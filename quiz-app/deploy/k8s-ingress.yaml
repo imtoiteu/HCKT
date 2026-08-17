@@ -1,0 +1,49 @@
+# Routes http://80.241.217.122/  ->  the quiz app running on the host at :8080
+# Scoped strictly to the bare-IP Host header, so it cannot shadow the existing
+# host-based routes (vstep-test.80-241-217-122.sslip.io) on the same entrypoint.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hckt
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hckt-quiz
+  namespace: hckt
+spec:
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: hckt-quiz          # must match the Service name
+  namespace: hckt
+subsets:
+  - addresses:
+      - ip: 10.42.0.1      # host gateway as seen from pods (flannel cni0)
+    ports:
+      - name: http
+        port: 8080
+        protocol: TCP
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hckt-quiz
+  namespace: hckt
+spec:
+  entryPoints:
+    - web
+  routes:
+    - kind: Rule
+      match: Host(`80.241.217.122`)
+      priority: 1
+      services:
+        - name: hckt-quiz
+          namespace: hckt
+          port: 80
