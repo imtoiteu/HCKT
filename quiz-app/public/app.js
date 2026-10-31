@@ -110,7 +110,7 @@ V.home = () => {
       <div class="hero-cta">
         <button class="btn primary big" data-go="due">${ICON.play} Ôn hôm nay${due ? ` (${due})` : ''}</button>
         <button class="btn big" data-nav="practice">Luyện tập</button>
-        <button class="btn big" data-nav="exam">Thi thử</button>
+        <button class="btn big" data-nav="team">Mô phỏng Đội tuyển</button>
       </div>
     </div>`));
 
@@ -152,7 +152,7 @@ function setupView(mode) {
   const S = setupState[mode];
   const v = el('div');
   v.appendChild(el('div', 'page-head', isExam
-    ? `<h1>Thi thử</h1><p>Làm bài liên tục theo thời gian, chấm điểm và xem lại ở cuối bài — giống không khí hội thi.</p>`
+    ? `<h1>Luyện tốc độ</h1><p>Làm nhiều câu liên tục theo thời gian tự chọn, chấm điểm và xem lại ở cuối bài — bài tập bổ sung để ôn rộng, <b>không phải định dạng chính thức</b> của Hội thi. Muốn mô phỏng đúng cấu trúc thi Đội tuyển, dùng tab “Đội tuyển”.</p>`
     : `<h1>Luyện tập</h1><p>Trả lời và biết đúng/sai ngay. Câu trả lời sai sẽ tự động quay lại sớm hơn.</p>`));
 
   const card = el('div', 'card pad');
@@ -505,6 +505,309 @@ function quizResult() {
   return v;
 }
 
+/* ---------- ĐỘI TUYỂN (mô phỏng Hội thi tập trung, Điều 12–15 Quy chế) ---------- */
+const TEAM_RULES = {
+  noidung: { title: 'Điều 12 Khoản 2 — Nội dung thi Đội tuyển', page: '5',
+    text: 'Nhận thức, hiểu biết về kiến thức chuyên ngành; về phong trào thi đua Ngành Hậu cần và thực hiện CVĐ50; truyền thống của ngành Hậu cần – Kỹ thuật Tổng cục.' },
+  so_khoidong: { title: 'Điều 13.2.b — Phần thi Khởi động (Vòng sơ khảo)', page: '5–6',
+    text: '5 câu hỏi, hình thức đưa ra đáp án đúng trên máy tính (soạn thảo đáp án); tổng thời gian đọc câu hỏi và trả lời mỗi câu: 90 giây. Trả lời đúng: điểm tối đa; không đưa ra câu trả lời hoặc trả lời sai: không được điểm.' },
+  so_tangtoc: { title: 'Điều 13.2.b — Phần thi Tăng tốc (Vòng sơ khảo)', page: '6',
+    text: '5 câu hỏi trắc nghiệm trên máy tính; tổng thời gian đọc câu hỏi và trả lời mỗi câu: 60 giây. Đội trả lời đúng & nhanh nhất được điểm tối đa; các đội đúng và nhanh tiếp theo nhận mức điểm thấp hơn tương ứng; không trả lời hoặc trả lời sai: không được điểm.' },
+  chung_rieng: { title: 'Điều 13.2.b — Gói câu hỏi riêng (Vòng chung khảo)', page: '6',
+    text: 'Mỗi đội trả lời 1 gói 5 câu hỏi riêng của BGK. Thời gian chuẩn bị tối đa 20 giây/câu. Đội được quyền trả lời: đúng được điểm câu hỏi; không trả lời hoặc trả lời sai: không được điểm — các đội còn lại được bấm chuông giành quyền trả lời trong 10 giây tiếp theo; giành chuông trả lời đúng: được điểm và đội thi của lượt đó bị trừ ½ số điểm câu hỏi; giành chuông trả lời sai: bị trừ ½ số điểm câu hỏi.' },
+  chung_chung: { title: 'Điều 13.2.b — Gói câu hỏi chung (Vòng chung khảo)', page: '6',
+    text: '4 đội cùng trả lời lần lượt 5 câu trong gói câu hỏi chung bằng hình thức bấm chuông giành quyền trả lời, trong vòng 20 giây; đội bấm chuông nhanh nhất trả lời đúng: được điểm; trả lời sai: không được điểm và các đội còn lại bấm chuông giành quyền trong 10 giây tiếp theo — giành quyền trả lời đúng: được điểm, đội giành quyền trả lời trước đó bị trừ ½ số điểm câu hỏi; trả lời sai: bị trừ ½ số điểm câu hỏi.' },
+  diem: { title: 'Điều 14 Khoản 2 — Cách chấm, tính điểm', page: '7–8',
+    text: 'Vòng sơ khảo: tổng điểm tối đa 100 điểm (10 câu × 10 điểm) → ký hiệu Điểm ĐT1, là cơ sở lựa chọn 4 đội vào vòng chung khảo. Vòng chung khảo: điểm hiện có của mỗi đội = Điểm ĐT1; tổng điểm tối đa vòng chung khảo 100 điểm (10 câu × 10 điểm) → ký hiệu Điểm ĐT2, là cơ sở tính thành tích, khen thưởng phần thi tập trung của đội tuyển.' },
+};
+const TEAM_STAGE_LABEL = { khoidong: 'Khởi động', tangtoc: 'Tăng tốc', rieng: 'Gói câu hỏi riêng', chung: 'Gói câu hỏi chung' };
+
+function pickTeamQuestions(n, exclude) {
+  let pool = basePool([]).filter(q => !exclude.includes(q.id));
+  pool = shuffle(pool).sort((a, b) => (store.d.stats[a.id]?.box || 1) - (store.d.stats[b.id]?.box || 1));
+  return pool.slice(0, n);
+}
+function teamSeconds(kind) { return kind === 'khoidong' ? 90 : kind === 'tangtoc' ? 60 : 20; }
+let teamTimerHandle = null;
+function clearTeamTimer() { if (teamTimerHandle) { clearInterval(teamTimerHandle); teamTimerHandle = null; } }
+function startTeamTimer(seconds, onZero) {
+  clearTeamTimer();
+  const end = Date.now() + seconds * 1000;
+  const tick = () => {
+    const t = $('#teamTimer');
+    if (!t) { clearTeamTimer(); return; }
+    const left = end - Date.now();
+    t.textContent = fmtTime(Math.max(0, left));
+    t.classList.toggle('warn', left < seconds * 1000 / 3);
+    if (left <= 0) { clearTeamTimer(); onZero(); }
+  };
+  setTimeout(tick);
+  teamTimerHandle = setInterval(tick, 250);
+}
+
+function startTeamRound(round) {
+  const stages = round === 'so' ? ['khoidong', 'tangtoc'] : ['rieng', 'chung'];
+  const used = [];
+  const stageData = stages.map(kind => {
+    const qs = pickTeamQuestions(5, used);
+    qs.forEach(q => used.push(q.id));
+    return { kind, items: qs.map(q => ({ q, order: shuffle(q.opts), pick: [], done: false, ok: null, points: 0, typed: '', revealed: false })) };
+  });
+  app.team = {
+    round, stages: stageData, si: 0, qi: 0, total: 0, finished: false,
+    baseline: round === 'chung' ? (store.d.lastDT1 ?? 0) : 0,
+  };
+  app.view = 'team'; render();
+}
+function teamCurrentItem() { const T = app.team, st = T.stages[T.si]; return { st, it: st.items[T.qi] }; }
+function teamAdvance() {
+  clearTeamTimer();
+  const T = app.team, st = T.stages[T.si];
+  if (T.qi < st.items.length - 1) T.qi++;
+  else if (T.si < T.stages.length - 1) { T.si++; T.qi = 0; }
+  else return teamFinish();
+  render();
+}
+function teamFinish() {
+  clearTeamTimer();
+  const T = app.team;
+  T.total = T.stages.reduce((a, st) => a + st.items.reduce((b, it) => b + it.points, 0), 0);
+  T.finished = true;
+  store.d.history.unshift({ d: Date.now(), mode: T.round === 'so' ? 'dtso' : 'dtck', r: T.total, t: 100 });
+  store.d.history = store.d.history.slice(0, 60);
+  if (T.round === 'so') {
+    store.d.lastDT1 = T.total;
+    if (T.total > (store.d.best.dt1 || 0)) store.d.best.dt1 = T.total;
+  } else {
+    T.dt2 = Math.min(100, T.baseline + T.total);
+    if (T.dt2 > (store.d.best.dt2 || 0)) store.d.best.dt2 = T.dt2;
+  }
+  store.save();
+  render();
+}
+
+V.team = () => {
+  const T = app.team;
+  if (!T) return teamHome();
+  if (T.finished) return teamResult();
+  const { st, it } = teamCurrentItem();
+  return st.kind === 'tangtoc' ? teamMCView(st, it) : teamRecallView(st, it);
+};
+
+function teamHome() {
+  const v = el('div');
+  v.appendChild(el('div', 'page-head', `<h1>Đội tuyển</h1><p>Mô phỏng "Thi Đội tuyển" trong Hội thi tập trung theo Điều 12–15 Quy chế: Vòng sơ khảo và Vòng chung khảo.</p>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span>Quy chế mô tả hình thức thi <b>theo đội, nhiều đội thi đồng thời</b> (xếp hạng theo tốc độ, bấm chuông giành quyền trả lời). Khi luyện một mình, ứng dụng chỉ mô phỏng được <b>nội dung câu hỏi, thời gian và kết quả đúng/sai của riêng bạn</b> — không thể tái hiện việc tranh chuông hay trừ điểm giữa nhiều đội. Điểm hiển thị là điểm luyện tập cá nhân để tham khảo, <b>không phải điểm thi chính thức</b>.</span>`));
+
+  const grid = el('div', 'sec-grid');
+  const mkCard = (title, desc, bestVal, bestLbl, cta, onGo) => {
+    const c = el('div', 'card pad');
+    c.appendChild(el('h3', '', title));
+    c.appendChild(el('p', 'muted', desc)).style.cssText = 'margin:6px 0 12px;font-size:13.5px;line-height:1.55';
+    c.appendChild(el('p', '', `${bestLbl}: <b>${bestVal ?? '–'}${bestVal != null ? '/100' : ''}</b>`)).style.cssText = 'font-size:13.5px';
+    const b = el('button', 'btn primary block', `${ICON.play} ${cta}`); b.style.marginTop = '12px';
+    b.onclick = onGo;
+    c.appendChild(b);
+    return c;
+  };
+  grid.appendChild(mkCard('Vòng sơ khảo', '10 câu: Khởi động (5 câu, 90 giây/câu, tự luận) + Tăng tốc (5 câu, 60 giây/câu, trắc nghiệm). Điều 13.2.b, 14.2.a — trang 5–7.',
+    store.d.best.dt1, 'Điểm ĐT1 cao nhất', 'Bắt đầu Vòng sơ khảo', () => startTeamRound('so')));
+  grid.appendChild(mkCard('Vòng chung khảo', '10 câu: Gói câu hỏi riêng (5 câu) + Gói câu hỏi chung (5 câu), 20 giây/câu. Điều 13.2.b, 14.2.b — trang 6–8.',
+    store.d.best.dt2, 'Điểm ĐT2 cao nhất', 'Bắt đầu Vòng chung khảo', () => startTeamRound('chung')));
+  v.appendChild(grid);
+
+  const rc = el('div', 'card pad'); rc.style.marginTop = '16px';
+  rc.appendChild(el('h3', '', 'Nội dung & cách chấm theo Quy chế'));
+  Object.values(TEAM_RULES).forEach(r => {
+    rc.appendChild(el('div', 'rule-row', `<b>${esc(r.title)}</b><p>${esc(r.text)}</p><span class="muted">Trang ${esc(r.page)} tài liệu gốc</span>`));
+  });
+  const gofull = el('button', 'btn ghost', 'Xem bản quét gốc trong tab “Quy chế”');
+  gofull.onclick = () => nav('ref');
+  rc.appendChild(gofull);
+  v.appendChild(rc);
+  return v;
+}
+
+function teamBar(T) {
+  const totalQ = T.stages.reduce((a, s) => a + s.items.length, 0);
+  const doneQ = T.stages.slice(0, T.si).reduce((a, s) => a + s.items.length, 0) + T.qi;
+  const bar = el('div', 'quiz-bar');
+  const back = el('button', 'btn ghost', `${ICON.back} Thoát`);
+  back.onclick = () => { if (confirm('Thoát và huỷ lượt mô phỏng này?')) { clearTeamTimer(); app.team = null; nav('team'); } };
+  bar.appendChild(back);
+  bar.appendChild(el('div', 'progress', `<i style="width:${doneQ / totalQ * 100}%"></i>`));
+  bar.appendChild(el('span', 'counter', `Câu ${doneQ + 1}/${totalQ}`));
+  const t = el('span', 'timer', ''); t.id = 'teamTimer'; bar.appendChild(t);
+  return bar;
+}
+
+function teamRecallView(st, it) {
+  const T = app.team, q = it.q, seconds = teamSeconds(st.kind);
+  const v = el('div');
+  v.appendChild(teamBar(T));
+
+  const card = el('div', 'card qcard');
+  card.appendChild(el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">${esc(TEAM_STAGE_LABEL[st.kind])}</span>`));
+  card.appendChild(el('div', 'qtext', esc(q.q)));
+
+  if (!it.revealed) {
+    const ta = el('textarea', 'recall-in');
+    ta.placeholder = 'Soạn câu trả lời của bạn (chỉ để tự đối chiếu — không được chấm tự động)…';
+    ta.value = it.typed;
+    ta.oninput = () => { it.typed = ta.value; };
+    card.appendChild(ta);
+    const foot = el('div', 'qfoot');
+    const submit = el('button', 'btn primary', `Nộp & xem đáp án ${ICON.arrow}`);
+    submit.onclick = () => { clearTeamTimer(); it.revealed = true; render(); };
+    foot.appendChild(submit);
+    card.appendChild(foot);
+  } else {
+    const ans = q.ans.map(k => `<div class="val"><span class="k">${k.toUpperCase()}</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+    const yours = it.typed.trim()
+      ? `<div class="lead" style="margin-top:14px;color:var(--ink2)">Câu trả lời của bạn</div><div class="your">${esc(it.typed)}</div>` : '';
+    const box = el('div', 'recall-ans', `<div class="lead">Đáp án đúng (tài liệu gốc)</div>${ans}${yours}`);
+    card.appendChild(box);
+    const self = el('div', 'self-grade');
+    self.appendChild(el('p', 'muted', 'Tự chấm — bạn tự đối chiếu và đánh giá, đây không phải điểm thi chính thức.'));
+    const row = el('div', 'rate');
+    const ok = el('button', 'btn primary', `${ICON.check} Tôi trả lời đúng (+10đ)`);
+    ok.onclick = () => { it.done = true; it.ok = true; it.points = 10; teamAdvance(); };
+    const bad = el('button', 'btn danger', `${ICON.x} Sai / không kịp (0đ)`);
+    bad.onclick = () => { it.done = true; it.ok = false; it.points = 0; teamAdvance(); };
+    row.appendChild(ok); row.appendChild(bad);
+    self.appendChild(row);
+    card.appendChild(self);
+  }
+  v.appendChild(card);
+  if (!it.revealed) startTeamTimer(seconds, () => { it.revealed = true; render(); });
+  return v;
+}
+
+function teamMCView(st, it) {
+  const T = app.team, q = it.q, seconds = teamSeconds('tangtoc');
+  const v = el('div');
+  v.appendChild(teamBar(T));
+
+  const card = el('div', 'card qcard');
+  const top = el('div', 'qtop');
+  top.innerHTML = `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">Tăng tốc</span>` + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '');
+  card.appendChild(top);
+  card.appendChild(el('div', 'qtext', esc(q.q)));
+
+  const wrap = el('div', 'opts');
+  it.order.forEach((o, idx) => {
+    const b = el('button', 'opt');
+    b.dataset.k = o.k;
+    b.innerHTML = `<span class="key">${esc(q.opts[idx].k)}</span><span class="txt">${esc(o.t)}</span><span class="mark"></span>`;
+    b.onclick = () => pick(o.k);
+    wrap.appendChild(b);
+  });
+  card.appendChild(wrap);
+  const fbSlot = el('div'); fbSlot.id = 'fbSlot'; card.appendChild(fbSlot);
+  const footSlot = el('div'); footSlot.id = 'mcFoot'; card.appendChild(footSlot);
+  v.appendChild(card);
+  setTimeout(paint);
+  if (!it.done) startTeamTimer(seconds, () => { if (!it.done) finish(); }); else clearTeamTimer();
+  return v;
+
+  function paint() {
+    $$('.opt', wrap).forEach(b => {
+      const k = b.dataset.k; b.className = 'opt';
+      if (it.done) {
+        b.classList.add('locked');
+        const isC = q.ans.includes(k), isP = it.pick.includes(k);
+        if (isC) { b.classList.add('correct'); b.querySelector('.mark').innerHTML = ICON.check; }
+        else if (isP) { b.classList.add('wrong'); b.querySelector('.mark').innerHTML = ICON.x; }
+        else b.classList.add('dim');
+      } else if (it.pick.includes(k)) b.classList.add('sel');
+    });
+    const slot = $('#mcFoot'); slot.innerHTML = '';
+    if (!it.done && q.multi) {
+      const foot = el('div', 'qfoot');
+      const chk = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
+      chk.disabled = it.pick.length === 0;
+      chk.onclick = () => finish();
+      foot.appendChild(chk);
+      slot.appendChild(foot);
+    }
+  }
+  function pick(k) {
+    if (it.done) return;
+    if (q.multi) { const i = it.pick.indexOf(k); i < 0 ? it.pick.push(k) : it.pick.splice(i, 1); paint(); }
+    else { it.pick = [k]; paint(); setTimeout(finish, 130); }
+  }
+  function finish() {
+    if (it.done) return;
+    clearTeamTimer();
+    it.done = true;
+    it.ok = it.pick.length > 0 && setEq(it.pick, q.ans);
+    it.points = it.ok ? 10 : 0;
+    store.grade(q.id, !!it.ok);
+    paint();
+    const corr = q.ans.map(k => `<b>${k.toUpperCase()}</b>. ${esc(q.opts.find(o => o.k === k).t)}`).join('<br>');
+    const fb = el('div', 'feedback ' + (it.ok ? 'good' : 'bad'),
+      (it.ok ? ICON.check : ICON.x) + `<div>${it.ok ? 'Chính xác (+10đ nếu bạn là đội nhanh & đúng nhất)' : 'Chưa đúng — 0đ'}<span class="sub">Đáp án đúng: ${corr}</span></div>`);
+    $('#fbSlot').innerHTML = ''; $('#fbSlot').appendChild(fb);
+    const foot = el('div', 'qfoot');
+    const last = T.si === T.stages.length - 1 && T.qi === st.items.length - 1;
+    const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+    next.onclick = teamAdvance;
+    foot.appendChild(next);
+    const slot = $('#mcFoot'); slot.innerHTML = ''; slot.appendChild(foot);
+    next.focus();
+  }
+}
+
+function teamResult() {
+  const T = app.team;
+  const label = T.round === 'so' ? 'Vòng sơ khảo' : 'Vòng chung khảo';
+  const pct = T.total;
+  const emo = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  const v = el('div');
+  const c = el('div', 'card result', `
+    <div class="emoji">${emo}</div>
+    <div class="big">${pct}<span style="font-size:22px;font-weight:700;opacity:.5">/100</span></div>
+    <div class="lbl"><b>${esc(label)}</b> — ${T.round === 'so' ? 'Điểm ĐT1' : 'Điểm phần Chung khảo'}: ${pct}/100</div>
+    ${T.round === 'chung' ? `<p class="muted" style="margin-top:8px;font-size:13px">Mốc xuất phát (Điểm ĐT1 gần nhất): ${T.baseline} + điểm Chung khảo ${pct} → <b>Điểm ĐT2 ước tính: ${T.dt2}/100</b> (ước tính cá nhân, không mô phỏng việc bị trừ điểm khi đội khác giành chuông).</p>` : ''}`);
+
+  const rstats = el('div', 'rstats');
+  T.stages.forEach(st => {
+    const pts = st.items.reduce((a, it) => a + it.points, 0);
+    rstats.appendChild(el('div', 'rstat', `<b>${pts}/50</b><span>${esc(TEAM_STAGE_LABEL[st.kind])}</span>`));
+  });
+  c.appendChild(rstats);
+
+  const cta = el('div', 'hero-cta'); cta.style.cssText = 'justify-content:center;margin-top:20px';
+  const again = el('button', 'btn primary', `${ICON.refresh} Làm lại ${label}`);
+  again.onclick = () => startTeamRound(T.round);
+  cta.appendChild(again);
+  const other = el('button', 'btn', T.round === 'so' ? 'Sang Vòng chung khảo' : 'Về Vòng sơ khảo');
+  other.onclick = () => startTeamRound(T.round === 'so' ? 'chung' : 'so');
+  cta.appendChild(other);
+  const home = el('button', 'btn ghost', 'Về trang chủ');
+  home.onclick = () => { app.team = null; nav('home'); };
+  cta.appendChild(home);
+  c.appendChild(cta);
+  v.appendChild(c);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Xem lại</h3>`));
+  const list = el('div', 'review-list');
+  T.stages.forEach(st => st.items.forEach(it => {
+    const q = it.q;
+    const r = el('div', 'rev ' + (it.ok ? 'hit' : 'miss'));
+    const corr = q.ans.map(k => `<div class="ans g"><span class="k">${k.toUpperCase()}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+    r.innerHTML = `<div class="qtop" style="margin-bottom:0">
+        <span class="tag">${esc(TEAM_STAGE_LABEL[st.kind])}</span>
+        <span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.ok ? `✓ +${it.points}đ` : '✕ 0đ'}</span></div>
+      <div class="q">${esc(q.q)}</div>
+      ${st.kind !== 'tangtoc' && it.typed.trim() ? `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-top:8px">Bạn trả lời</div><div class="your">${esc(it.typed)}</div>` : ''}
+      <div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án đúng</div>${corr}`;
+    list.appendChild(r);
+  }));
+  v.appendChild(list);
+  return v;
+}
+
 /* ---------- FLASHCARD ---------- */
 const flash = { list: null, i: 0, shown: false, secs: [] };
 
@@ -662,7 +965,9 @@ V.stats = () => {
     <div class="kpi"><b>${tot}</b><span>Lượt trả lời</span></div>
     <div class="kpi due"><b>${due}</b><span>Đến hạn ôn</span></div>
     <div class="kpi"><b>${store.d.streak.days} 🔥</b><span>Ngày liên tiếp</span></div>
-    <div class="kpi"><b>${store.d.best.exam || 0}%</b><span>Điểm thi thử cao nhất</span></div>`));
+    <div class="kpi"><b>${store.d.best.dt1 ?? '–'}${store.d.best.dt1 != null ? '/100' : ''}</b><span>Điểm ĐT1 cao nhất (Sơ khảo)</span></div>
+    <div class="kpi"><b>${store.d.best.dt2 ?? '–'}${store.d.best.dt2 != null ? '/100' : ''}</b><span>Điểm ĐT2 cao nhất (Chung khảo)</span></div>
+    <div class="kpi"><b>${store.d.best.exam || 0}%</b><span>Điểm luyện tốc độ cao nhất</span></div>`));
 
   // Leitner boxes
   const boxes = [0, 0, 0, 0, 0];
@@ -696,8 +1001,9 @@ V.stats = () => {
     hc.appendChild(el('h3', '', 'Lượt gần đây'));
     store.d.history.slice(0, 12).forEach(h => {
       const p = Math.round(h.r / h.t * 100);
+      const hlbl = { exam: 'Luyện tốc độ', dtso: 'ĐT · Sơ khảo', dtck: 'ĐT · Chung khảo' }[h.mode] || 'Luyện tập';
       hc.appendChild(el('div', 'mastery-row', `
-        <span class="tag">${h.mode === 'exam' ? 'Thi thử' : 'Luyện tập'}</span>
+        <span class="tag">${hlbl}</span>
         <div class="nm"><b>${h.r}/${h.t} câu đúng</b><div class="bar"><i style="width:${p}%;background:${p >= 75 ? 'var(--ok)' : p >= 50 ? 'var(--warn)' : 'var(--bad)'}"></i></div></div>
         <span class="pct" style="width:auto;color:var(--ink3);font-weight:600;font-size:12px">${new Date(h.d).toLocaleDateString('vi-VN')}</span>
         <span class="pct">${p}%</span>`));
@@ -718,22 +1024,44 @@ V.stats = () => {
 /* ---------- REFERENCE ---------- */
 V.ref = () => {
   const v = el('div');
-  v.appendChild(el('div', 'page-head', `<h1>Thang điểm chấm thi</h1><p>Phụ lục “Thang điểm chấm thi Đơn vị chính quy ngành HC-KT cấp Tổng cục năm 2026” — bản quét đầy đủ 23 trang từ tài liệu gốc.</p>`));
-  const g = el('div', 'ref-grid');
+  v.appendChild(el('div', 'page-head', `<h1>Quy chế</h1><p>Bản quét gốc các tài liệu quy chế/thang điểm dùng làm căn cứ xây dựng ứng dụng. Trích dẫn số điều, số trang trong phần "Đội tuyển" đều dựa trên các trang này.</p>`));
+
+  v.appendChild(el('div', 'note', `${ICON.warn}<span>Bản quét "Thể lệ Thi Đội tuyển" dưới đây chỉ có <b>5 trang, đánh số gốc 4–8</b> (trích từ Quy chế Hội thi HC-KT 2026). Các phần khác của quy chế (Mục I chấm đơn vị đầy đủ, Thi Chủ nhiệm HC-KT, điều kiện dự thi, xếp loại chung toàn đoàn…) <b>chưa có trong tài liệu được cung cấp</b> nên không được đưa vào ứng dụng — nếu có đủ văn bản, hãy bổ sung để cập nhật.</span>`));
+
+  v.appendChild(el('div', 'sec-title', `<h3>Thể lệ Thi Đội tuyển (trích Điều 12–15)</h3><span class="muted" style="font-size:12.5px">5 trang — dùng cho tab “Đội tuyển”</span>`));
+  const g1 = el('div', 'ref-grid');
+  for (let i = 1; i <= 5; i++) {
+    const p = el('div', 'ref-page');
+    const img = el('img'); img.loading = 'lazy'; img.decoding = 'async';
+    img.src = `ref/dt-${pad2(i)}.jpg`; img.alt = `Thể lệ Đội tuyển — trang ${i}`;
+    p.appendChild(img);
+    p.appendChild(el('div', 'cap', `Trang gốc ${i + 3} (trích ${i}/5)`));
+    g1.appendChild(p);
+  }
+  v.appendChild(g1);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Phụ lục: Thang điểm chấm "Đơn vị chính quy ngành HC-KT"</h3><span class="muted" style="font-size:12.5px">23 trang — chấm đơn vị (Mục I), không áp dụng trực tiếp cho phần thi Đội tuyển</span>`));
+  const g2 = el('div', 'ref-grid');
   for (let i = 1; i <= 23; i++) {
     const p = el('div', 'ref-page');
     const img = el('img'); img.loading = 'lazy'; img.decoding = 'async';
     img.src = `ref/tcd-${pad2(i)}.jpg`; img.alt = `Thang điểm chấm thi — trang ${i}`;
     p.appendChild(img);
     p.appendChild(el('div', 'cap', `Trang ${i} / 23`));
-    g.appendChild(p);
+    g2.appendChild(p);
   }
-  v.appendChild(g);
+  v.appendChild(g2);
   return v;
 };
 
 /* ---------------- router / render ---------------- */
-function nav(v) { app.view = v; if (v !== 'quiz') app.quiz = null; location.hash = v; render(); scrollTo({ top: 0, behavior: 'smooth' }); }
+function nav(v) {
+  app.view = v;
+  if (v !== 'quiz') app.quiz = null;
+  if (v === 'team' && app.team?.finished) app.team = null;
+  if (v !== 'team') { clearTeamTimer(); app.team = null; }
+  location.hash = v; render(); scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 function render() {
   const host = $('#view');
@@ -745,7 +1073,7 @@ function render() {
 
 function buildBottomBar() {
   const bb = $('#botbar');
-  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', exam: 'Thi thử', flash: 'Thẻ nhớ', browse: 'Tra cứu', stats: 'Tiến độ', ref: 'Thang điểm' };
+  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', team: 'Đội tuyển', exam: 'Tốc độ', flash: 'Thẻ nhớ', browse: 'Tra cứu', stats: 'Tiến độ', ref: 'Quy chế' };
   [...$('#tabs').children].forEach(b => {
     const c = b.cloneNode(true);
     c.querySelector('span').textContent = SHORT[c.dataset.nav] || c.dataset.nav;
@@ -761,6 +1089,14 @@ document.addEventListener('keydown', e => {
   if (app.view === 'flash' && flash.list) {
     if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); if (!flash.shown) { flash.shown = true; render(); } else nextFlash(); }
     if (e.key === 'ArrowRight') nextFlash();
+    return;
+  }
+  if (app.view === 'team') {
+    if (!app.team || app.team.finished) return;
+    const { st, it } = teamCurrentItem();
+    if (st.kind !== 'tangtoc' || it.done) return;
+    if (/^[1-9]$/.test(e.key)) { const b = $$('.opt')[+e.key - 1]; if (b) { e.preventDefault(); b.click(); } }
+    else if (/^[a-e]$/i.test(e.key)) { const b = $$('.opt').find(x => x.dataset.k === e.key.toLowerCase()); if (b) { e.preventDefault(); b.click(); } }
     return;
   }
   if (app.view !== 'quiz' || !app.quiz || app.quiz.finished) return;
@@ -822,10 +1158,10 @@ setInterval(() => {
   });
 
   const h = location.hash.slice(1);
-  app.view = V[h] && h !== 'quiz' ? h : 'home';
+  app.view = V[h] && h !== 'quiz' && h !== 'team' ? h : 'home';
   window.addEventListener('hashchange', () => {
     const v = location.hash.slice(1) || 'home';
-    if (v !== app.view && V[v] && v !== 'quiz') { app.view = v; app.quiz = null; render(); }
+    if (v !== app.view && V[v] && v !== 'quiz' && v !== 'team') { app.view = v; app.quiz = null; clearTeamTimer(); app.team = null; render(); }
   });
 
   $('#boot').remove();

@@ -1,9 +1,17 @@
-# Ôn thi HC-KT 2026 — web app luyện & ghi nhớ bộ câu hỏi
+# Ôn thi HC-KT 2026 — web app luyện thi Đội tuyển
 
-Ứng dụng web luyện tập, ghi nhớ **228 câu hỏi trắc nghiệm** thuộc 8 ngành trong
-*"Bộ câu hỏi, đáp án Hội thi ngành Hậu cần – Kỹ thuật năm 2026"*.
+Ứng dụng web ôn luyện cho **Thi Đội tuyển** trong Hội thi tập trung ngành Hậu cần –
+Kỹ thuật năm 2026: vừa ghi nhớ **228 câu hỏi trắc nghiệm** (8 ngành), vừa mô phỏng
+đúng cấu trúc, thời gian và cách tính điểm của **Vòng sơ khảo** và **Vòng chung
+khảo** theo Quy chế Hội thi (Điều 12–15).
 
 **URL công khai:** http://80.241.217.122:8080/
+
+> **Phạm vi:** ứng dụng phục vụ riêng phần **Thi Đội tuyển**. Quy chế còn mô tả
+> "Thi Chủ nhiệm HC-KT" (bảo vệ kế hoạch cá nhân, không phải trắc nghiệm) và chấm
+> điểm đơn vị (Mục I) — hai phần này **chưa** được xây dựng vì nằm ngoài phạm vi đã
+> xác nhận và/hoặc thiếu căn cứ văn bản đầy đủ, xem mục "Quy chế & giới hạn dữ liệu"
+> bên dưới.
 
 ---
 
@@ -12,7 +20,8 @@
 | Tệp gốc | Vai trò |
 |---|---|
 | `Bo_cau_hoi_Hoi_thi_0001.pdf` (53 trang) | Toàn bộ 228 câu trắc nghiệm + đáp án |
-| `Thang_cham_diem_Hoi_thi_0001.pdf` (23 trang) | Thang điểm chấm thi — **không chứa câu trắc nghiệm**, được đưa vào tab "Thang điểm" dưới dạng ảnh quét đầy đủ |
+| `Thang_cham_diem_Hoi_thi_0001.pdf` (23 trang) | Phụ lục thang điểm chấm **đơn vị chính quy** (Mục I) — không áp dụng trực tiếp cho Đội tuyển, đưa vào tab "Quy chế" dưới dạng ảnh quét đầy đủ để tham khảo |
+| `CamScanner 31-10-26 12.43.pdf` (5 trang, đánh số gốc 4–8) | Trích Điều 11–15 Quy chế Hội thi — căn cứ duy nhất cho cấu trúc/thời gian/cách tính điểm của tab "Đội tuyển"; ảnh quét ở `public/ref/dt-01..05.jpg` |
 
 Cả hai PDF là bản quét (không có lớp văn bản), nội dung được bóc tách thủ công
 theo từng trang. Đáp án đúng trong tài liệu gốc được đánh dấu bằng **gạch chân**
@@ -46,20 +55,62 @@ theo từng trang. Đáp án đúng trong tài liệu gốc được đánh dấ
 
 ## Tính năng
 
+### Đội tuyển (mô phỏng Hội thi) — tab mới
+- **Vòng sơ khảo**: Khởi động (5 câu tự luận, 90s/câu, tự soạn đáp án rồi tự
+  chấm) + Tăng tốc (5 câu trắc nghiệm, 60s/câu) → **Điểm ĐT1**/100. Đúng theo
+  Điều 13.2.b, 14.2.a (trang 5–7).
+- **Vòng chung khảo**: Gói câu hỏi riêng + Gói câu hỏi chung (mỗi gói 5 câu,
+  20s/câu, tự luận) → cộng vào mốc Điểm ĐT1 gần nhất thành **Điểm ĐT2 ước
+  tính**/100. Đúng theo Điều 13.2.b, 14.2.b (trang 6–8).
+- Vì quy chế mô tả thi đấu **nhiều đội cùng lúc** (xếp hạng theo tốc độ, bấm
+  chuông giành quyền trả lời), khi luyện một mình ứng dụng chỉ mô phỏng được nội
+  dung, thời gian và đúng/sai của riêng người dùng — **không** mô phỏng việc
+  tranh chuông/trừ điểm giữa các đội. Mọi điểm số trong tab này là **điểm luyện
+  tập cá nhân**, ứng dụng luôn ghi chú rõ đây không phải điểm thi chính thức.
+- Câu hỏi được ưu tiên chọn theo hộp Leitner thấp nhất (câu còn yếu) trước.
+- Tab "Quy chế" hiển thị nguyên văn bản quét 5 trang làm căn cứ, kèm trích dẫn
+  điều/trang cho từng quy tắc hiển thị trong tab Đội tuyển.
+
+### Ôn tập nền tảng (không đổi)
 - **Luyện tập** — chọn ngành, số câu, xáo trộn đáp án; biết đúng/sai ngay; lọc
   theo *câu đến hạn ôn / câu từng sai / câu đã đánh dấu ★*.
-- **Thi thử** — 15/30/50 câu có đồng hồ đếm ngược, nộp bài, chấm điểm, xem lại.
+- **Luyện tốc độ** (trước gọi là "Thi thử") — 15/30/50 câu có đồng hồ đếm
+  ngược, nộp bài, chấm điểm, xem lại. Bài tập bổ sung để ôn rộng, không phải
+  định dạng chính thức của Hội thi.
 - **Thẻ ghi nhớ** — lật thẻ, tự đánh giá "đã nhớ / chưa thuộc".
 - **Lặp lại ngắt quãng** (Leitner 5 hộp: 0 → 1 → 3 → 7 → 21 ngày). Trả lời đúng
-  đẩy câu ra xa, trả lời sai đưa về hộp 1 để gặp lại ngay.
+  đẩy câu ra xa, trả lời sai đưa về hộp 1 để gặp lại ngay — áp dụng cho cả
+  Luyện tập và phần Tăng tốc trong tab Đội tuyển.
 - **Tra cứu** — tìm kiếm không dấu trên toàn bộ câu hỏi & đáp án, lọc theo ngành.
-- **Tiến độ** — % thông thạo từng ngành, phân bố 5 hộp, chuỗi ngày học, lịch sử.
-- **Thang điểm** — 23 trang phụ lục thang điểm chấm thi.
+- **Tiến độ** — % thông thạo từng ngành, phân bố 5 hộp, chuỗi ngày học, lịch sử,
+  điểm ĐT1/ĐT2 cao nhất.
+- **Quy chế** — bản quét gốc thể lệ Đội tuyển (5 trang) + phụ lục thang điểm
+  chấm đơn vị (23 trang, chỉ để tham khảo).
 - Giao diện sáng/tối, responsive cho điện thoại (thanh điều hướng dưới),
   phím tắt trên máy tính (`1–9` hoặc `a–e` chọn ý, `Enter` tiếp, `S` đánh dấu).
 
 Tiến độ học lưu tại **localStorage** của trình duyệt — không có backend, không
 gửi dữ liệu đi đâu. Mỗi thiết bị có tiến độ riêng.
+
+## Quy chế & giới hạn dữ liệu
+
+- File quy chế được cung cấp (`CamScanner 31-10-26 12.43.pdf`) chỉ có **5 trang,
+  đánh số gốc 4–8**. Không có trang 1–3 (nhiều khả năng chứa Mục I, Điều 1–10)
+  và không rõ có trang nào sau trang 8 hay không (Điều 15 dường như chưa hết ở
+  cuối trang 8). Ứng dụng **chỉ dùng đúng phần đã đọc được** (Điều 11–15) và
+  không suy đoán thêm nội dung thiếu.
+- Phạm vi đã xác nhận với người dùng: **chỉ xây dựng cho "Thi Đội tuyển"**
+  (Điều 12 khoản 2). "Thi Chủ nhiệm HC-KT" (Điều 12 khoản 1 — bảo vệ kế hoạch cá
+  nhân trước BGK) và phần chấm điểm đơn vị (Mục I) có trong quy chế nhưng
+  **chưa được xây dựng** trong ứng dụng.
+- Giả định (không phải quy định minh thị trong quy chế): 228 câu trong
+  `Bo_cau_hoi_Hoi_thi_0001.pdf` là nguồn câu hỏi BGK sử dụng cho Khởi động/Tăng
+  tốc/gói câu hỏi — quy chế không nêu rõ nguồn câu hỏi. Nếu có bộ câu hỏi chính
+  thức khác cho các phần thi này, cần cập nhật lại.
+- Cơ chế **xếp hạng theo tốc độ giữa nhiều đội** (Tăng tốc) và **giành
+  chuông/trừ điểm** (Vòng chung khảo) không thể mô phỏng khi luyện một mình —
+  ứng dụng chỉ tính đúng/sai cho phần trả lời của người dùng và luôn ghi chú rõ
+  đây là điểm luyện tập, không phải điểm thi chính thức.
 
 ## Kiến trúc
 
@@ -71,10 +122,12 @@ quiz-app/
 ├── server.js                 # static server (gzip, cache, SPA fallback), 0 dependency
 ├── public/
 │   ├── index.html
-│   ├── app.js                # toàn bộ logic: router, quiz engine, SRS, thống kê
+│   ├── app.js                # router, quiz engine, SRS, Đội tuyển (mô phỏng), thống kê
 │   ├── styles.css
 │   ├── data/questions.json   # 228 câu — nguồn dữ liệu duy nhất của app
-│   └── ref/tcd-01..23.jpg    # ảnh quét thang điểm chấm thi
+│   └── ref/
+│       ├── tcd-01..23.jpg    # ảnh quét phụ lục thang điểm chấm đơn vị
+│       └── dt-01..05.jpg     # ảnh quét thể lệ Đội tuyển (Điều 11–15, trang gốc 4–8)
 ├── data/raw/chunk-*.json     # bản bóc tách gốc theo từng cụm trang (để đối chiếu)
 └── deploy/k8s-ingress.yaml   # (tuỳ chọn) route cổng 80 qua Traefik — chưa áp dụng
 ```
