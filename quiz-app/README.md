@@ -56,12 +56,13 @@ theo từng trang. Đáp án đúng trong tài liệu gốc được đánh dấ
 ## Tính năng
 
 ### Đội tuyển (mô phỏng Hội thi) — tab mới
-- **Vòng sơ khảo**: Khởi động (5 câu tự luận, 90s/câu, tự soạn đáp án rồi tự
-  chấm) + Tăng tốc (5 câu trắc nghiệm, 60s/câu) → **Điểm ĐT1**/100. Đúng theo
+- **Vòng sơ khảo**: Khởi động (5 câu tự luận, 90s/câu, **chấm tự động**) +
+  Tăng tốc (5 câu trắc nghiệm, 60s/câu) → **Điểm ĐT1**/100. Đúng theo
   Điều 13.2.b, 14.2.a (trang 5–7).
 - **Vòng chung khảo**: Gói câu hỏi riêng + Gói câu hỏi chung (mỗi gói 5 câu,
-  20s/câu, tự luận) → cộng vào mốc Điểm ĐT1 gần nhất thành **Điểm ĐT2 ước
-  tính**/100. Đúng theo Điều 13.2.b, 14.2.b (trang 6–8).
+  20s/câu, tự luận, **tự chấm thủ công** như trước) → cộng vào mốc Điểm ĐT1
+  gần nhất thành **Điểm ĐT2 ước tính**/100. Đúng theo Điều 13.2.b, 14.2.b
+  (trang 6–8).
 - Vì quy chế mô tả thi đấu **nhiều đội cùng lúc** (xếp hạng theo tốc độ, bấm
   chuông giành quyền trả lời), khi luyện một mình ứng dụng chỉ mô phỏng được nội
   dung, thời gian và đúng/sai của riêng người dùng — **không** mô phỏng việc
@@ -70,6 +71,39 @@ theo từng trang. Đáp án đúng trong tài liệu gốc được đánh dấ
 - Câu hỏi được ưu tiên chọn theo hộp Leitner thấp nhất (câu còn yếu) trước.
 - Tab "Quy chế" hiển thị nguyên văn bản quét 5 trang làm căn cứ, kèm trích dẫn
   điều/trang cho từng quy tắc hiển thị trong tab Đội tuyển.
+
+#### Chấm tự luận tự động (Khởi động)
+
+Chỉ phần **Khởi động** (Vòng sơ khảo) được chấm tự động; Gói câu hỏi riêng/chung
+ở Vòng chung khảo vẫn tự chấm thủ công như bản trước (hai phần này không có
+định dạng rõ ràng trong quy chế để xác định đáp án chuẩn một cách chắc chắn).
+
+**Công thức** (xem `normWords`, `lcsAlign`, `gradeRecall` trong `app.js`):
+1. Chuẩn hoá cả đáp án chuẩn và câu trả lời: Unicode NFC → chữ thường → bỏ dấu
+   câu (`\p{P}`: `. , ; : ! ? ( ) " ' …` …) → gộp khoảng trắng/tab/xuống dòng
+   thừa. **Không bỏ dấu tiếng Việt, không sửa chính tả, không đoán nghĩa.**
+2. Tách thành mảng từ theo khoảng trắng.
+3. Tìm **dãy con chung dài nhất (LCS)** giữa 2 mảng từ — thuật toán quy hoạch
+   động O(n·m), giữ đúng thứ tự từ, bỏ qua từ đảo vị trí (không tính khớp) và
+   không cho từ thừa làm tăng điểm.
+4. **Tỷ lệ khớp (%) = |LCS| / số từ đáp án chuẩn × 100**, làm tròn 1 chữ số
+   thập phân.
+5. **Điểm câu hỏi = round(tỷ lệ khớp / 100 × 10)** — đây là *điểm luyện tập tự
+   động*, khác với cách chấm **nhị phân Đúng=10đ/Sai=0đ** mà Điều 14.2.a quy
+   định chính thức tại hội thi; ứng dụng luôn ghi chú rõ sự khác biệt này.
+- Câu hỏi nhiều đáp án đúng (8/228 câu, mục "chọn nhiều đáp án") bị **loại khỏi
+  Khởi động** vì nối nhiều đáp án trắc nghiệm rời rạc thành 1 chuỗi "đáp án
+  chuẩn" sẽ không đáng tin cậy — các câu này vẫn xuất hiện bình thường ở Tăng
+  tốc (trắc nghiệm, không đổi). Câu VII-12 (không có đáp án trong tài liệu gốc)
+  tiếp tục bị loại khỏi mọi vòng như từ trước.
+- Hỗ trợ kỹ thuật nhiều đáp án chuẩn cho 1 câu (lấy kết quả khớp cao nhất), tuy
+  hiện ngân hàng câu hỏi chỉ có đúng 1 cách diễn đạt/câu nên tạm thời luôn dùng
+  1 biến thể.
+- Màn hình kết quả hiển thị đáp án chuẩn, câu trả lời của bạn, tỷ lệ khớp,
+  điểm, và highlight từng từ: xanh = khớp, đỏ gạch ngang = thiếu (có ở đáp án
+  chuẩn nhưng bạn chưa viết), đỏ gạch chân = sai/thừa. Đáp án chuẩn **không**
+  hiển thị trước khi nộp bài hoặc hết giờ. Có nút "Thử lại câu này" để luyện
+  đến khi thuộc chính xác — điểm giữ lại là điểm **cao nhất** trong các lần thử.
 
 ### Ôn tập nền tảng (không đổi)
 - **Luyện tập** — chọn ngành, số câu, xáo trộn đáp án; biết đúng/sai ngay; lọc
