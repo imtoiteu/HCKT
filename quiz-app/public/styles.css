@@ -202,11 +202,20 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;pad
 .self-grade .rate{grid-template-columns:1fr 1fr}
 .tag.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent}
 
+/* pha "chuẩn bị" (Gói riêng) / "giành quyền trả lời" (Gói chung) */
+.prep-box{margin-top:4px;padding:16px;border-radius:13px;background:var(--card2);border:1px solid var(--line)}
+.prep-box .lead{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700}
+.prep-box .lead svg{width:18px;height:18px;flex:0 0 auto;color:var(--warn)}
+.prep-box .btn{margin-top:10px}
+/* luyện thêm "Giành quyền trả lời" */
+.steal-wrap .note{margin-bottom:10px}
+
 /* auto-grade (chấm tự luận tự động) */
 .grade-box{margin-top:4px}
 .gscore{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .gpct,.gpts{background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px 14px;text-align:center}
-.gpct b,.gpts b{display:block;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.gpct b,.gpts b{display:flex;align-items:center;justify-content:center;gap:5px;font-size:22px;font-weight:800;letter-spacing:-.02em}
+.gpct b svg,.gpts b svg{width:22px;height:22px;flex:0 0 auto}
 .gpct span,.gpts span{font-size:11px;color:var(--ink3);font-weight:600}
 .gpct b{color:var(--brand)}
 .gpts b{color:var(--ok)}

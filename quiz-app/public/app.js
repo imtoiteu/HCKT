@@ -916,7 +916,7 @@ function rcFormatNote() {
 function rcPhaseUI(card, kind, seconds, onReady, onMiss) {
   const box = el('div', 'prep-box');
   if (kind === 'rieng') {
-    box.innerHTML = `<div class="lead">${ICON.warn.replace('warn','')}Đang trong thời gian chuẩn bị…</div><p class="muted" style="font-size:13px;margin:6px 0 12px">Tối đa ${seconds}s (Điều 13.2.b, trang 6). Quy chế không nêu thời lượng trình bày câu trả lời sau đó, nên ứng dụng không giới hạn thêm — hết giờ chuẩn bị sẽ tự mở ô trả lời, hoặc bấm nút dưới để trả lời sớm hơn.</p>`;
+    box.innerHTML = `<div class="lead">${ICON.warn}<span>Đang trong thời gian chuẩn bị…</span></div><p class="muted" style="font-size:13px;margin:6px 0 12px">Tối đa ${seconds}s (Điều 13.2.b, trang 6). Quy chế không nêu thời lượng trình bày câu trả lời sau đó, nên ứng dụng không giới hạn thêm — hết giờ chuẩn bị sẽ tự mở ô trả lời, hoặc bấm nút dưới để trả lời sớm hơn.</p>`;
     const go = el('button', 'btn primary', `${ICON.arrow} Trả lời ngay`);
     go.onclick = once(() => { clearTeamTimer(); onReady(); });
     box.appendChild(go);

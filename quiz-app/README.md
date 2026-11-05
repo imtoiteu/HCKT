@@ -631,3 +631,55 @@ nghiệm ("Ôn có gợi ý") vẫn hiện nguyên văn "Cả a, b, c." làm ph�
 kiểm thử 80-câu-đúng cũ: điểm giảm còn 96% nếu vẫn gõ 3 cụm tham chiếu cũ
 (đúng như kỳ vọng, xác nhận lỗi đã được chặn), quay lại 100% khi gõ đúng nội
 dung đã mở rộng — không có câu nào khác bị ảnh hưởng ngoài 3 câu trên.
+
+### 05/11/2026 (tiếp 6) — sửa icon cảnh báo/kết quả bị phóng quá khổ
+
+Lỗi: icon cảnh báo ở pha "Đang chuẩn bị" (Gói câu hỏi riêng) và icon
+Đúng/Sai ở màn hình chấm kết quả (cả Khởi động lẫn Gói riêng/chung, cả 2 tab)
+bị hiển thị rất lớn, đẩy ô trả lời/nút thao tác xuống dưới.
+
+**Nguyên nhân** (SVG icon dùng chung `ICON.warn/check/x` trong `app.js` —
+mỗi icon chỉ có `viewBox`, không có `width`/`height`, phải dựa hoàn toàn vào
+CSS theo đúng ngữ cảnh chứa nó để định kích thước):
+1. `rcPhaseUI` (pha "chuẩn bị" Gói riêng) gọi `${ICON.warn.replace('warn','')}`
+   — lỗi gõ nhầm, chuỗi `"warn"` không hề xuất hiện trong mã SVG nên
+   `.replace()` không có tác dụng gì, để lọt nguyên icon **không có class**
+   vào một `<div class="lead">` chưa từng được định kiểu cho bối cảnh này
+   (CSS `.lead` sẵn có chỉ áp dụng trong `.recall-ans`/`.flash .fa`) → trình
+   duyệt tự giãn SVG theo kích thước mặc định, rất lớn.
+2. `.gpts b{display:block;...}` (khung điểm Đúng/Sai dùng chung cho
+   `teamAutoGradeBox`, khung "luyện thêm giành quyền trả lời", và
+   `rcMissedBox`) **chưa từng có quy tắc CSS định cỡ `svg` con** — vẫn hoạt
+   động "tạm ổn" ở các icon khác vì mọi nơi khác đều có `X svg{width;height}`
+   riêng (`.note svg`, `.feedback svg`, `.btn svg`, `.mark`…), chỉ riêng
+   `.gpts`/`.gpct` bị bỏ sót từ trước, lộ rõ hơn khi thêm các khung mới (Gói
+   riêng/chung, luyện giành quyền trả lời) dùng cùng cấu trúc này.
+
+**Sửa tại đúng phạm vi** (không đổi quy tắc `svg{...}` toàn cục, không ảnh
+hưởng logo hay icon khác đang đúng):
+- Bỏ `.replace()` sai, bọc icon + chữ trong `<div class="lead">${ICON.warn}
+  <span>…</span></div>`; thêm CSS `.prep-box` (khung pha chuẩn bị/giành
+  quyền) và `.prep-box .lead svg{width:18px;height:18px}` — icon cạnh chữ,
+  đúng dải 20–24px theo yêu cầu (chọn 18px cho vừa cỡ chữ 15px của dòng tiêu
+  đề ngắn này).
+- Đổi `.gpct b,.gpts b` từ `display:block` sang `display:flex;align-items:
+  center;justify-content:center;gap:5px` (vẫn căn giữa y hệt trước, chỉ đổi
+  cơ chế để xếp icon + chữ cùng hàng) và thêm `.gpct b svg,.gpts b svg{
+  width:22px;height:22px}` — áp dụng thống nhất cho mọi nơi dùng `.gpts`
+  (Khởi động, Gói riêng/chung, "luyện thêm giành quyền trả lời", "không
+  giành được quyền"), vì tất cả cùng chia sẻ một đoạn mã hiển thị kết quả.
+- Không đổi `.note svg`, `.feedback svg`, `.btn svg`, `.mark`, `.tabs
+  button svg`, `.star-btn svg`, `.ring svg` — những nơi này đã có quy tắc
+  đúng từ trước, rà soát lại toàn bộ danh sách nơi dùng `ICON.warn/check/x`
+  trong `app.js` xác nhận không còn chỗ nào thiếu CSS định cỡ `svg`.
+
+**Kiểm thử**: dùng `jsdom` tải trang thật từ service đang chạy rồi đọc
+`getComputedStyle` của icon — xác nhận icon pha chuẩn bị còn đúng 18×18px,
+icon Đúng/Sai trong khung kết quả còn đúng 22×22px (trước đó không có quy
+tắc CSS nào khớp, kích thước không xác định/giãn to). Chạy lại toàn bộ kiểm
+thử trước đó (80 câu đúng → 100%, bộ lọc vòng không lẫn câu, kịch bản đáp án
+mở rộng ở `DT3-KD-3`/`DT2-GC-1`/`DT3-GC-3`) — không hồi quy. **Không kiểm tra
+được bằng mắt thật trên trình duyệt/điện thoại thật** vì VPS không có trình
+duyệt hay màn hình — `jsdom` không dựng layout/CSS đầy đủ như trình duyệt
+thật, chỉ xác nhận đúng quy tắc CSS được áp dụng; cần người dùng tự mở trang
+để xác nhận hình ảnh cuối cùng.
