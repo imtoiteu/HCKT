@@ -136,9 +136,9 @@
             "ans": [
               "a"
             ],
-            "dupOf": null,
+            "dupOf": "VIII-4",
             "uncertain": false,
-            "note": "Bản scan có một ký hiệu lạ (giống vết mực/dấu gạch) ngay trước “Câu 5” — không rõ ý nghĩa, không ảnh hưởng tới việc đọc đáp án (vẫn có gạch chân rõ ở ý a)."
+            "note": "Trùng chính xác với VIII-4 trong ngân hàng cũ (cùng câu hỏi, cùng 3 phương án, cùng đáp án a=11/7/1950) — xác nhận lại khi đối chiếu, không thêm làm mục riêng."
           }
         ],
         "tangtoc": [
@@ -214,9 +214,9 @@
             "ans": [
               "d"
             ],
-            "dupOf": null,
+            "dupOf": "VII-25",
             "uncertain": false,
-            "note": "Không tìm thấy câu trùng chính xác trong 228 câu cũ khi tra theo cụm từ đặc trưng; có thể là biến thể của một câu an toàn điện khác — chưa xác nhận là trùng, tạm coi là không trùng."
+            "note": "Trùng chính xác với VII-25 trong ngân hàng cũ (cùng câu hỏi, 4 phương án, cùng đáp án d=Cả a,b,c) — xác nhận lại khi đối chiếu, không thêm làm mục riêng."
           },
           {
             "num": 4,
@@ -262,9 +262,9 @@
             "ans": [
               "b"
             ],
-            "dupOf": null,
+            "dupOf": "V-13",
             "uncertain": false,
-            "note": "Thuộc nhóm câu hỏi Thông tư 59/2015/TT-BQP (V-7..V-15 trong ngân hàng cũ) nhưng không xác định được ID trùng khớp chính xác theo nội dung “định mức nhiên liệu tăng thêm trong thành phố”; chưa xác nhận trùng."
+            "note": "Trùng chính xác với V-13 trong ngân hàng cũ (cùng câu hỏi, cùng đáp án b=15%) — xác nhận lại khi đối chiếu, không thêm làm mục riêng."
           }
         ],
         "rieng": [
@@ -416,7 +416,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VIII-33."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VIII-33.",
+            "addedAs": "VIII-33"
           },
           {
             "num": 2,
@@ -446,7 +447,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Câu nhiều đáp án đúng (a, c, d đều gạch chân). Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-53."
+            "note": "Câu nhiều đáp án đúng (a, c, d đều gạch chân). Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-53.",
+            "addedAs": "VII-53"
           },
           {
             "num": 3,
@@ -468,9 +470,9 @@
             "ans": [
               "a"
             ],
-            "dupOf": null,
+            "dupOf": "VII-17",
             "uncertain": false,
-            "note": "Không xác nhận được trùng/không trùng với 228 câu cũ qua tra cứu từ khóa; chưa thêm vào ngân hàng chính (giữ nguyên trong file này để đối chiếu)."
+            "note": "Trùng nội dung với VII-17 trong ngân hàng cũ (khác nhẹ về câu chữ: \"nào\" so với \"nào sau đây\"), cùng đáp án a — xác nhận lại khi đối chiếu, không thêm làm mục riêng."
           },
           {
             "num": 4,
@@ -573,7 +575,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không xác nhận được trùng/không trùng qua tra cứu từ khóa với 228 câu cũ."
+            "note": "Xác nhận KHÔNG trùng câu nào trong 228 câu cũ (II-15/II-16 hỏi số ngày/mức tiền ăn thêm, câu này hỏi hệ số \"bao nhiêu lần\" — góc hỏi khác). Đã thêm vào questions.json với id II-32.",
+            "addedAs": "II-32"
           },
           {
             "num": 3,
@@ -699,7 +702,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-54."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-54.",
+            "addedAs": "VII-54"
           },
           {
             "num": 3,
@@ -802,7 +806,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Bản scan in nhầm nhãn ý thứ ba là 'a)' thay vì 'c)' (lặp lại chữ a) — đã tự sửa thành 'c' theo thứ tự xuất hiện khi lưu vào file này; không đổi nội dung chữ. Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-55."
+            "note": "Bản scan in nhầm nhãn ý thứ ba là 'a)' thay vì 'c)' (lặp lại chữ a) — đã tự sửa thành 'c' theo thứ tự xuất hiện khi lưu vào file này; không đổi nội dung chữ. Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-55.",
+            "addedAs": "VII-53"
           },
           {
             "num": 2,
@@ -826,7 +831,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-56."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-56.",
+            "addedAs": "VII-56"
           },
           {
             "num": 3,
@@ -932,7 +938,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-57."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-57.",
+            "addedAs": "VII-57"
           },
           {
             "num": 2,
@@ -984,7 +991,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID II-31."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID II-31.",
+            "addedAs": "II-31"
           },
           {
             "num": 4,
@@ -1032,7 +1040,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-58."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-58.",
+            "addedAs": "VII-58"
           }
         ]
       }
@@ -1221,7 +1230,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-60."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-60.",
+            "addedAs": "VII-60"
           },
           {
             "num": 3,
@@ -1517,7 +1527,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Có câu VII-41 trong ngân hàng cũ cùng chủ đề nhưng PHƯƠNG ÁN TRẢ LỜI khác hẳn (không phải cùng một câu) — không phải trùng. Đã thêm vào ngân hàng với ID VII-59."
+            "note": "Có câu VII-41 trong ngân hàng cũ cùng chủ đề nhưng PHƯƠNG ÁN TRẢ LỜI khác hẳn (không phải cùng một câu) — không phải trùng. Đã thêm vào ngân hàng với ID VII-59.",
+            "addedAs": "VII-59"
           },
           {
             "num": 4,
@@ -1541,7 +1552,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-61."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-61.",
+            "addedAs": "VII-61"
           },
           {
             "num": 5,
@@ -1956,7 +1968,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-63."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-63.",
+            "addedAs": "VII-63"
           }
         ],
         "chung": [
@@ -2016,7 +2029,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-62."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-62.",
+            "addedAs": "VII-61"
           },
           {
             "num": 3,
@@ -2040,7 +2054,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID IV-36."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID IV-36.",
+            "addedAs": "IV-36"
           },
           {
             "num": 4,
@@ -2088,7 +2103,8 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID IV-37."
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID IV-37.",
+            "addedAs": "IV-37"
           }
         ]
       }

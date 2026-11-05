@@ -1,7 +1,7 @@
 # Ôn thi HC-KT 2026 — web app luyện thi Đội tuyển
 
 Ứng dụng web ôn luyện cho **Thi Đội tuyển** trong Hội thi tập trung ngành Hậu cần –
-Kỹ thuật năm 2026: vừa ghi nhớ **243 câu hỏi trắc nghiệm** (8 ngành), vừa mô phỏng
+Kỹ thuật năm 2026: vừa ghi nhớ **244 câu hỏi trắc nghiệm** (8 ngành), vừa mô phỏng
 đúng cấu trúc, thời gian và cách tính điểm của **Vòng sơ khảo** và **Vòng chung
 khảo** theo Quy chế Hội thi (Điều 12–15).
 
@@ -28,7 +28,7 @@ khảo** theo Quy chế Hội thi (Điều 12–15).
 | `Bo_cau_hoi_Hoi_thi_0001.pdf` (53 trang) | 228 câu trắc nghiệm gốc + đáp án |
 | `Thang_cham_diem_Hoi_thi_0001.pdf` (23 trang) | Phụ lục thang điểm chấm **đơn vị chính quy** (Mục I) — không áp dụng trực tiếp cho Đội tuyển, đưa vào tab "Quy chế" dưới dạng ảnh quét đầy đủ để tham khảo |
 | `CamScanner 31-10-26 12.43.pdf` (5 trang, đánh số gốc 4–8) | Trích Điều 11–15 Quy chế Hội thi — căn cứ duy nhất cho cấu trúc/thời gian/cách tính điểm của tab "Đội tuyển"; ảnh quét ở `public/ref/dt-01..05.jpg` |
-| `CamScanner 5-11-26 07.17.pdf` (16 trang, không nằm trong repo — chỉ xử lý cục bộ trên VPS) | 4 "Bộ đề" mô phỏng thi Đội tuyển (mỗi bộ 20 câu: Khởi động 5 + Tăng tốc 5 + Gói riêng 5 + Gói chung 5). Đối chiếu từng câu với 228 câu trên cho thấy **65/80 câu trùng nội dung/đáp án** với ngân hàng cũ (chỉ khác cách rút gọn câu hỏi) — không nhập lại các câu này để tránh trùng lặp; **15 câu thực sự mới** đã được thêm vào ngân hàng (xem "Nhật ký khôi phục 05/11/2026"). Bản bóc tách đầy đủ cả 80 câu (kèm chú thích câu nào trùng `dupOf` câu nào) nằm ở `data/raw/dethi-doituyen-2026-11-05.json` để đối chiếu sau này. |
+| `CamScanner 5-11-26 07.17.pdf` (16 trang, không nằm trong repo — chỉ xử lý cục bộ trên VPS) | 4 "Bộ đề" mô phỏng thi Đội tuyển (mỗi bộ 20 câu: Khởi động 5 + Tăng tốc 5 + Gói riêng 5 + Gói chung 5). Đối chiếu từng câu với 228 câu trên cho thấy **64/80 câu trùng nội dung/đáp án** với ngân hàng cũ (chỉ khác cách rút gọn câu hỏi) — không nhập lại các câu này để tránh trùng lặp; **16 câu thực sự mới** đã được thêm vào ngân hàng (xem "Nhật ký khôi phục 05/11/2026"). Bản bóc tách đầy đủ cả 80 câu (kèm chú thích câu nào trùng `dupOf`/`addedAs` câu nào) nằm ở `data/raw/dethi-doituyen-2026-11-05.json` để đối chiếu sau này. |
 
 Cả 3 PDF câu hỏi là bản quét (không có lớp văn bản), nội dung được bóc tách thủ
 công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được đánh dấu bằng
@@ -40,14 +40,14 @@ công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được
 | Mục | Ngành | Số câu |
 |---|---|---|
 | I | Tham mưu | 16 |
-| II | Quân nhu | 31 |
+| II | Quân nhu | 32 |
 | III | Quân y | 22 |
 | IV | Doanh trại | 37 |
 | V | Xăng dầu | 21 |
 | VI | Xe máy – Vận tải | 20 |
 | VII | Các chuyên ngành Kỹ thuật | 63 |
 | VIII | Truyền thống ngành HC, KT | 33 |
-| | **Tổng** | **243** |
+| | **Tổng** | **244** |
 
 ### Lưu ý về dữ liệu
 
@@ -60,10 +60,16 @@ công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được
   Câu này **được loại khỏi mọi lượt luyện tập/thi thử**, chỉ hiển thị trong tab
   "Tra cứu" kèm cảnh báo. Nếu có đáp án chính thức, sửa trường `ans` của
   `VII-12` trong `public/data/questions.json`.
-- 15 câu mới từ `CamScanner 5-11-26 07.17.pdf` (ID: VIII‑33, VII‑53..VII‑63,
-  II‑31, IV‑36, IV‑37) hiển thị nguồn là **"Bộ đề Đội tuyển số N (bổ sung
+- 16 câu mới từ `CamScanner 5-11-26 07.17.pdf` (ID: VIII‑33, VII‑53..VII‑63,
+  II‑31, II-32, IV‑36, IV‑37) hiển thị nguồn là **"Bộ đề Đội tuyển số N (bổ sung
   5/11/2026)"** thay vì "Trang X tài liệu gốc", vì chúng không nằm trong
   `Bo_cau_hoi_Hoi_thi_0001.pdf` 53 trang.
+- **4 câu trong `CamScanner 5-11-26 07.17.pdf` chưa xác nhận được là trùng hay
+  câu mới hoàn toàn** sau khi tra từ khoá thủ công với 228 câu cũ (ví dụ "Đối
+  tượng nào được khám phát hiện Bệnh nghề nghiệp?", "Trường hợp nào phải kiểm
+  định kỹ thuật an toàn lao động?") — **chưa được thêm** vào ngân hàng chính để
+  tránh trùng lặp không xác định; vẫn lưu đầy đủ trong `data/raw/dethi-doituyen-
+  2026-11-05.json` kèm ghi chú, cần người có bản gốc đầy đủ đối chiếu lại.
 
 ## Tính năng
 
@@ -175,12 +181,12 @@ quiz-app/
 │   ├── index.html
 │   ├── app.js                # router, quiz engine, SRS, Đội tuyển (mô phỏng), thống kê
 │   ├── styles.css
-│   ├── data/questions.json   # 243 câu — nguồn dữ liệu duy nhất của app
+│   ├── data/questions.json   # 244 câu — nguồn dữ liệu duy nhất của app
 │   └── ref/
 │       ├── tcd-01..23.jpg    # ảnh quét phụ lục thang điểm chấm đơn vị
 │       └── dt-01..05.jpg     # ảnh quét thể lệ Đội tuyển (Điều 11–15, trang gốc 4–8)
 ├── data/raw/chunk-*.json              # bản bóc tách gốc 228 câu theo từng cụm trang (để đối chiếu)
-├── data/raw/dethi-doituyen-2026-11-05.json  # bản bóc tách đầy đủ 80 câu từ CamScanner 5-11-26 (kèm dupOf)
+├── data/raw/dethi-doituyen-2026-11-05.json  # bản bóc tách đầy đủ 80 câu từ CamScanner 5-11-26 (kèm dupOf/addedAs)
 └── deploy/k8s-ingress.yaml   # route k3s/Traefik của VPS cũ — không áp dụng trên VPS mới, giữ lại để tham khảo
 ```
 
@@ -214,18 +220,35 @@ cache (file JSON được server cache 7 ngày). Không cần khởi động l�
   `/root/imtoiteu/HCKT` trên VPS mới (139.180.211.252) — không có dữ liệu cục
   bộ nào mới hơn để giữ lại, không có thay đổi chưa commit nào bị mất.
 - Đối chiếu lại Điều 11–15 quy chế (đọc trực tiếp ảnh quét, không dựa vào
-  README cũ) — nội dung Đội tuyển (TEAM_RULES, công thức tính điểm, hạn mức
-  thời gian) trong `app.js` đã khớp chính xác với bản quét, không cần sửa.
+  README cũ) — nội dung Đội tuyển (TEAM_RULES, hạn mức thời gian, số câu từng
+  phần) trong `app.js` đã khớp chính xác với bản quét. Một chỗ **được bổ
+  sung**: công thức tính điểm chi tiết từng câu của Điều 14.2.a (nhị phân
+  10đ/0đ cho Khởi động; `10 − (n−1)×1,0` cho Tăng tốc; trừ 5,0đ khi giành
+  chuông sai ở Gói riêng/chung) có trong bản quét (trang 7–8) nhưng trước đó
+  chưa được trích dẫn trong tab "Đội tuyển" — đã thêm rule `diem_ct` vào
+  `TEAM_RULES` trong `app.js` kèm trích dẫn điều/trang.
 - Nạp thêm bộ đề mới `CamScanner 5-11-26 07.17.pdf` (4 "Bộ đề", 80 câu dạng mô
-  phỏng Đội tuyển): đối chiếu từng câu với 228 câu cũ, phát hiện 65/80 câu
+  phỏng Đội tuyển): đối chiếu từng câu với 228 câu cũ, phát hiện 64/80 câu
   trùng nội dung + đáp án (chỉ khác cách rút gọn văn bản câu hỏi) — không nhập
-  lại để tránh trùng lặp theo đúng yêu cầu. 15 câu còn lại là nội dung mới,
-  đã thêm vào `questions.json` (ID mới: `VIII-33`, `VII-53`..`VII-63`,
-  `II-31`, `IV-36`, `IV-37`), nâng tổng số câu từ 228 lên 243. 1 câu
-  (Bộ đề số 3, Tăng tốc, câu 1) không có gạch chân đáp án trong bản quét mới,
-  nhưng trùng nội dung với câu `I-2` đã có đáp án xác minh (gạch chân rõ) nên
-  không thêm câu này như một mục riêng — không có câu nào bị bỏ ngỏ đáp án
-  trong số 15 câu mới được thêm.
-- Toàn bộ 80 câu bóc tách (kể cả 65 câu trùng, có ghi chú `dupOf`) được lưu ở
-  `data/raw/dethi-doituyen-2026-11-05.json` để đối chiếu/kiểm tra lại sau này,
-  không bị xoá.
+  lại để tránh trùng lặp theo đúng yêu cầu. 16 câu là nội dung mới, đã thêm
+  vào `questions.json` (ID mới: `VIII-33`, `VII-53`..`VII-63`, `II-31`,
+  `II-32`, `IV-36`, `IV-37`), nâng tổng số câu từ 228 lên 244. 1 câu (Bộ đề số
+  3, Tăng tốc, câu 1) không có gạch chân đáp án trong bản quét mới nhưng
+  trùng nội dung với câu `I-2` đã có đáp án xác minh (gạch chân rõ) nên không
+  thêm câu này như một mục riêng — không có câu nào bị bỏ ngỏ đáp án trong số
+  16 câu mới được thêm. **4 câu** còn chưa xác nhận được là trùng hay mới
+  hoàn toàn sau khi tra từ khoá thủ công — **chưa đưa vào** ngân hàng chính,
+  giữ nguyên trong file bóc tách kèm ghi chú để người có bản gốc đầy đủ đối
+  chiếu lại sau.
+  - *Kiểm tra lại sau khi nhập:* đối chiếu độc lập toàn bộ 20 câu được đánh
+    dấu "không trùng" trong lần bóc tách đầu tiên với 244 câu hiện có bằng
+    tra từ khoá theo từng câu — phát hiện 4 câu trong số đó thực ra **trùng
+    chính xác** với câu đã có (`VIII-4`, `VII-25`, `V-13`, `VII-17`) nhưng bị
+    bỏ sót cờ `dupOf` ở lần bóc tách đầu, và 1 câu (`II-32`, về hệ số ăn thêm
+    ngày lễ/tết theo Nghị định 02/2026/NĐ-CP) là **câu mới thật sự nhưng bị bỏ
+    sót, chưa được thêm** — đã bổ sung câu này vào `questions.json` sau khi
+    đối chiếu lại trực tiếp với ảnh trang 5 của bản quét. Đã cập nhật cờ
+    `dupOf`/`addedAs` tương ứng trong file bóc tách.
+- Toàn bộ 80 câu bóc tách (kể cả 64 câu trùng, có ghi chú `dupOf`, và câu đã
+  thêm có ghi chú `addedAs`) được lưu ở `data/raw/dethi-doituyen-2026-11-05.json`
+  để đối chiếu/kiểm tra lại sau này, không bị xoá.

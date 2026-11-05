@@ -1238,7 +1238,7 @@ setInterval(() => {
   };
 
   try {
-    const r = await fetch('data/questions.json?v=2');
+    const r = await fetch('data/questions.json?v=3');
     DATA = await r.json();
   } catch (e) {
     $('#boot').innerHTML = '<p style="color:#dc2626">Không tải được dữ liệu câu hỏi. Vui lòng tải lại trang.</p>';
