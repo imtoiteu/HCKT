@@ -82,6 +82,18 @@ công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được
   20s/câu, tự luận, **tự chấm thủ công** như trước) → cộng vào mốc Điểm ĐT1
   gần nhất thành **Điểm ĐT2 ước tính**/100. Đúng theo Điều 13.2.b, 14.2.b
   (trang 6–8).
+- **Đồng hồ đếm ngược bắt buộc, theo đúng quy chế, tính riêng từng câu** (Điều
+  13.2.b quy định thời gian theo mỗi câu, không phải cho cả phần thi, nên mỗi
+  câu mới hợp lệ có đồng hồ riêng — không phải "reset để gian lận"): Khởi động
+  90s/câu (trang 5–6), Tăng tốc 60s/câu (trang 6), Gói riêng/Gói chung 20s/câu
+  (trang 6). Hiển thị cạnh số câu trên thanh điều hướng của bài làm (đổi màu
+  cảnh báo khi còn dưới 1/3 thời gian). Hết giờ tự khoá câu, lưu lại bài đã
+  làm/đã chọn và tự chuyển bước đúng như khi bấm nộp tay — không mất câu trả
+  lời đã nhập. Không bị chậm/dừng khi chuyển tab hay thu nhỏ trình duyệt (tính
+  theo mốc thời gian tuyệt đối, không cộng dồn theo số lần tick). Tải lại
+  trang giữa lượt mô phỏng không lấy thêm được giờ — toàn bộ trạng thái chỉ ở
+  bộ nhớ trình duyệt, tải lại sẽ mất luôn lượt làm đó (có hộp thoại cảnh báo
+  trước khi rời/tải lại trang để tránh mất bài do vô ý).
 - Vì quy chế mô tả thi đấu **nhiều đội cùng lúc** (xếp hạng theo tốc độ, bấm
   chuông giành quyền trả lời), khi luyện một mình ứng dụng chỉ mô phỏng được nội
   dung, thời gian và đúng/sai của riêng người dùng — **không** mô phỏng việc
@@ -169,11 +181,19 @@ riêng.
   chọn.
 - Màn hình kết quả ghi rõ mỗi câu **thuộc đề nào, phần nào, số câu gốc** (ví
   dụ "Đề 3 · Gói câu hỏi riêng · Câu 2 gốc").
-- **Không có đồng hồ đếm ngược ép buộc và không tính vào Điểm ĐT1/ĐT2** — đây
-  là khu vực ôn luyện tự do, tách biệt khỏi tab "Đội tuyển" (vẫn giữ đúng cấu
-  trúc/thời gian/cách tính điểm chính thức của quy chế). Phần Khởi động dùng
-  chung công thức chấm nhị phân chính xác ở mục trên; phần Tăng tốc/Gói
-  riêng/Gói chung chấm trắc nghiệm đúng/sai bình thường.
+- **Không tính vào Điểm ĐT1/ĐT2** — đây là khu vực ôn luyện, tách biệt khỏi
+  tab "Đội tuyển" (mô phỏng mới là nơi giữ đúng cấu trúc/thời gian/cách tính
+  điểm chính thức *bắt buộc* của quy chế). Phần Khởi động dùng chung công
+  thức chấm nhị phân chính xác ở mục trên; phần Tăng tốc/Gói riêng/Gói chung
+  chấm trắc nghiệm đúng/sai bình thường.
+- **Đồng hồ đếm ngược ở đây là tuỳ chọn** (gạt công tắc "Thời gian" trên màn
+  hình thiết lập, mặc định **tắt** để ôn chậm không giới hạn giờ). Khi bật,
+  dùng đúng thời lượng/cách tính của Điều 13.2.b như tab "Đội tuyển" (Khởi
+  động 90s/câu, Tăng tốc 60s/câu, Gói riêng/Gói chung 20s/câu — theo đúng
+  `stage` của từng câu, không phụ thuộc đề/vòng/chế độ ôn đã chọn), chỉ bắt
+  đầu đếm khi câu đã hiển thị, hết giờ tự khoá và chấm bằng bài đã làm (không
+  mất câu trả lời), không bị chậm khi chuyển tab, và chuyển câu không reset
+  "để gian lận" vì quy chế vốn tính theo từng câu chứ không theo cả phần thi.
 - Toàn bộ 80 câu đã được đối chiếu trực tiếp với ảnh quét 16 trang ngày
   05/11/2026 — **0 câu còn chưa xác minh được đáp án**; nếu phát hiện sai sót,
   sửa `public/data/dethi4.json` (và `data/raw/dethi-doituyen-2026-11-05.json`
@@ -387,3 +407,50 @@ thi chính thức.
   tra bằng `jsdom` bấm qua giao diện thật (5 tổ hợp phạm vi×vòng×chế độ) qua
   HTTP tới service đang chạy — 0 câu bị gắn sai "Đề N · Phần · Câu M gốc"
   trong toàn bộ các lượt duyệt.
+
+### 05/11/2026 (tiếp 3) — đồng hồ đếm ngược theo quy chế
+
+- **Đọc lại Điều 13.2.b** (trang 5–6 bản quét) để xác nhận thời lượng chính
+  xác trước khi code: quy chế tính thời gian **theo từng câu**, không phải
+  cho cả phần thi — Khởi động "tổng thời gian đọc câu hỏi và trả lời của mỗi
+  câu: 90s", Tăng tốc "...mỗi câu: 60s", Gói riêng "Thời gian chuẩn bị tối đa
+  của mỗi câu hỏi là 20s", Gói chung "...trong vòng 20s". Không có mốc thời
+  gian nào tính cho cả vòng/phần thi trong văn bản — nên yêu cầu "chuyển câu
+  không được reset thời gian nếu tính cho cả phần" không áp dụng ở đây: mỗi
+  câu có đồng hồ riêng là đúng quy chế.
+- Tab **"Đội tuyển"** đã có sẵn đồng hồ đúng các mốc trên từ trước (không
+  phải xây mới); lần này kiểm tra/siết lại cho khớp các yêu cầu mới: chỉ bắt
+  đầu đếm khi câu đã hiển thị (đồng hồ khởi động bằng `setTimeout` trễ 1 nhịp
+  sau khi gắn vào DOM, không tính giờ "chết" trước khi hiển thị), tính theo
+  mốc `Date.now()` tuyệt đối nên không chậm khi chuyển tab/thu nhỏ cửa sổ,
+  hết giờ tự khoá + lưu bài đã làm (giữ nguyên câu đã gõ/đã chọn, không mất),
+  và bổ sung chặn **nộp bài hai lần** (xem dưới).
+- Thêm đồng hồ **tuỳ chọn** (mặc định tắt) vào tab "Ôn 4 đề trọng tâm" — dùng
+  lại đúng hàm `startTeamTimer`/`teamSeconds` của tab "Đội tuyển" (chỉ thêm
+  tham số `elId` để dùng chung 1 cơ chế đếm giờ cho cả hai tab, vì chúng không
+  bao giờ hiển thị đồng thời), cùng thời lượng/trích dẫn Điều 13.2.b, áp dụng
+  đúng cho mọi tổ hợp đề/vòng/chế độ ôn đã chọn (thời gian theo `stage` của
+  từng câu, độc lập với các bộ lọc khác).
+- **Phát hiện khi kiểm thử**: bấm rất nhanh 2 lần vào nút "Câu tiếp theo"
+  (bằng tham chiếu DOM cũ, qua `jsdom`) có thể gọi `d4Advance()`/`teamAdvance()`
+  hai lần, nhảy 2 câu thay vì 1. Không tái hiện được bằng thao tác thật của
+  người dùng trong trình duyệt (nút cũ đã bị `render()` gỡ khỏi màn hình
+  trước khi trình duyệt kịp gửi sự kiện click thứ 2), nhưng vẫn sửa cho chắc:
+  thêm hàm bọc `once()` cho mọi nút nộp bài/chuyển câu có tác dụng phụ (nộp tự
+  luận, nộp trắc nghiệm tự chấm, "Câu tiếp theo"/"Xem kết quả" ở cả tab "Đội
+  tuyển" lẫn "Ôn 4 đề trọng tâm") và thêm chặn tái vào ở `gradeAndReveal`/
+  `doGrade` (`if (it.revealed) return`) — chạy lại kiểm thử sau khi sửa: bấm
+  đúp không còn nhảy câu nữa.
+- **Kiểm thử** (qua `jsdom`, bấm thật trên service đang chạy, giả lập trôi
+  thời gian bằng cách ghi đè `Date.now` thay vì chờ thật 90s): xác nhận đồng
+  hồ hiện đúng 01:30/01:00/00:20 kèm đúng chú thích điều/trang cho từng phần;
+  xác nhận hết giờ tự khoá câu tự luận và chấm "Sai" dựa trên bài đã gõ (rỗng
+  → Sai, đúng theo cách chấm nhị phân); xác nhận câu hỏi tiếp theo luôn có
+  đồng hồ mới đúng thời lượng phần đó; xác nhận bật/tắt đồng hồ hoạt động cả
+  hai chiều ở "Ôn 4 đề trọng tâm"; chạy lại toàn bộ bộ kiểm thử cũ (80 câu
+  đúng → 100%, bộ lọc vòng không lẫn câu, tab "Đội tuyển"/"Luyện tập") để xác
+  nhận không có hồi quy.
+- Thêm cảnh báo `beforeunload` khi đang có lượt mô phỏng Đội tuyển hoặc lượt
+  ôn 4 đề có bật giờ còn dang dở — tải lại/đóng tab giữa chừng vẫn **không lấy
+  thêm được giờ** (toàn bộ trạng thái chỉ ở bộ nhớ, tải lại mất hết lượt làm,
+  không phải "được reset đồng hồ"); cảnh báo chỉ để tránh mất bài do vô ý.

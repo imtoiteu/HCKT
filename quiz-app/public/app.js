@@ -72,6 +72,10 @@ function toast(msg) {
 }
 function fmtTime(ms) { const s = Math.max(0, Math.round(ms / 1000)); return pad2(s / 60 | 0) + ':' + pad2(s % 60); }
 function setEq(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+/** Bọc 1 trình xử lý sự kiện để chỉ chạy đúng 1 lần — chặn nộp bài/chuyển bước
+ * hai lần nếu cùng một nút (hoặc tham chiếu cũ của nó) nhận sự kiện click lần
+ * nữa trước khi màn hình kịp vẽ lại (ví dụ bấm liên tiếp rất nhanh). */
+function once(fn) { let used = false; return (...a) => { if (used) return; used = true; return fn(...a); }; }
 
 /* ---------------- theme ---------------- */
 function applyTheme() {
@@ -605,14 +609,30 @@ function pickTeamQuestions(n, exclude, excludeMulti) {
   pool = shuffle(pool).sort((a, b) => (store.d.stats[a.id]?.box || 1) - (store.d.stats[b.id]?.box || 1));
   return pool.slice(0, n);
 }
+/* Thời gian mỗi câu theo Điều 13.2.b Quy chế Hội thi (trang 5–6 bản quét):
+ * Khởi động 90s/câu, Tăng tốc 60s/câu, Gói câu hỏi riêng/chung 20s/câu — tính
+ * PER CÂU (không phải cho cả phần thi), nên mỗi câu mới hợp lệ có đồng hồ
+ * riêng; đây không phải "reset để gian lận" mà đúng theo quy chế. */
 function teamSeconds(kind) { return kind === 'khoidong' ? 90 : kind === 'tangtoc' ? 60 : 20; }
+const TIME_CITE = {
+  khoidong: '90 giây/câu — Điều 13.2.b, trang 5–6',
+  tangtoc: '60 giây/câu — Điều 13.2.b, trang 6',
+  rieng: '20 giây/câu — Điều 13.2.b, trang 6',
+  chung: '20 giây/câu — Điều 13.2.b, trang 6',
+};
 let teamTimerHandle = null;
 function clearTeamTimer() { if (teamTimerHandle) { clearInterval(teamTimerHandle); teamTimerHandle = null; } }
-function startTeamTimer(seconds, onZero) {
+/** elId: id phần tử hiển thị đồng hồ (mặc định 'teamTimer', dùng chung cho cả
+ * tab "Đội tuyển" và tab "Ôn 4 đề trọng tâm" vì không bao giờ hiển thị đồng
+ * thời). Luôn tính theo mốc thời gian tuyệt đối (Date.now()), không cộng dồn
+ * theo số lần tick, nên không bị chậm/lệch khi tab bị trình duyệt tạm ngưng
+ * lúc chuyển tab/thu nhỏ cửa sổ — khi quay lại, đồng hồ hiển thị đúng ngay. */
+function startTeamTimer(seconds, onZero, elId) {
   clearTeamTimer();
+  const id = elId || 'teamTimer';
   const end = Date.now() + seconds * 1000;
   const tick = () => {
-    const t = $('#teamTimer');
+    const t = document.getElementById(id);
     if (!t) { clearTeamTimer(); return; }
     const left = end - Date.now();
     t.textContent = fmtTime(Math.max(0, left));
@@ -716,7 +736,7 @@ function teamBar(T) {
   bar.appendChild(back);
   bar.appendChild(el('div', 'progress', `<i style="width:${doneQ / totalQ * 100}%"></i>`));
   bar.appendChild(el('span', 'counter', `Câu ${doneQ + 1}/${totalQ}`));
-  const t = el('span', 'timer', ''); t.id = 'teamTimer'; bar.appendChild(t);
+  const t = el('span', 'timer', ''); t.id = 'teamTimer'; t.title = TIME_CITE[T.stages[T.si].kind] || ''; bar.appendChild(t);
   return bar;
 }
 
@@ -742,7 +762,7 @@ function teamRecallView(st, it) {
     card.appendChild(ta);
     const foot = el('div', 'qfoot');
     const submit = el('button', 'btn primary', `Nộp & xem đáp án ${ICON.arrow}`);
-    submit.onclick = () => { clearTeamTimer(); autoGrade ? gradeAndReveal(it, q) : (it.revealed = true, render()); };
+    submit.onclick = once(() => { clearTeamTimer(); autoGrade ? gradeAndReveal(it, q) : (it.revealed = true, render()); });
     foot.appendChild(submit);
     card.appendChild(foot);
   } else if (autoGrade) {
@@ -753,11 +773,11 @@ function teamRecallView(st, it) {
     foot.appendChild(retry);
     const last = T.si === T.stages.length - 1 && T.qi === st.items.length - 1;
     const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
-    next.onclick = () => {
+    next.onclick = once(() => {
       it.done = true;
       store.grade(q.id, !!(it.graded && it.graded.exact));
       teamAdvance();
-    };
+    });
     foot.appendChild(next);
     card.appendChild(foot);
   } else {
@@ -770,9 +790,9 @@ function teamRecallView(st, it) {
     self.appendChild(el('p', 'muted', 'Tự chấm — bạn tự đối chiếu và đánh giá, đây không phải điểm thi chính thức.'));
     const row = el('div', 'rate');
     const ok = el('button', 'btn primary', `${ICON.check} Tôi trả lời đúng (+10đ)`);
-    ok.onclick = () => { it.done = true; it.ok = true; it.points = 10; teamAdvance(); };
+    ok.onclick = once(() => { it.done = true; it.ok = true; it.points = 10; teamAdvance(); });
     const bad = el('button', 'btn danger', `${ICON.x} Sai / không kịp (0đ)`);
-    bad.onclick = () => { it.done = true; it.ok = false; it.points = 0; teamAdvance(); };
+    bad.onclick = once(() => { it.done = true; it.ok = false; it.points = 0; teamAdvance(); });
     row.appendChild(ok); row.appendChild(bad);
     self.appendChild(row);
     card.appendChild(self);
@@ -783,6 +803,7 @@ function teamRecallView(st, it) {
 }
 
 function gradeAndReveal(it, q) {
+  if (it.revealed) return; // chặn chấm/khoá 2 lần nếu nộp tay và hết giờ trùng thời điểm
   clearTeamTimer();
   const canonical = q.opts.find(o => o.k === q.ans[0]);
   const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
@@ -880,7 +901,7 @@ function teamMCView(st, it) {
     const foot = el('div', 'qfoot');
     const last = T.si === T.stages.length - 1 && T.qi === st.items.length - 1;
     const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
-    next.onclick = teamAdvance;
+    next.onclick = once(teamAdvance);
     foot.appendChild(next);
     const slot = $('#mcFoot'); slot.innerHTML = ''; slot.appendChild(foot);
     next.focus();
@@ -1195,7 +1216,7 @@ const D4_STAGE_LABEL = { khoidong: 'Khởi động', tangtoc: 'Tăng tốc', rie
  * Cùng cách chia này đã dùng trong tab "Đội tuyển" (xem startTeamRound: stages = round==='so' ? [...] : [...]). */
 const D4_ROUND_STAGES = { so: ['khoidong', 'tangtoc'], chung: ['rieng', 'chung'], all: ['khoidong', 'tangtoc', 'rieng', 'chung'] };
 const D4_ROUND_LABEL = { so: 'Vòng sơ khảo', chung: 'Vòng chung khảo', all: 'Toàn bộ' };
-const d4Setup = { scope: '1', round: 'all', mode: 'goc' };
+const d4Setup = { scope: '1', round: 'all', mode: 'goc', timed: false };
 
 function d4Pool(scope, round) {
   if (!DETHI4) return [];
@@ -1228,7 +1249,7 @@ V.dethi4 = () => {
 function d4Home() {
   const v = el('div');
   v.appendChild(el('div', 'page-head', `<h1>Ôn 4 đề trọng tâm</h1><p>Ôn đúng nguyên văn <b>80 câu</b> trong <b>4 "Bộ đề"</b> mô phỏng thi Đội tuyển (CamScanner 5-11-26) — giữ nguyên thứ tự gốc, giữ cả câu trùng giữa các đề/ngân hàng cũ. Không trộn câu ngoài 4 đề vào đây.</p>`));
-  v.appendChild(el('div', 'note', `${ICON.warn}<span>Khu vực luyện tập riêng, <b>không có đồng hồ đếm ngược</b> và <b>không tính vào Điểm ĐT1/ĐT2</b>. Muốn mô phỏng đúng cấu trúc/thời gian/cách tính điểm chính thức, dùng tab "Đội tuyển".</span>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span>Khu vực luyện tập riêng, <b>không tính vào Điểm ĐT1/ĐT2</b>. Đồng hồ đếm ngược ở đây là <b>tuỳ chọn</b> (tắt để ôn chậm không giới hạn giờ). Muốn mô phỏng đúng cấu trúc/thời gian/cách tính điểm chính thức bắt buộc theo quy chế, dùng tab "Đội tuyển".</span>`));
 
   const card = el('div', 'card pad');
 
@@ -1273,10 +1294,16 @@ function d4Home() {
   });
   f2.appendChild(sw); card.appendChild(f2);
 
+  const f3 = el('div', 'field', `<label>Thời gian</label>`);
+  const w3 = el('label', 'sw', `<input type="checkbox"${d4Setup.timed ? ' checked' : ''}><span class="box"></span>
+    <span class="lbl">Bật đồng hồ đếm ngược theo đúng Quy chế<i>Khởi động 90s/câu · Tăng tốc 60s/câu · Gói riêng/chung 20s/câu (Điều 13.2.b) — tắt để ôn chậm, không giới hạn giờ</i></span>`);
+  w3.querySelector('input').onchange = e => { d4Setup.timed = e.target.checked; };
+  f3.appendChild(w3); card.appendChild(f3);
+
   const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
 
   const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`);
-  go.onclick = () => d4Start(d4Setup.scope, d4Setup.round, d4Setup.mode);
+  go.onclick = () => d4Start(d4Setup.scope, d4Setup.round, d4Setup.mode, d4Setup.timed);
   card.appendChild(go);
   v.appendChild(card);
 
@@ -1302,14 +1329,14 @@ function d4Home() {
   return v;
 }
 
-function d4Start(scope, round, mode) {
+function d4Start(scope, round, mode, timed) {
   let pool = d4Pool(scope, round);
   if (mode === 'sai') pool = pool.filter(q => d4IsWeak(q.id));
   if (!pool.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
   let items = pool.slice();
   if (mode === 'dao') items = shuffle(items);
   app.d4 = {
-    scope, round, mode,
+    scope, round, mode, timed: !!timed,
     items: items.map(q => ({
       q, order: q.stage !== 'khoidong' ? shuffle(q.opts) : q.opts,
       pick: [], typed: '', done: false, ok: null, revealed: false, graded: null,
@@ -1323,11 +1350,13 @@ function d4Tag(q) {
   return `Đề ${q.setNo} · ${D4_STAGE_LABEL[q.stage]} · Câu ${q.num} gốc`;
 }
 function d4Advance() {
+  clearTeamTimer();
   const T = app.d4;
   if (T.i < T.items.length - 1) { T.i++; render(); }
   else d4Finish();
 }
 function d4Finish() {
+  clearTeamTimer();
   const T = app.d4;
   T.right = T.items.filter(it => it.ok === true).length;
   T.wrong = T.items.filter(it => it.ok === false).length;
@@ -1342,10 +1371,11 @@ function d4QuizView() {
 
   const bar = el('div', 'quiz-bar');
   const back = el('button', 'btn ghost', `${ICON.back} Thoát`);
-  back.onclick = () => { if (T.i === 0 || confirm('Thoát và huỷ lượt ôn này?')) { app.d4 = null; nav('dethi4'); } };
+  back.onclick = () => { clearTeamTimer(); if (T.i === 0 || confirm('Thoát và huỷ lượt ôn này?')) { app.d4 = null; nav('dethi4'); } };
   bar.appendChild(back);
   bar.appendChild(el('div', 'progress', `<i style="width:${T.i / T.items.length * 100}%"></i>`));
   bar.appendChild(el('span', 'counter', `${T.i + 1}/${T.items.length}`));
+  if (T.timed) { const t = el('span', 'timer', ''); t.id = 'teamTimer'; t.title = TIME_CITE[q.stage] || ''; bar.appendChild(t); }
   bar.appendChild(el('span', 'score-live', `<span class="g">✓ ${T.items.filter(x => x.ok === true).length}</span> · <span class="r">✕ ${T.items.filter(x => x.ok === false).length}</span>`));
   v.appendChild(bar);
 
@@ -1360,6 +1390,14 @@ function d4QuizView() {
 }
 
 function d4RenderRecall(card, T, it, q) {
+  const doGrade = once(() => {
+    if (it.revealed) return;
+    clearTeamTimer();
+    const canonical = q.opts.find(o => o.k === q.ans[0]);
+    const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
+    if (g) { it.graded = g; it.ok = g.exact; store.grade(q.id, g.exact); }
+    it.revealed = true; render();
+  });
   if (!it.revealed) {
     const ta = el('textarea', 'recall-in');
     ta.placeholder = 'Gõ câu trả lời đầy đủ của bạn — hệ thống so khớp chính xác toàn bộ với đáp án chuẩn…';
@@ -1368,14 +1406,10 @@ function d4RenderRecall(card, T, it, q) {
     card.appendChild(ta);
     const foot = el('div', 'qfoot');
     const submit = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
-    submit.onclick = () => {
-      const canonical = q.opts.find(o => o.k === q.ans[0]);
-      const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
-      if (g) { it.graded = g; it.ok = g.exact; store.grade(q.id, g.exact); }
-      it.revealed = true; render();
-    };
+    submit.onclick = doGrade;
     foot.appendChild(submit);
     card.appendChild(foot);
+    if (T.timed) startTeamTimer(teamSeconds(q.stage), doGrade); else clearTeamTimer();
   } else {
     card.appendChild(teamAutoGradeBox(it));
     const foot = el('div', 'qfoot');
@@ -1384,7 +1418,7 @@ function d4RenderRecall(card, T, it, q) {
     foot.appendChild(retry);
     const last = T.i === T.items.length - 1;
     const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
-    next.onclick = () => { it.done = true; d4Advance(); };
+    next.onclick = once(() => { it.done = true; d4Advance(); });
     foot.appendChild(next);
     card.appendChild(foot);
   }
@@ -1403,6 +1437,7 @@ function d4RenderMC(card, T, it, q) {
   const fbSlot = el('div'); fbSlot.id = 'fbSlot'; card.appendChild(fbSlot);
   const footSlot = el('div'); footSlot.id = 'mcFoot'; card.appendChild(footSlot);
   setTimeout(paint);
+  if (T.timed) { if (!it.done) startTeamTimer(teamSeconds(q.stage), () => { if (!it.done) finish(); }); else clearTeamTimer(); }
 
   function paint() {
     $$('.opt', wrap).forEach(b => {
@@ -1432,6 +1467,7 @@ function d4RenderMC(card, T, it, q) {
   }
   function finish() {
     if (it.done) return;
+    clearTeamTimer();
     it.done = true;
     it.ok = it.pick.length > 0 && setEq(it.pick, q.ans);
     store.grade(q.id, !!it.ok);
@@ -1442,7 +1478,7 @@ function d4RenderMC(card, T, it, q) {
     const foot = el('div', 'qfoot');
     const last = T.i === T.items.length - 1;
     const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
-    next.onclick = d4Advance;
+    next.onclick = once(d4Advance);
     foot.appendChild(next);
     const slot = $('#mcFoot'); if (slot) { slot.innerHTML = ''; slot.appendChild(foot); }
     next.focus();
@@ -1511,7 +1547,7 @@ function nav(v) {
   if (v === 'team' && app.team?.finished) app.team = null;
   if (v !== 'team') { clearTeamTimer(); app.team = null; }
   if (v === 'dethi4' && app.d4?.finished) app.d4 = null;
-  if (v !== 'dethi4') app.d4 = null;
+  if (v !== 'dethi4') { clearTeamTimer(); app.d4 = null; }
   location.hash = v; render(); scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1585,6 +1621,15 @@ setInterval(() => {
     store.d.theme = { auto: 'light', light: 'dark', dark: 'auto' }[store.d.theme] || 'auto';
     store.save(); applyTheme();
   };
+
+  // Cảnh báo trước khi rời/tải lại trang giữa lượt mô phỏng Đội tuyển hoặc lượt
+  // ôn 4 đề có bật đồng hồ — tải lại không lấy thêm giờ được (trạng thái chỉ ở
+  // bộ nhớ, mất hết khi tải lại), cảnh báo này chỉ để tránh mất bài làm do vô ý.
+  window.addEventListener('beforeunload', e => {
+    const inTeam = app.team && !app.team.finished;
+    const inD4 = app.d4 && app.d4.timed && !app.d4.finished;
+    if (inTeam || inD4) { e.preventDefault(); e.returnValue = ''; }
+  });
 
   try {
     const r = await fetch('data/questions.json?v=3');
