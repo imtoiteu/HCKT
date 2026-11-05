@@ -1,11 +1,17 @@
 # Ôn thi HC-KT 2026 — web app luyện thi Đội tuyển
 
 Ứng dụng web ôn luyện cho **Thi Đội tuyển** trong Hội thi tập trung ngành Hậu cần –
-Kỹ thuật năm 2026: vừa ghi nhớ **228 câu hỏi trắc nghiệm** (8 ngành), vừa mô phỏng
+Kỹ thuật năm 2026: vừa ghi nhớ **243 câu hỏi trắc nghiệm** (8 ngành), vừa mô phỏng
 đúng cấu trúc, thời gian và cách tính điểm của **Vòng sơ khảo** và **Vòng chung
 khảo** theo Quy chế Hội thi (Điều 12–15).
 
-**URL công khai:** http://80.241.217.122:8080/
+**URL công khai:** http://139.180.211.252/
+
+> VPS trước đó (80.241.217.122) đã mất; dự án được khôi phục từ GitHub
+> (`https://github.com/imtoiteu/HCKT.git`) sang VPS mới ngày 05/11/2026. Không
+> có bản sao cục bộ nào mới hơn commit `990b8c6` trên GitHub, nên phần sửa quy
+> chế/nội dung kể từ 31/10/2026 (nếu có) được thực hiện lại trong lần khôi phục
+> này — xem mục "Nhật ký khôi phục 05/11/2026" bên dưới.
 
 > **Phạm vi:** ứng dụng phục vụ riêng phần **Thi Đội tuyển**. Quy chế còn mô tả
 > "Thi Chủ nhiệm HC-KT" (bảo vệ kế hoạch cá nhân, không phải trắc nghiệm) và chấm
@@ -19,32 +25,34 @@ khảo** theo Quy chế Hội thi (Điều 12–15).
 
 | Tệp gốc | Vai trò |
 |---|---|
-| `Bo_cau_hoi_Hoi_thi_0001.pdf` (53 trang) | Toàn bộ 228 câu trắc nghiệm + đáp án |
+| `Bo_cau_hoi_Hoi_thi_0001.pdf` (53 trang) | 228 câu trắc nghiệm gốc + đáp án |
 | `Thang_cham_diem_Hoi_thi_0001.pdf` (23 trang) | Phụ lục thang điểm chấm **đơn vị chính quy** (Mục I) — không áp dụng trực tiếp cho Đội tuyển, đưa vào tab "Quy chế" dưới dạng ảnh quét đầy đủ để tham khảo |
 | `CamScanner 31-10-26 12.43.pdf` (5 trang, đánh số gốc 4–8) | Trích Điều 11–15 Quy chế Hội thi — căn cứ duy nhất cho cấu trúc/thời gian/cách tính điểm của tab "Đội tuyển"; ảnh quét ở `public/ref/dt-01..05.jpg` |
+| `CamScanner 5-11-26 07.17.pdf` (16 trang, không nằm trong repo — chỉ xử lý cục bộ trên VPS) | 4 "Bộ đề" mô phỏng thi Đội tuyển (mỗi bộ 20 câu: Khởi động 5 + Tăng tốc 5 + Gói riêng 5 + Gói chung 5). Đối chiếu từng câu với 228 câu trên cho thấy **65/80 câu trùng nội dung/đáp án** với ngân hàng cũ (chỉ khác cách rút gọn câu hỏi) — không nhập lại các câu này để tránh trùng lặp; **15 câu thực sự mới** đã được thêm vào ngân hàng (xem "Nhật ký khôi phục 05/11/2026"). Bản bóc tách đầy đủ cả 80 câu (kèm chú thích câu nào trùng `dupOf` câu nào) nằm ở `data/raw/dethi-doituyen-2026-11-05.json` để đối chiếu sau này. |
 
-Cả hai PDF là bản quét (không có lớp văn bản), nội dung được bóc tách thủ công
-theo từng trang. Đáp án đúng trong tài liệu gốc được đánh dấu bằng **gạch chân**
-(mục I–VII) hoặc dòng **"\* Đáp án đúng: x"** (mục VIII).
+Cả 3 PDF câu hỏi là bản quét (không có lớp văn bản), nội dung được bóc tách thủ
+công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được đánh dấu bằng
+**gạch chân** (mục I–VII, và toàn bộ `CamScanner 5-11-26`) hoặc dòng
+**"\* Đáp án đúng: x"** (mục VIII của `Bo_cau_hoi_Hoi_thi_0001.pdf`).
 
 ### Phân bố câu hỏi
 
 | Mục | Ngành | Số câu |
 |---|---|---|
 | I | Tham mưu | 16 |
-| II | Quân nhu | 30 |
+| II | Quân nhu | 31 |
 | III | Quân y | 22 |
-| IV | Doanh trại | 35 |
+| IV | Doanh trại | 37 |
 | V | Xăng dầu | 21 |
 | VI | Xe máy – Vận tải | 20 |
-| VII | Các chuyên ngành Kỹ thuật | 52 |
-| VIII | Truyền thống ngành HC, KT | 32 |
-| | **Tổng** | **228** |
+| VII | Các chuyên ngành Kỹ thuật | 63 |
+| VIII | Truyền thống ngành HC, KT | 33 |
+| | **Tổng** | **243** |
 
 ### Lưu ý về dữ liệu
 
-- **8 câu có nhiều đáp án đúng** (tài liệu gốc gạch chân từ 2 ý trở lên):
-  I‑10, VII‑1, VII‑34, VII‑43, VII‑49, VIII‑26, VIII‑29, VIII‑30.
+- **9 câu có nhiều đáp án đúng** (tài liệu gốc gạch chân/đánh dấu từ 2 ý trở lên):
+  I‑10, VII‑1, VII‑34, VII‑43, VII‑49, VII‑53, VIII‑26, VIII‑29, VIII‑30.
   Ứng dụng đánh dấu "Chọn nhiều đáp án" và chỉ tính đúng khi chọn đủ.
 - **1 câu không có đáp án trong tài liệu gốc**: **VII‑12**
   (*"Quy định khám sức khỏe định kỳ đối với người lao động làm nghề, công việc
@@ -52,6 +60,10 @@ theo từng trang. Đáp án đúng trong tài liệu gốc được đánh dấ
   Câu này **được loại khỏi mọi lượt luyện tập/thi thử**, chỉ hiển thị trong tab
   "Tra cứu" kèm cảnh báo. Nếu có đáp án chính thức, sửa trường `ans` của
   `VII-12` trong `public/data/questions.json`.
+- 15 câu mới từ `CamScanner 5-11-26 07.17.pdf` (ID: VIII‑33, VII‑53..VII‑63,
+  II‑31, IV‑36, IV‑37) hiển thị nguồn là **"Bộ đề Đội tuyển số N (bổ sung
+  5/11/2026)"** thay vì "Trang X tài liệu gốc", vì chúng không nằm trong
+  `Bo_cau_hoi_Hoi_thi_0001.pdf` 53 trang.
 
 ## Tính năng
 
@@ -129,9 +141,14 @@ gửi dữ liệu đi đâu. Mỗi thiết bị có tiến độ riêng.
 ## Quy chế & giới hạn dữ liệu
 
 - File quy chế được cung cấp (`CamScanner 31-10-26 12.43.pdf`) chỉ có **5 trang,
-  đánh số gốc 4–8**. Không có trang 1–3 (nhiều khả năng chứa Mục I, Điều 1–10)
-  và không rõ có trang nào sau trang 8 hay không (Điều 15 dường như chưa hết ở
-  cuối trang 8). Ứng dụng **chỉ dùng đúng phần đã đọc được** (Điều 11–15) và
+  đánh số gốc 4–8**. Không có trang 1–3 (nhiều khả năng chứa Mục I, Điều 1–10).
+  Điều 15 (Cách tính thành tích) đọc được **trọn vẹn đến hết mục "Thành tích cá
+  nhân"** ở cuối trang 8 (câu cuối kết thúc bằng dấu chấm, không bị cắt giữa
+  chừng) — nhưng tiêu đề Chương III là "CÁCH TÍNH THÀNH TÍCH, **XẾP LOẠI, KHEN
+  THƯỞNG**" trong khi 5 trang hiện có chỉ chứa nội dung "cách tính thành tích";
+  nhiều khả năng còn Điều 16+ về xếp loại/khen thưởng ở (các) trang sau trang 8
+  mà tài liệu hiện có không bao gồm. Phần "Thi Đội tuyển" (Điều 12–14, phạm vi
+  ứng dụng) đã đọc được đầy đủ. Ứng dụng **chỉ dùng đúng phần đã đọc được** và
   không suy đoán thêm nội dung thiếu.
 - Phạm vi đã xác nhận với người dùng: **chỉ xây dựng cho "Thi Đội tuyển"**
   (Điều 12 khoản 2). "Thi Chủ nhiệm HC-KT" (Điều 12 khoản 1 — bảo vệ kế hoạch cá
@@ -158,12 +175,13 @@ quiz-app/
 │   ├── index.html
 │   ├── app.js                # router, quiz engine, SRS, Đội tuyển (mô phỏng), thống kê
 │   ├── styles.css
-│   ├── data/questions.json   # 228 câu — nguồn dữ liệu duy nhất của app
+│   ├── data/questions.json   # 243 câu — nguồn dữ liệu duy nhất của app
 │   └── ref/
 │       ├── tcd-01..23.jpg    # ảnh quét phụ lục thang điểm chấm đơn vị
 │       └── dt-01..05.jpg     # ảnh quét thể lệ Đội tuyển (Điều 11–15, trang gốc 4–8)
-├── data/raw/chunk-*.json     # bản bóc tách gốc theo từng cụm trang (để đối chiếu)
-└── deploy/k8s-ingress.yaml   # (tuỳ chọn) route cổng 80 qua Traefik — chưa áp dụng
+├── data/raw/chunk-*.json              # bản bóc tách gốc 228 câu theo từng cụm trang (để đối chiếu)
+├── data/raw/dethi-doituyen-2026-11-05.json  # bản bóc tách đầy đủ 80 câu từ CamScanner 5-11-26 (kèm dupOf)
+└── deploy/k8s-ingress.yaml   # route k3s/Traefik của VPS cũ — không áp dụng trên VPS mới, giữ lại để tham khảo
 ```
 
 ## Vận hành
@@ -174,29 +192,40 @@ Chạy như một systemd service, tự khởi động lại và tự bật khi 
 systemctl status hckt-quiz      # trạng thái
 systemctl restart hckt-quiz     # khởi động lại
 journalctl -u hckt-quiz -f      # log
-tail -f /var/log/hckt-quiz.log
 ```
 
-Cấu hình: `/etc/systemd/system/hckt-quiz.service` (`PORT=8080`, `HOST=0.0.0.0`).
-
-### Vì sao là cổng 8080 chứ không phải 80?
-
-Cổng 80 của máy chủ đang do **Traefik ingress của k3s** chiếm (service
-`kube-system/traefik`, external IP `80.241.217.122`), phục vụ ứng dụng
-`vstep-test.80-241-217-122.sslip.io`. Ứng dụng này chạy ở cổng 8080 để **không
-đụng chạm** dịch vụ đang có.
-
-Muốn dùng URL gọn `http://80.241.217.122/` (không kèm cổng), áp dụng route bổ
-sung — chỉ khớp Host là địa chỉ IP trần nên không che các route theo tên miền
-hiện có:
-
-```bash
-k3s kubectl apply -f deploy/k8s-ingress.yaml
-# gỡ bỏ: k3s kubectl delete -f deploy/k8s-ingress.yaml
-```
+Cấu hình: `/etc/systemd/system/hckt-quiz.service` (`PORT=80`, `HOST=0.0.0.0`).
+Trên VPS mới (139.180.211.252), cổng 80 đang rảnh (không có nginx/k3s/docker
+nào chiếm dụng — đã kiểm tra bằng `ss -tlnp` trước khi cấu hình), nên dùng
+thẳng cổng 80 để có URL gọn `http://139.180.211.252/`, không cần ingress/k3s
+như cấu hình VPS cũ (`deploy/k8s-ingress.yaml` chỉ còn mang tính tham khảo).
 
 ## Cập nhật nội dung câu hỏi
 
 Sửa `public/data/questions.json` (hoặc sửa `data/raw/chunk-*.json` rồi dựng lại),
-sau đó tăng số phiên bản `?v=` trong `public/index.html` để trình duyệt tải lại
-cache. Không cần khởi động lại service.
+sau đó tăng số phiên bản `?v=` trong `public/index.html` **và** trong lệnh gọi
+`fetch('data/questions.json?v=N')` ở `public/app.js` để trình duyệt tải lại
+cache (file JSON được server cache 7 ngày). Không cần khởi động lại service.
+
+## Nhật ký khôi phục 05/11/2026
+
+- VPS cũ (80.241.217.122) mất; khôi phục bằng `git clone` từ
+  `https://github.com/imtoiteu/HCKT.git` (nhánh `main`, commit `990b8c6`) vào
+  `/root/imtoiteu/HCKT` trên VPS mới (139.180.211.252) — không có dữ liệu cục
+  bộ nào mới hơn để giữ lại, không có thay đổi chưa commit nào bị mất.
+- Đối chiếu lại Điều 11–15 quy chế (đọc trực tiếp ảnh quét, không dựa vào
+  README cũ) — nội dung Đội tuyển (TEAM_RULES, công thức tính điểm, hạn mức
+  thời gian) trong `app.js` đã khớp chính xác với bản quét, không cần sửa.
+- Nạp thêm bộ đề mới `CamScanner 5-11-26 07.17.pdf` (4 "Bộ đề", 80 câu dạng mô
+  phỏng Đội tuyển): đối chiếu từng câu với 228 câu cũ, phát hiện 65/80 câu
+  trùng nội dung + đáp án (chỉ khác cách rút gọn văn bản câu hỏi) — không nhập
+  lại để tránh trùng lặp theo đúng yêu cầu. 15 câu còn lại là nội dung mới,
+  đã thêm vào `questions.json` (ID mới: `VIII-33`, `VII-53`..`VII-63`,
+  `II-31`, `IV-36`, `IV-37`), nâng tổng số câu từ 228 lên 243. 1 câu
+  (Bộ đề số 3, Tăng tốc, câu 1) không có gạch chân đáp án trong bản quét mới,
+  nhưng trùng nội dung với câu `I-2` đã có đáp án xác minh (gạch chân rõ) nên
+  không thêm câu này như một mục riêng — không có câu nào bị bỏ ngỏ đáp án
+  trong số 15 câu mới được thêm.
+- Toàn bộ 80 câu bóc tách (kể cả 65 câu trùng, có ghi chú `dupOf`) được lưu ở
+  `data/raw/dethi-doituyen-2026-11-05.json` để đối chiếu/kiểm tra lại sau này,
+  không bị xoá.

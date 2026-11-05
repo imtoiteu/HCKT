@@ -1,0 +1,2097 @@
+{
+  "source": "CamScanner 5-11-26 07.17.pdf",
+  "pages": 16,
+  "transcribedBy": "Claude (đọc trực tiếp ảnh quét từng trang, đối chiếu thủ công với public/data/questions.json)",
+  "transcribedAt": "2026-11-05",
+  "summary": {
+    "totalQuestions": 80,
+    "sets": 4,
+    "exactOrNearDuplicatesOfExistingBank": 65,
+    "genuinelyNewAddedToBank": 15,
+    "uncertainAnswer": 1,
+    "multiAnswer": 3
+  },
+  "sets": [
+    {
+      "setNo": 1,
+      "stages": {
+        "khoidong": [
+          {
+            "num": 1,
+            "q": "Quy định đánh giá, chấm điểm đối với công tác hậu cần, kỹ thuật SSCĐ tại Văn bản số 2519/HCKT-TMKH ngày 09/9/2025 gồm mấy nội dung?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "05 nội dung."
+              },
+              {
+                "k": "b",
+                "t": "04 nội dung."
+              },
+              {
+                "k": "c",
+                "t": "03 nội dung."
+              },
+              {
+                "k": "d",
+                "t": "02 nội dung."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "I-9",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Nghị định số 02/2026/NĐ-CP ngày 20/01/2026 của Chính phủ quy định nhiệt lượng khẩu phần ăn của hạ sĩ quan, binh sĩ bộ binh là bao nhiêu Kcal/người/ngày?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "3.100 Kcal/người/ngày."
+              },
+              {
+                "k": "b",
+                "t": "3.200 Kcal/người/ngày."
+              },
+              {
+                "k": "c",
+                "t": "3.500 Kcal/người/ngày."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "II-4",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Theo Luật khám bệnh, chữa bệnh số 15/2023/QH15 ngày 09/01/2023 “Nguyên tắc trong khám bệnh, chữa bệnh” là gì?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Bảo vệ, đối xử bình đẳng và kỳ thị, phân biệt đối xử đối với người bệnh."
+              },
+              {
+                "k": "b",
+                "t": "Tôn trọng, bảo vệ, đối xử bình đẳng và không kỳ thị, phân biệt đối xử đối với người bệnh."
+              },
+              {
+                "k": "c",
+                "t": "Bảo vệ, đối xử bình đẳng và không kỳ thị, phân biệt đối xử đối với người bệnh."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "III-12",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Tiêu chuẩn điện năng đối với đối tượng sĩ quan giữ chức vụ có cấp bậc quân hàm cao nhất là Thượng tá theo Nghị định số 02/2026/NĐ-CP là bao nhiêu kWh/người/tháng?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "320 kWh/người/tháng."
+              },
+              {
+                "k": "b",
+                "t": "440 kWh/người/tháng."
+              },
+              {
+                "k": "c",
+                "t": "570 kWh/người/tháng."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "IV-5",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Tổng cục Cung cấp tiền thân của Tổng cục Hậu cần được thành lập ngày, tháng, năm nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "11/7/1950."
+              },
+              {
+                "k": "b",
+                "t": "16/9/1950."
+              },
+              {
+                "k": "c",
+                "t": "15/7/1950."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Bản scan có một ký hiệu lạ (giống vết mực/dấu gạch) ngay trước “Câu 5” — không rõ ý nghĩa, không ảnh hưởng tới việc đọc đáp án (vẫn có gạch chân rõ ở ý a)."
+          }
+        ],
+        "tangtoc": [
+          {
+            "num": 1,
+            "q": "Phòng Hậu cần/Cục Nghiên cứu (tiền thân của Cục Hậu cần - Kỹ thuật/Tổng cục II) thành lập ngày, tháng, năm nào. Ai là trưởng phòng đầu tiên?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Ngày 07/3/1979. Đồng chí Vũ Kiểm làm trưởng phòng"
+              },
+              {
+                "k": "b",
+                "t": "Ngày 19/11/1966. Đồng chí Hoàng Vân làm trưởng phòng"
+              },
+              {
+                "k": "c",
+                "t": "Ngày 19/11/1967. Đồng chí Võ Minh làm trưởng phòng"
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VIII-6",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Bảo đảm kỹ thuật trong tác chiến gồm các nội dung gì?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Bảo đảm trang bị kỹ thuật; bảo dưỡng, sửa chữa, cứu kéo trang bị kỹ thuật; bảo đảm vật tư kỹ thuật."
+              },
+              {
+                "k": "b",
+                "t": "Bảo dưỡng, sửa chữa, cứu kéo trang bị kỹ thuật; bảo đảm vật tư kỹ thuật."
+              },
+              {
+                "k": "c",
+                "t": "Bảo đảm vũ khí, trang bị kỹ thuật; bảo dưỡng, sửa chữa, cứu kéo trang bị kỹ thuật; bảo đảm vật tư kỹ thuật."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "VII-52",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Để đảm bảo an toàn trong sử dụng, sửa chữa điện người lao động phải làm gì?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Sử dụng đầy đủ trang bị PTBVCN."
+              },
+              {
+                "k": "b",
+                "t": "Chấp hành đúng quy trình an toàn trong sửa chữa, sử dụng điện."
+              },
+              {
+                "k": "c",
+                "t": "Kiểm tra tình trạng an toàn thiết bị, hệ thống điện trước khi làm việc."
+              },
+              {
+                "k": "d",
+                "t": "Cả a, b, c"
+              }
+            ],
+            "ans": [
+              "d"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy câu trùng chính xác trong 228 câu cũ khi tra theo cụm từ đặc trưng; có thể là biến thể của một câu an toàn điện khác — chưa xác nhận là trùng, tạm coi là không trùng."
+          },
+          {
+            "num": 4,
+            "q": "Theo Hướng dẫn Công tác kỹ thuật xe - máy QĐNDVN, xe - máy được phân thành những nhóm nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Nhóm sẵn sàng chiến đấu; Nhóm sử dụng thường xuyên; nhóm huấn luyện."
+              },
+              {
+                "k": "b",
+                "t": "Nhóm tác chiến; Nhóm sử dụng thường xuyên; Nhóm huấn luyện."
+              },
+              {
+                "k": "c",
+                "t": "Nhóm tác chiến; Nhóm bảo đảm; Nhóm huấn luyện."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "VI-13",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Định mức nhiên liệu tăng thêm tối đa đối với ô tô khi chạy trong thành phố và khu đông dân cư được quy định tại Thông tư 59/2015/TT-BQP ngày 13/7/2015 của BQP là bao nhiêu %?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "10 %."
+              },
+              {
+                "k": "b",
+                "t": "15 %."
+              },
+              {
+                "k": "c",
+                "t": "20 %."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Thuộc nhóm câu hỏi Thông tư 59/2015/TT-BQP (V-7..V-15 trong ngân hàng cũ) nhưng không xác định được ID trùng khớp chính xác theo nội dung “định mức nhiên liệu tăng thêm trong thành phố”; chưa xác nhận trùng."
+          }
+        ],
+        "rieng": [
+          {
+            "num": 1,
+            "q": "Theo Quy chế số 3101/QC-BCĐ ngày 02/6/2025 của Ban Chỉ đạo PTTĐ Ngành Hậu cần và CVĐ50/Bộ Quốc phòng, quy định Ban chỉ đạo ở đơn vị được thành lập ở cấp nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Cấp Sư đoàn và tương đương (có cơ quan đảm nhiệm công tác Hậu cần, Kỹ thuật) trở lên."
+              },
+              {
+                "k": "b",
+                "t": "Cấp Trung đoàn, Lữ đoàn và tương đương (có cơ quan đảm nhiệm công tác Hậu cần, Kỹ thuật) trở lên."
+              },
+              {
+                "k": "c",
+                "t": "Cấp Tiểu đoàn và tương đương (có cơ quan đảm nhiệm công tác Hậu cần, Kỹ thuật) trở lên."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "I-12",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Nghị định số 02/2026/NĐ-CP ngày 20/01/2026 của Chính phủ quy định 01 suất quần áo lót gồm những loại nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "01 áo và 01 quần sịp; nữ cấp bằng tiền."
+              },
+              {
+                "k": "b",
+                "t": "01 quần, 01 áo và 01 quần sịp; nữ cấp bằng tiền."
+              },
+              {
+                "k": "c",
+                "t": "01 quần, 01 áo; nữ cấp bằng tiền."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "II-11",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Nguyên tắc quản lý hồ sơ bệnh án điện tử (HSBAĐT) quy định mỗi người bệnh có bao nhiêu mã số HSBAĐT tại một cơ sở khám chữa bệnh?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Mỗi lần người bệnh đến khám sẽ tạo một mã HSBAĐT khác nhau."
+              },
+              {
+                "k": "b",
+                "t": "Hai mã (một cho nội trú, một cho ngoại trú) cho mỗi người bệnh tại một cơ sở."
+              },
+              {
+                "k": "c",
+                "t": "Mỗi người bệnh chỉ có một mã số quản lý HSBAĐT duy nhất tại một cơ sở khám chữa bệnh."
+              },
+              {
+                "k": "d",
+                "t": "Không có quy định cụ thể, tùy theo quy chế mỗi bệnh viện."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "III-9",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Nội dung “Bàn giao công trình đưa vào sử dụng” thuộc giai đoạn nào trong trình tự đầu tư xây dựng dự án được quy định tại khoản 1, Điều 4 Nghị định số 217/2026/NĐ-CP?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Giai đoạn chuẩn bị dự án"
+              },
+              {
+                "k": "b",
+                "t": "Giai đoạn thực hiện dự án"
+              },
+              {
+                "k": "c",
+                "t": "Giai đoạn kết thúc xây dựng"
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "IV-33",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Phòng Trang bị Vật tư/Cục Nghiên cứu (tiền thân của Cục Kỹ thuật/Tổng cục II) thành lập ngày tháng năm nào? Ai là trưởng Phòng đầu tiên?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Ngày 07/3/1979. Đồng chí Nguyễn Dạn làm Trưởng phòng."
+              },
+              {
+                "k": "b",
+                "t": "Ngày 19/11/1966. Đồng chí Lê Văn Thưa làm Trưởng phòng."
+              },
+              {
+                "k": "c",
+                "t": "Ngày 07/3/1979. Đồng chí Lê Văn Thưa làm Trưởng phòng."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "VIII-7",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "chung": [
+          {
+            "num": 1,
+            "q": "Phong trào thi đua “Ngành hậu cần quân đội làm theo lời Bác Hồ dạy” được Bộ Quốc phòng triển khai thực hiện theo văn bản nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Chỉ thị số 214/CT-BQP ngày 14/3/1995 của Bộ trưởng Bộ Quốc phòng"
+              },
+              {
+                "k": "b",
+                "t": "Chỉ thị 917/1999/CT-BQP ngày 22/6/1999 của Bộ trưởng Bộ Quốc phòng"
+              },
+              {
+                "k": "c",
+                "t": "Chỉ thị số 216/CT-BQP ngày 14/3/1995 của Bộ trưởng Bộ Quốc phòng"
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VIII-33."
+          },
+          {
+            "num": 2,
+            "q": "Điều lệ Công tác kỹ thuật QĐND Việt Nam năm 2023 quy định phân cấp sửa chữa như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Sửa chữa nhỏ thực hiện tại đơn vị hoặc trạm sửa chữa tổng hợp;"
+              },
+              {
+                "k": "b",
+                "t": "Sửa chữa nhỏ thực hiện tại đơn vị;"
+              },
+              {
+                "k": "c",
+                "t": "Sửa chữa vừa thực hiện tại nhà máy, xưởng, tiểu đoàn sửa chữa;"
+              },
+              {
+                "k": "d",
+                "t": "Sửa chữa lớn thực hiện tại nhà máy, xí nghiệp, xưởng sửa chữa."
+              }
+            ],
+            "ans": [
+              "a",
+              "c",
+              "d"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Câu nhiều đáp án đúng (a, c, d đều gạch chân). Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-53."
+          },
+          {
+            "num": 3,
+            "q": "Đối tượng nào được khám phát hiện Bệnh nghề nghiệp?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Người lao động làm việc trong môi trường có nguy cơ mắc Bệnh nghề nghiệp."
+              },
+              {
+                "k": "b",
+                "t": "Tất cả người lao động trong đơn vị."
+              },
+              {
+                "k": "c",
+                "t": "Những người lao động có thời gian làm việc ít nhất 15 năm."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không xác nhận được trùng/không trùng với 228 câu cũ qua tra cứu từ khóa; chưa thêm vào ngân hàng chính (giữ nguyên trong file này để đối chiếu)."
+          },
+          {
+            "num": 4,
+            "q": "Theo Hướng dẫn Công tác kỹ thuật xe - máy QĐNDVN, xe ô tô quân sự được phân thành những loại nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Xe con; Xe vận tải; Xe ca; Xe chuyên dùng (bao gồm xe chuyên dùng chung và xe chuyên dùng quân sự)."
+              },
+              {
+                "k": "b",
+                "t": "Xe con; Xe vận tải; Xe bán tải; Xe chuyên dùng."
+              },
+              {
+                "k": "c",
+                "t": "Xe con; Xe vận tải; Xe chuyên dùng (bao gồm xe chuyên dùng chung và xe chuyên dùng quân sự)."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "VI-12",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Mức tiền ăn, bồi dưỡng đối với sĩ quan, quân nhân chuyên nghiệp có cấp bậc quân hàm cấp úy; công nhân quốc phòng có hệ số lương dưới 4,95; công chức quốc phòng, viên chức quốc phòng có hệ số lương dưới 4,0 theo quy định hiện hành là bao nhiêu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "3.100.000 đồng/lần/năm."
+              },
+              {
+                "k": "b",
+                "t": "2.500.000 đồng/lần/năm."
+              },
+              {
+                "k": "c",
+                "t": "2.400.000 đồng/lần/năm."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "II-21",
+            "uncertain": false,
+            "note": ""
+          }
+        ]
+      }
+    },
+    {
+      "setNo": 2,
+      "stages": {
+        "khoidong": [
+          {
+            "num": 1,
+            "q": "Nhiệm vụ trọng tâm công tác bảo đảm hậu cần, kỹ thuật theo Chỉ lệnh công tác hậu cần, kỹ thuật năm 2026 gồm bao nhiêu nội dung?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "4 nội dung."
+              },
+              {
+                "k": "b",
+                "t": "5 nội dung."
+              },
+              {
+                "k": "c",
+                "t": "6 nội dung."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "I-1",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Nghị định số 02/2026/NĐ-CP ngày 20/01/2026 của Chính phủ quy định tiêu chuẩn ăn thêm ngày lễ, tết và ngày thành lập QĐND Việt Nam được tính bằng bao nhiêu lần so với tiêu chuẩn ăn cơ bản của hạ sĩ quan, binh sĩ bộ binh?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "1,0 lần."
+              },
+              {
+                "k": "b",
+                "t": "1,5 lần."
+              },
+              {
+                "k": "c",
+                "t": "2,0 lần."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không xác nhận được trùng/không trùng qua tra cứu từ khóa với 228 câu cũ."
+          },
+          {
+            "num": 3,
+            "q": "Khi phân loại sức khỏe định kỳ cho quân nhân theo Thông tư 37/2021/TT-BQP ngày 15/4/2021, yếu tố nào sau đây không là căn cứ phân loại?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Tình trạng thể lực."
+              },
+              {
+                "k": "b",
+                "t": "Tình trạng bệnh tật, suy giảm sức lao động."
+              },
+              {
+                "k": "c",
+                "t": "Số lần khám bệnh."
+              },
+              {
+                "k": "d",
+                "t": "Số ngày nghỉ ốm."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "III-8",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Thời hạn bảo hành đối với công trình xây dựng mới (sử dụng nguồn vốn đầu tư công) kể từ khi chủ đầu tư nghiệm thu theo quy định tại Nghị định số 207/2026/NĐ-CP là bao lâu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Không ít hơn 12 tháng."
+              },
+              {
+                "k": "b",
+                "t": "Không ít hơn 18 tháng."
+              },
+              {
+                "k": "c",
+                "t": "Không ít hơn 24 tháng."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "IV-23",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Đồng chí cho biết quy định hiện hành khi thanh toán dầu mỡ theo tỉ lệ nhiên liệu đối với Diesel cho xe ô tô là bao nhiêu %?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "3,5 %."
+              },
+              {
+                "k": "b",
+                "t": "05 %."
+              },
+              {
+                "k": "c",
+                "t": "06 %."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "V-6",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "tangtoc": [
+          {
+            "num": 1,
+            "q": "Chủ đề của Năm An toàn giao thông 2026 được xác định trong Kế hoạch số 113/KH-BCĐ ngày 18/3/2026 của BCĐ PTTĐ “Ngành Hậu cần” và CVĐ50 Bộ Quốc phòng là gì?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Tăng cường công tác quản lý, chấp hành pháp luật, kỷ luật Quân đội để xây dựng văn hóa giao thông an toàn."
+              },
+              {
+                "k": "b",
+                "t": "Hành trình an toàn, kiến tạo tương lai."
+              },
+              {
+                "k": "c",
+                "t": "Thượng tôn pháp luật, xây dựng văn hóa giao thông an toàn."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VI-1",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Khi đóng hoặc mở hòm thuốc nổ, chất cháy trong kho phải thực hiện như thế nào để bảo đảm an toàn?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Thực hiện tại vị trí cất giữ trong kho."
+              },
+              {
+                "k": "b",
+                "t": "Phải đưa ra ngoài nhà kho."
+              },
+              {
+                "k": "c",
+                "t": "Phải đưa ra ngoài nhà kho và không được dùng các dụng cụ phát sinh tia lửa khi va chạm."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-54."
+          },
+          {
+            "num": 3,
+            "q": "Bảo dưỡng kỹ thuật không định kỳ áp dụng trong trường hợp nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Trang bị kỹ thuật đang sử dụng trong điều kiện môi trường, địa hình phức tạp."
+              },
+              {
+                "k": "b",
+                "t": "Trang bị kỹ thuật trước khi đưa vào niêm cất."
+              },
+              {
+                "k": "c",
+                "t": "Trang bị kỹ thuật hư hỏng nhẹ, có thể hoạt động nhưng tính năng chiến-kỹ thuật chưa đầy đủ."
+              }
+            ],
+            "ans": [
+              "a",
+              "b"
+            ],
+            "dupOf": "VII-43",
+            "uncertain": false,
+            "note": "Câu nhiều đáp án đúng (a, b gạch chân) — khớp chính xác với VII-43 trong ngân hàng cũ (cũng ans=[a,b])."
+          },
+          {
+            "num": 4,
+            "q": "Câu nói “Công việc cung cấp cũng quan trọng như việc trực tiếp đánh giặc trước mặt trận” được chủ tịch Hồ Chí Minh viết trong bức thư gửi lớp cán bộ cung cấp tháng, năm nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Tháng 6 năm 1951"
+              },
+              {
+                "k": "b",
+                "t": "Tháng 6 năm 1953"
+              },
+              {
+                "k": "c",
+                "t": "Tháng 12 năm 1953"
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "VIII-14",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Theo Điều lệ công tác tham mưu hậu cần năm 2023, đâu KHÔNG phải là nội dung thuộc công tác tham mưu hậu cần?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Công tác thống kê hậu cần."
+              },
+              {
+                "k": "b",
+                "t": "Công tác kiểm tra, phúc tra."
+              },
+              {
+                "k": "c",
+                "t": "Công tác chỉ huy hậu cần."
+              },
+              {
+                "k": "d",
+                "t": "Công tác tham mưu, đề xuất triển khai các mặt công tác hậu cần."
+              }
+            ],
+            "ans": [
+              "d"
+            ],
+            "dupOf": "I-5",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "rieng": [
+          {
+            "num": 1,
+            "q": "Điều lệ Công tác kỹ thuật QĐND Việt Nam năm 2023 quy định nội dung bảo đảm kỹ thuật trong hành quân gồm?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Bảo đảm trang bị kỹ thuật; bảo dưỡng kỹ thuật, sửa chữa, cứu kéo trang bị kỹ thuật, bảo đảm vật tư kỹ thuật; huấn luyện kỹ thuật bổ sung."
+              },
+              {
+                "k": "b",
+                "t": "Bảo dưỡng kỹ thuật, sửa chữa, cứu kéo, bảo đảm vật tư kỹ thuật."
+              },
+              {
+                "k": "c",
+                "t": "Bảo đảm trang bị, vật tư kỹ thuật; sửa chữa, cứu kéo trang bị kỹ thuật, bảo đảm vật tư kỹ thuật."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Bản scan in nhầm nhãn ý thứ ba là 'a)' thay vì 'c)' (lặp lại chữ a) — đã tự sửa thành 'c' theo thứ tự xuất hiện khi lưu vào file này; không đổi nội dung chữ. Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-55."
+          },
+          {
+            "num": 2,
+            "q": "Đồng chí cho biết hệ thống kỹ thuật quân đội gồm thành phần nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Cơ quan kỹ thuật và cơ sở kỹ thuật."
+              },
+              {
+                "k": "b",
+                "t": "Cơ quan kỹ thuật, cơ sở bảo đảm kỹ thuật và cơ sở nghiên cứu, thông tin khoa học kỹ thuật."
+              },
+              {
+                "k": "c",
+                "t": "Cơ quan kỹ thuật; cơ sở bảo đảm kỹ thuật và cơ sở đào tạo, huấn luyện kỹ thuật."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-56."
+          },
+          {
+            "num": 3,
+            "q": "Quy định chỉ tiêu giá trị thu lãi từ tăng gia sản xuất, chế biến là bao nhiêu theo Chỉ lệnh số 143/CL-TCII ngày 11/01/2026 của Tổng cục trưởng?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "800.000 đồng/người/năm trở lên."
+              },
+              {
+                "k": "b",
+                "t": "1.000.000 đồng/người/năm trở lên."
+              },
+              {
+                "k": "c",
+                "t": "1.500.000 đồng/người/năm trở lên."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "II-27",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Theo Quy chế số 401-QC/ĐU ngày 19/6/2026 của Đảng ủy Tổng cục; báo cáo định kỳ của người chỉ huy đối với cấp ủy cùng cấp về công tác xăng dầu ở đơn vị đồng chí là bao nhiêu ngày?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Định kỳ 03 tháng."
+              },
+              {
+                "k": "b",
+                "t": "Định kỳ 06 tháng."
+              },
+              {
+                "k": "c",
+                "t": "Định kỳ 01 năm."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "V-3",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Theo Hướng dẫn Công tác kỹ thuật xe - máy QĐNDVN, quy định về phân cấp chất lượng xe - máy, xe ô tô, xe mô tô cấp 1 là xe có km sử dụng và thời gian sử dụng như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Xe mô tô không quá 5.000km, xe ô tô không quá 10.000km và không quá 5 năm kể từ ngày sản xuất."
+              },
+              {
+                "k": "b",
+                "t": "Không quá 10.000km và không quá 5 năm kể từ ngày sản xuất."
+              },
+              {
+                "k": "c",
+                "t": "Xe mô tô không quá 5.000km và không quá 5 năm, xe ô tô không quá 10.000km và không quá 5 năm kể từ ngày sản xuất."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VI-14",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "chung": [
+          {
+            "num": 1,
+            "q": "Trường hợp nào phải kiểm định kỹ thuật an toàn lao động?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Lần đầu trước khi đưa đối tượng kiểm định vào sử dụng."
+              },
+              {
+                "k": "b",
+                "t": "Định kỳ khi đối tượng kiểm định đến hạn kiểm định lại."
+              },
+              {
+                "k": "c",
+                "t": "Sau khi lắp đặt lại đối tượng kiểm định hoặc có cải tạo, sửa chữa làm thay đổi kết cấu, thông số kỹ thuật của đối tượng kiểm định."
+              },
+              {
+                "k": "d",
+                "t": "Theo yêu cầu của đơn vị sử dụng hoặc theo yêu cầu của Cơ quan An toàn, bảo hộ lao động quân đội."
+              },
+              {
+                "k": "đ",
+                "t": "Cả a, b, c, d."
+              }
+            ],
+            "ans": [
+              "đ"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-57."
+          },
+          {
+            "num": 2,
+            "q": "Tiêu chí đánh giá đội ngũ, nhân viên, chiến sĩ ngành Hậu cần - Kỹ thuật theo quy định tại Văn bản số 2519/HCKT-TMKH ngày 09/9/2025?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "100% hoàn thành tốt nhiệm vụ, trong đó có 25% trở lên hoàn xuất sắc nhiệm vụ."
+              },
+              {
+                "k": "b",
+                "t": "100% hoàn thành nhiệm vụ, trong đó có 75% trở lên hoàn thành tốt, xuất sắc nhiệm vụ."
+              },
+              {
+                "k": "c",
+                "t": "100% hoàn thành nhiệm vụ, trong đó có 70% trở lên hoàn thành tốt, xuất sắc nhiệm vụ."
+              },
+              {
+                "k": "d",
+                "t": "100% hoàn thành tốt nhiệm vụ, trong đó có 20% trở lên hoàn xuất sắc nhiệm vụ."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "I-7",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Điều lệnh quản lý bộ đội QĐND Việt Nam năm 2026 quy định đối với người chỉ huy đơn vị có tổ chức bếp ăn như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Người chỉ huy đơn vị có tổ chức bếp ăn phải chịu trách nhiệm quản lý nhà ăn, nhà bếp; bảo đảm đúng tiêu chuẩn, định lượng, tổ chức ăn uống khoa học và duy trì ăn đúng giờ quy định."
+              },
+              {
+                "k": "b",
+                "t": "Người chỉ huy đơn vị có tổ chức bếp ăn phải chịu trách nhiệm quản lý nhà ăn, nhà bếp; bảo đảm đúng tiêu chuẩn, định lượng và duy trì ăn đúng giờ quy định."
+              },
+              {
+                "k": "c",
+                "t": "Người chỉ huy đơn vị có tổ chức bếp ăn phải bảo đảm đúng tiêu chuẩn, định lượng, tổ chức ăn uống khoa học và duy trì ăn đúng giờ quy định."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID II-31."
+          },
+          {
+            "num": 4,
+            "q": "Điều lệ Công tác kỹ thuật QĐND Việt Nam quy định về thời gian tổ chức ngày kỹ thuật như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Đơn vị từ cấp tiểu đoàn và tương đương trở xuống một tháng tổ chức một ngày kỹ thuật."
+              },
+              {
+                "k": "b",
+                "t": "Đơn vị cấp lữ đoàn, trung đoàn và tương đương một tuần tổ chức một ngày kỹ thuật."
+              },
+              {
+                "k": "c",
+                "t": "Đơn vị từ cấp tiểu đoàn và tương đương trở xuống một tuần tổ chức một ngày kỹ thuật. Đơn vị cấp lữ đoàn, trung đoàn và tương đương hai tuần tổ chức một ngày kỹ thuật."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "VII-47",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Theo Công văn số 1548/HCKT-TMKH ngày 09/6/2025 của Cục HC-KT; lựu đạn huấn luyện nổ nhiều lần LĐ-01-HL do Việt Nam sản xuất ném chưa quá 05 lần nhưng khi kiểm tra có hiện tượng nứt vỏ nhựa trên thân lựu đạn có được sử dụng tiếp hay không?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Không được sử dụng tiếp"
+              },
+              {
+                "k": "b",
+                "t": "Được sử dụng tiếp"
+              },
+              {
+                "k": "c",
+                "t": "Chỉ được sử dụng tiếp trong trường hợp cần thiết."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-58."
+          }
+        ]
+      }
+    },
+    {
+      "setNo": 3,
+      "stages": {
+        "khoidong": [
+          {
+            "num": 1,
+            "q": "Tiêu chuẩn, định lượng gạo tẻ của bộ binh theo quy định hiện hành là bao nhiêu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "650 gam/người/ngày."
+              },
+              {
+                "k": "b",
+                "t": "680 gam/người/ngày."
+              },
+              {
+                "k": "c",
+                "t": "700 gam/người/ngày."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "II-22",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Theo Luật khám bệnh, chữa bệnh số 15/2023/QH15 ngày 09/01/2023 quy định đối tượng ưu tiên hàng đầu khi khám chữa bệnh là?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Trẻ em dưới 6 tuổi."
+              },
+              {
+                "k": "b",
+                "t": "Người có công với cách mạng."
+              },
+              {
+                "k": "c",
+                "t": "Đối tượng cấp cứu."
+              },
+              {
+                "k": "d",
+                "t": "Quân nhân."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "III-11",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Theo Nghị định số 02/2026/NĐ-CP, tiêu chuẩn diện tích nhà trong quân đội được quy định theo?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Cấp bậc quân hàm."
+              },
+              {
+                "k": "b",
+                "t": "Chức vụ."
+              },
+              {
+                "k": "c",
+                "t": "Cả hai phương án trên."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "IV-14",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Quy định hiện hành về thời gian nộp Báo cáo quyết toán xăng dầu của đơn vị quý IV là trước ngày bao nhiêu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Trước ngày 30/12."
+              },
+              {
+                "k": "b",
+                "t": "Trước ngày 31/12."
+              },
+              {
+                "k": "c",
+                "t": "Trước ngày 15/01 năm sau."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "V-17",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Trong các hành vi dưới đây, người lái xe có văn hóa giao thông phải ứng xử như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Điều khiển xe đi bên phải theo chiều đi của mình, đi đúng phần đường, làn đường quy định, đội mũ bảo hiểm đúng quy cách."
+              },
+              {
+                "k": "b",
+                "t": "Điều khiển xe đi trên phần đường, làn đường có ít phương tiện tham gia giao thông."
+              },
+              {
+                "k": "c",
+                "t": "Đội mũ bảo hiểm ở nơi có biển báo bắt buộc đội mũ bảo hiểm."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "VI-11",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "tangtoc": [
+          {
+            "num": 1,
+            "q": "Chủ đề thực hiện nhiệm vụ chủ yếu xác định trong Kế hoạch số 160/KH-HCKT ngày 30/01/2026 được phê duyệt tại Quyết định số 777/QĐ-TCII ngày 12/02/2026 về công tác hậu cần, kỹ thuật năm 2026?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Đoàn kết, kỷ cương, sáng tạo, hoàn thành xuất sắc nhiệm vụ."
+              },
+              {
+                "k": "b",
+                "t": "Quyết tâm nghiên cứu, sản xuất vũ khí trang bị tiên tiến, hiện đại."
+              },
+              {
+                "k": "c",
+                "t": "Đoàn kết, kỷ cương, đổi mới sáng tạo, nâng cao chất lượng công tác."
+              },
+              {
+                "k": "d",
+                "t": "Phát huy dân chủ, giữ vững đoàn kết, tăng cường kỷ cương, chủ động sáng tạo, hiệu quả."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "I-2",
+            "uncertain": true,
+            "note": "Bản scan KHÔNG có ý nào được gạch chân (đã kiểm tra cả 2 trang chứa câu này). Đáp án 'b' suy ra từ đối chiếu với câu I-2 đã có đáp án xác minh (gạch chân rõ) trong ngân hàng 228 câu cũ — cùng số Kế hoạch/Quyết định, cùng 4 phương án. Không tự chấm điểm nếu không có xác minh độc lập."
+          },
+          {
+            "num": 2,
+            "q": "Theo Thông tư 50/2025/TT-BQP ngày 22/6/2025 của Bộ trưởng BQP, ai là người có thẩm quyền quyết định loại khỏi trang bị quân sự các trang bị nhóm 1 của Tổng cục?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Tổng cục trưởng."
+              },
+              {
+                "k": "b",
+                "t": "Các Phó Tổng cục trưởng khi được ủy quyền."
+              },
+              {
+                "k": "c",
+                "t": "Tổng Tham mưu trưởng QĐND Việt Nam."
+              },
+              {
+                "k": "d",
+                "t": "Cả a và b."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-60."
+          },
+          {
+            "num": 3,
+            "q": "Tại văn bản nào của Tổng cục II đã quyết định lấy ngày 19/11/1966 (ngày thành lập Phòng Hậu cần/Cục Nghiên cứu) là ngày truyền thống của Cục Hậu cần - Kỹ thuật.",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Quyết định số 2400/QĐ-TCII ngày 11/12/2025 của Tổng cục trưởng"
+              },
+              {
+                "k": "b",
+                "t": "Quyết định số 843/QĐ/TCII ngày 26/5/2026 của Tổng cục trưởng"
+              },
+              {
+                "k": "c",
+                "t": "Quyết định số 2401/QĐ-TCII ngày 11/12/2025 của Tổng cục trưởng"
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "VIII-13",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Trong hành quân, huấn luyện kỹ thuật bổ sung được thực hiện trong giai đoạn nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Chuẩn bị hành quân"
+              },
+              {
+                "k": "b",
+                "t": "Thực hành hành quân"
+              },
+              {
+                "k": "c",
+                "t": "Sau hành quân"
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "VII-50",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Quy định thực hiện công tác tự kiểm tra ATVSLĐ tại đơn vị cấp cơ sở?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "01 tháng/1 lần."
+              },
+              {
+                "k": "b",
+                "t": "Ít nhất 03 tháng/1 lần."
+              },
+              {
+                "k": "c",
+                "t": "Ít nhất 06 tháng/1 lần."
+              },
+              {
+                "k": "d",
+                "t": "01 năm/1 lần."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VII-29",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "rieng": [
+          {
+            "num": 1,
+            "q": "Nội dung nào KHÔNG phải là mục tiêu của Cuộc vận động 50 năm 2026 của Tổng cục?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Tăng cường tuyên truyền, đẩy mạnh hoạt động CVĐ các cấp trong Tổng cục."
+              },
+              {
+                "k": "b",
+                "t": "Quản lý tốt VKTBKT."
+              },
+              {
+                "k": "c",
+                "t": "Khai thác VKTBKT tốt, bền."
+              },
+              {
+                "k": "d",
+                "t": "Bảo đảm an toàn."
+              },
+              {
+                "k": "đ",
+                "t": "Thực hành tiết kiệm."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "I-14",
+            "uncertain": false,
+            "note": "Đáp án 'a' (gạch chân) khớp với I-14 trong ngân hàng cũ — câu hỏi dạng phủ định (KHÔNG phải), đã kiểm tra lại, không phải lỗi transcribe."
+          },
+          {
+            "num": 2,
+            "q": "Theo Nghị định số 02/2026/NĐ-CP ngày 20/01/2026 của Chính phủ, 01 suất Quân phục đông của sĩ quan, quân nhân chuyên nghiệp gồm những loại nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "01 áo khoác + 01 quần + 01 áo chít gấu."
+              },
+              {
+                "k": "b",
+                "t": "01 áo khoác + 02 quần + 01 áo chít gấu."
+              },
+              {
+                "k": "c",
+                "t": "01 áo khoác + 01 quần + 02 áo chít gấu."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "II-9",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Khái niệm đúng về sức khỏe là gì?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Là trạng thái thoải mái toàn diện về thể chất, tinh thần và xã hội."
+              },
+              {
+                "k": "b",
+                "t": "Là trạng thái thoải mái toàn diện về thể chất, tinh thần và xã hội và không chỉ bao gồm tình trạng không có bệnh hay thương tật."
+              },
+              {
+                "k": "c",
+                "t": "Là trạng thái thoải mái toàn diện về thể chất, tinh thần và không chỉ bao gồm tình trạng không có bệnh hay thương tật."
+              },
+              {
+                "k": "d",
+                "t": "Là trạng thái thoải mái toàn diện về thể chất và không chỉ bao gồm tình trạng không có bệnh hay thương tật."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "III-6",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Hướng dẫn số 425/HD-TCHC ngày 06/3/2024, quy hoạch xây dựng doanh trại phải đảm bảo khoa học, ổn định trong bao lâu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Ổn định từ 5 năm trở lên."
+              },
+              {
+                "k": "b",
+                "t": "Ổn định từ 10 năm trở lên."
+              },
+              {
+                "k": "c",
+                "t": "Ổn định từ 15 năm trở lên."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "IV-32",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Đồng chí cho biết trách nhiệm của người sử dụng lao động?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Sử dụng và bảo quản phương tiện bảo vệ cá nhân."
+              },
+              {
+                "k": "b",
+                "t": "Đảm bảo nơi làm việc, điều kiện thiết bị máy móc an toàn cho người lao động."
+              },
+              {
+                "k": "c",
+                "t": "Phạt tiền người lao động nếu họ không tuân thủ các quy định an toàn."
+              },
+              {
+                "k": "d",
+                "t": "Sa thải người lao động nếu họ vi phạm nội quy an toàn."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VII-3",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "chung": [
+          {
+            "num": 1,
+            "q": "Quy định đánh giá, chấm điểm đối với công tác hậu cần, kỹ thuật SSCĐ tại Văn bản số 2519/HCKT-TMKH ngày 09/9/2025 gồm mấy nội dung?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "05 nội dung."
+              },
+              {
+                "k": "b",
+                "t": "04 nội dung."
+              },
+              {
+                "k": "c",
+                "t": "03 nội dung."
+              },
+              {
+                "k": "d",
+                "t": "02 nội dung."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "I-9",
+            "uncertain": false,
+            "note": "Trùng với Bộ đề số 1 / Khởi động câu 1 (cùng nội dung trong chính tài liệu mới này)."
+          },
+          {
+            "num": 2,
+            "q": "Tiêu chuẩn bánh chưng Tết Nguyên đán của quân nhân, công chức quốc phòng, công nhân quốc phòng và viên chức quốc phòng (trừ lực lượng đang công tác ở quần đảo Trường Sa, Nhà giàn ĐK, vùng biển thềm lục địa phía Bắc, phía Nam, bãi cạn Cà Mau và những nơi có phụ cấp đặc biệt mức 100%) đang hưởng lương, phụ cấp từ nguồn NSNN trong Bộ Quốc phòng theo quy định hiện hành là bao nhiêu:",
+            "opts": [
+              {
+                "k": "a",
+                "t": "03 chiếc/người."
+              },
+              {
+                "k": "b",
+                "t": "04 chiếc/người."
+              },
+              {
+                "k": "c",
+                "t": "05 chiếc/người."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "II-19",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Theo Điều lệ Công tác kỹ thuật QĐND Việt Nam, công tác chuẩn bị sử dụng trang bị kỹ thuật gồm những nội dung nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Kiểm tra tình trạng kỹ thuật và đồng bộ của trang bị kỹ thuật."
+              },
+              {
+                "k": "b",
+                "t": "Bảo quản trang bị kỹ thuật và dụng cụ, thiết bị khác, sửa chữa hỏng hóc nếu có."
+              },
+              {
+                "k": "c",
+                "t": "Kiểm tra hồ sơ, ghi chép sổ sách đăng ký thống kê."
+              },
+              {
+                "k": "d",
+                "t": "Cả a, b, c."
+              }
+            ],
+            "ans": [
+              "d"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Có câu VII-41 trong ngân hàng cũ cùng chủ đề nhưng PHƯƠNG ÁN TRẢ LỜI khác hẳn (không phải cùng một câu) — không phải trùng. Đã thêm vào ngân hàng với ID VII-59."
+          },
+          {
+            "num": 4,
+            "q": "Theo Quy định số 4137/QyĐ-TCII ngày 30/12/2024 của Tổng cục; các đơn vị không được biên chế nhân viên quân khí trong quá trình cấp phát đạn dược phải?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Có ít nhất 02 người theo dõi, giám sát trở lên."
+              },
+              {
+                "k": "b",
+                "t": "Có ít nhất 01 người theo dõi, giám sát."
+              },
+              {
+                "k": "c",
+                "t": "Có ít nhất 03 người theo dõi, giám sát trở lên."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-61."
+          },
+          {
+            "num": 5,
+            "q": "Bộ Quốc phòng ký quyết định nào quy định tiêu chuẩn định lượng ăn và tiêu chuẩn quân trang của Lực lượng chuyên trách chống khủng bố?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Quyết định số 359/QĐ-BQP ngày 20/3/1997."
+              },
+              {
+                "k": "b",
+                "t": "Quyết định số 120/2006/QĐ-BQP ngày 24/6/2006"
+              },
+              {
+                "k": "c",
+                "t": "Quyết định số 125/QĐ-BQP ngày 14/7/2010."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VIII-23",
+            "uncertain": false,
+            "note": ""
+          }
+        ]
+      }
+    },
+    {
+      "setNo": 4,
+      "stages": {
+        "khoidong": [
+          {
+            "num": 1,
+            "q": "Mức tiền ăn thêm các ngày lễ, tết trong năm của quân nhân, công chức quốc phòng, công nhân quốc phòng và viên chức quốc phòng đang hưởng lương, phụ cấp từ nguồn ngân sách nhà nước trong Bộ Quốc phòng theo quy định hiện hành là bao nhiêu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "65.000 đ/người/ngày."
+              },
+              {
+                "k": "b",
+                "t": "72.000 đ/người/ngày."
+              },
+              {
+                "k": "c",
+                "t": "108.000 đ/người/ngày."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "II-16",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Danh mục bệnh truyền nhiễm phải sử dụng vắc xin, sinh phẩm trong tiêm chủng bắt buộc (Chương trình Tiêm chủng mở rộng) bao gồm bao nhiêu bệnh?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "12 bệnh."
+              },
+              {
+                "k": "b",
+                "t": "14 bệnh."
+              },
+              {
+                "k": "c",
+                "t": "16 bệnh."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "III-20",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Gói thầu dịch vụ phi tư vấn, hàng hóa, xây lắp, hỗn hợp thuộc dự án có giá gói thầu không quá giá trị nào sau đây thuộc trường hợp được Chỉ định thầu theo quy định tại khoản 4 Điều 78 Nghị định số 214/2026-NĐ-CP?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Không quá 01 tỷ đồng."
+              },
+              {
+                "k": "b",
+                "t": "Không quá 02 tỷ đồng."
+              },
+              {
+                "k": "c",
+                "t": "Không quá 03 tỷ đồng."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "IV-28",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Quy định hiện hành về thời gian thanh toán xăng dầu cho phương tiện tối đa là bao nhiêu ngày?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "01 tuần. (07 ngày)."
+              },
+              {
+                "k": "b",
+                "t": "10 ngày."
+              },
+              {
+                "k": "c",
+                "t": "15 ngày."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "V-18",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Tại nơi đường giao nhau có tín hiệu đi theo vòng xuyến phải nhường đường như thế nào là đúng quy tắc giao thông?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Nhường đường cho xe đi đến từ bên phải?"
+              },
+              {
+                "k": "b",
+                "t": "Nhường đường cho xe đi đến từ bên trái?"
+              },
+              {
+                "k": "c",
+                "t": "Nhường đường cho xe đi bên phải?"
+              },
+              {
+                "k": "d",
+                "t": "Nhường cho xe vào vòng xuyến trước."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VI-4",
+            "uncertain": false,
+            "note": "Dấu chấm hỏi cuối các phương án a/b/c là in nguyên trong bản gốc (có thể là lỗi in ấn), đã giữ nguyên."
+          }
+        ],
+        "tangtoc": [
+          {
+            "num": 1,
+            "q": "Quy định kết quả đào tạo, huấn luyện hậu cần, kỹ thuật đối với sỹ quan, QNCN, chiến sỹ tại Văn bản số 2519/HCKT-TMKH ngày 09/9/2025?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Có 70% trở lên khá, giỏi, trong đó có 30% trở lên giỏi"
+              },
+              {
+                "k": "b",
+                "t": "Có 75% trở lên khá, giỏi, trong đó có 35% trở lên giỏi."
+              },
+              {
+                "k": "c",
+                "t": "Có 75% trở lên khá, giỏi, trong đó có 35% trở lên giỏi."
+              },
+              {
+                "k": "d",
+                "t": "Có 75% trở lên khá, giỏi, trong đó có 30% trở lên giỏi."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "I-8",
+            "uncertain": false,
+            "note": "Phương án b và c in trùng y hệt chữ nhau trong bản gốc (có thể là lỗi in ấn) — ý b được gạch chân. Câu I-8 trong ngân hàng cũ có cùng đáp án (b, 75%/35%) nhưng văn bản đầy đủ/chi tiết hơn (thêm vế 'riêng cán bộ, nhân viên, chiến sỹ hậu cần, kỹ thuật...') — coi là cùng một câu, bản rút gọn."
+          },
+          {
+            "num": 2,
+            "q": "Thời gian tổ chức Hội nghị tài chính công khai bếp ăn đơn vị theo quy định của ngành Quân nhu Quân đội nhân dân Việt Nam được thực hiện như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "01 lần/01 tháng."
+              },
+              {
+                "k": "b",
+                "t": "01 lần/02 tháng."
+              },
+              {
+                "k": "c",
+                "t": "01 lần/01 quý."
+              },
+              {
+                "k": "d",
+                "t": "02 lần/01 quý."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "II-30",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Theo Luật khám bệnh, chữa bệnh số 15/2023/QH15 ngày 09/01/2023 “Nguyên tắc trong khám bệnh, chữa bệnh” là gì?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Bảo vệ, đối xử bình đẳng và kỳ thị, phân biệt đối xử đối với người bệnh."
+              },
+              {
+                "k": "b",
+                "t": "Tôn trọng, bảo vệ, đối xử bình đẳng và không kỳ thị, phân biệt đối xử đối với người bệnh."
+              },
+              {
+                "k": "c",
+                "t": "Bảo vệ, đối xử bình đẳng và không kỳ thị, phân biệt đối xử đối với người bệnh."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "III-12",
+            "uncertain": false,
+            "note": "Trùng với Bộ đề số 1 / Khởi động câu 3 (cùng nội dung trong chính tài liệu mới này)."
+          },
+          {
+            "num": 4,
+            "q": "Chỉ thị số 10/CT-TTg ngày 30/3/2026 của Thủ tướng Chính phủ về nội dung nào sau đây là đúng?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Tăng cường thực thi tiết kiệm điện và phát triển điện mặt trời mái nhà."
+              },
+              {
+                "k": "b",
+                "t": "Phát thải xanh, tăng cường thực thi tiết kiệm điện và phát triển điện mặt trời mái nhà."
+              },
+              {
+                "k": "c",
+                "t": "Giảm phát thải khí nhà kính, tăng cường thực thi tiết kiệm điện và phát triển điện mặt trời mái nhà."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "IV-20",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Chỉ tiêu km an toàn/1 vụ A, B về xe ô tô quân sự được xác định trong Kế hoạch số 94/KH-BCĐ ngày 11/3/2026 của BCĐ PTTĐ “Ngành Hậu cần” và CVĐ50 Bộ Quốc phòng là bao nhiêu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Phấn đấu đạt và vượt chỉ tiêu 5 triệu km."
+              },
+              {
+                "k": "b",
+                "t": "Phấn đấu đạt và vượt chỉ tiêu 10 triệu km."
+              },
+              {
+                "k": "c",
+                "t": "Phấn đấu đạt và vượt chỉ tiêu 15 triệu km."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "VI-2",
+            "uncertain": false,
+            "note": ""
+          }
+        ],
+        "rieng": [
+          {
+            "num": 1,
+            "q": "Đồng chí cho biết chế độ báo cáo được quy định tại Quy chế số 125/QC-BCĐ ngày 27/3/2026 của Ban Chỉ đạo PTTĐ ngành Hậu cần, CVĐ50 Tổng cục II?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Báo cáo 6 tháng đầu năm (trước ngày 05/5; thời gian lấy số liệu từ 05/11 năm trước đến 05/5 năm báo cáo)."
+              },
+              {
+                "k": "b",
+                "t": "Báo cáo 6 tháng đầu năm (trước ngày 05/5; thời gian lấy số liệu từ 05/10 năm trước đến 09/5 năm báo cáo)."
+              },
+              {
+                "k": "c",
+                "t": "Báo cáo 6 tháng đầu năm (trước ngày 10/5; thời gian lấy số liệu từ 10/11 năm trước đến 09/5 năm báo cáo)."
+              },
+              {
+                "k": "d",
+                "t": "Báo cáo 6 tháng đầu năm (trước ngày 10/5; thời gian lấy số liệu từ 20/10 năm trước đến 09/5 năm báo cáo)."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "I-15",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 2,
+            "q": "Chỉ thị số 2354/CT-TCII ngày 05/12/2025 của Tổng cục trưởng Tổng cục II (về việc đẩy mạnh công tác tăng gia sản xuất, chế biến trong Tổng cục) quy định giá thành sản phẩm TGSX, CB đưa vào các bếp chi ăn phải thấp hơn giá khai thác ngoài thị trường là bao nhiêu?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Từ 5 đến 7%, tùy từng mặt hàng."
+              },
+              {
+                "k": "b",
+                "t": "Từ 5 đến 10%, tùy từng mặt hàng."
+              },
+              {
+                "k": "c",
+                "t": "Từ 5 đến 15%, tùy từng mặt hàng."
+              }
+            ],
+            "ans": [
+              "c"
+            ],
+            "dupOf": "II-26",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 3,
+            "q": "Đồng chí cho biết “Bốn biện pháp cấp cứu tại chỗ say nóng”?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Nghỉ nơi râm mát, cởi quần áo dài, chườm đá và dùng thuốc hạ sốt."
+              },
+              {
+                "k": "b",
+                "t": "Ngừng lao động, nghỉ nơi râm mát, cởi quần áo dài và thông gió."
+              },
+              {
+                "k": "c",
+                "t": "Ngừng lao động, nghỉ nơi râm mát, cởi quần áo dài và truyền nước."
+              },
+              {
+                "k": "d",
+                "t": "Nghỉ nơi râm mát, cởi quần áo dài, thông gió và truyền nước."
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": "III-7",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 4,
+            "q": "Mức bảo đảm thực hiện hợp đồng xây dựng nào sau đây là đúng theo quy định tại điểm đ khoản 2 Điều 13 Nghị định 210/2026/NĐ-CP?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Từ 2% đến 10% giá hợp đồng xây dựng; trường hợp yêu cầu mức bảo đảm thực hiện hợp đồng cao hơn 10% để phòng ngừa rủi ro, thì thực hiện theo quy định của pháp luật về đấu thầu."
+              },
+              {
+                "k": "b",
+                "t": "Từ 3% đến 5% giá hợp đồng xây dựng."
+              },
+              {
+                "k": "c",
+                "t": "Từ 5% đến 8% giá hợp đồng xây dựng."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "IV-25",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Công tác quản lý trang bị kỹ thuật?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Quản lý trang bị kỹ thuật gồm quản lý số lượng, chất lượng, hình thức, chủng loại, đồng bộ trang bị kỹ thuật."
+              },
+              {
+                "k": "b",
+                "t": "Quản lý trang bị kỹ thuật gồm quản lý số lượng, chất lượng, chủng loại, đồng bộ trang bị kỹ thuật."
+              },
+              {
+                "k": "c",
+                "t": "Quản lý trang bị kỹ thuật gồm quản lý số lượng, chất lượng, xuất xứ, chủng loại, đồng bộ trang bị kỹ thuật"
+              }
+            ],
+            "ans": [
+              "b"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-63."
+          }
+        ],
+        "chung": [
+          {
+            "num": 1,
+            "q": "Thực hiện nhiệm vụ rà soát, điều chỉnh các văn kiện tác chiến trong trạng thái SSCĐ nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Trạng thái SSCĐ thường xuyên."
+              },
+              {
+                "k": "b",
+                "t": "Trạng thái SSCĐ tăng cường."
+              },
+              {
+                "k": "c",
+                "t": "Trạng thái SSCĐ cao."
+              },
+              {
+                "k": "d",
+                "t": "Trạng thái SSCĐ toàn bộ."
+              }
+            ],
+            "ans": [
+              "b",
+              "c",
+              "d"
+            ],
+            "dupOf": "VII-49",
+            "uncertain": false,
+            "note": "Câu nhiều đáp án đúng (b, c, d đều gạch chân) — khớp chính xác với VII-49 trong ngân hàng cũ (cũng ans=[b,c,d])."
+          },
+          {
+            "num": 2,
+            "q": "Theo Quy định số 4137/QyĐ-TCII ngày 30/12/2024 của Tổng cục; phương pháp xử lý đối với các loại: Thuốc nổ, ống nổ, nụ xùy, dây cháy chậm đã liên kết thành mạch nổ nhưng chưa sử dụng được thực hiện như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Hủy tại trường bắn sau khi kết thúc buổi bắn, ném"
+              },
+              {
+                "k": "b",
+                "t": "Hủy nổ tại chỗ"
+              },
+              {
+                "k": "c",
+                "t": "Thu về kho đạn được cấp 5."
+              },
+              {
+                "k": "d",
+                "t": "Thu hồi chờ xử lý cấp Tổng cục."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-62."
+          },
+          {
+            "num": 3,
+            "q": "Từ “Doanh trại” trong Điều lệ công tác doanh trại ban hành kèm theo Thông tư số 36/2023/TT-BQP ngày 29/5/2023 được hiểu như thế nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Là khu đất quốc phòng có công trình xây dựng, vật kiến trúc, do đơn vị quân đội quản lý, sử dụng để thực hiện nhiệm vụ quân sự, quốc phòng, nhiệm vụ khác theo quyết định của cấp có thẩm quyền."
+              },
+              {
+                "k": "b",
+                "t": "Là một khu đất quốc phòng có đường ranh giới xác định khép kín; do một đơn vị quân đội quản lý, sử dụng."
+              },
+              {
+                "k": "c",
+                "t": "Là một khu đất quốc phòng có đường ranh giới xác định khép kín; do một đơn vị quân đội quản lý, sử dụng để thực hiện nhiệm vụ quốc phòng."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID IV-36."
+          },
+          {
+            "num": 4,
+            "q": "Người có Giấy phép lái xe quân sự hạng A1 được lái loại xe nào?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Lái xe mô tô 2 bánh có dung tích xi lanh đến 125 cm³ hoặc công suất động cơ điện đến 11 kW."
+              },
+              {
+                "k": "b",
+                "t": "Lái xe mô tô 2 bánh có dung tích xi lanh trên 125 cm³ hoặc công suất động cơ điện trên 11 kW."
+              },
+              {
+                "k": "c",
+                "t": "Lái xe mô tô, xe gắn máy có dung tích xi lanh trên 125 cm³ hoặc công suất động cơ điện trên 15 kW."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": "VI-3",
+            "uncertain": false,
+            "note": ""
+          },
+          {
+            "num": 5,
+            "q": "Luật số 55/2024/QH15 quy định thế nào là chữa cháy?",
+            "opts": [
+              {
+                "k": "a",
+                "t": "Chữa cháy là tổng hợp các hoạt động chống cháy lan, dập tắt đám cháy và các hoạt động khác để giảm thiểu thiệt hại do cháy gây ra."
+              },
+              {
+                "k": "b",
+                "t": "Chữa cháy là tổng hợp các hoạt động tạo điều kiện cho cháy lan, cháy rộng hơn, để dập tắt đám cháy và các hoạt động khác để giảm thiểu thiệt hại do cháy gây ra."
+              },
+              {
+                "k": "c",
+                "t": "Cả hai ý trên."
+              }
+            ],
+            "ans": [
+              "a"
+            ],
+            "dupOf": null,
+            "uncertain": false,
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID IV-37."
+          }
+        ]
+      }
+    }
+  ]
+}

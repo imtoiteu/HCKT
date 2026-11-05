@@ -517,8 +517,10 @@ const TEAM_RULES = {
     text: 'Mỗi đội trả lời 1 gói 5 câu hỏi riêng của BGK. Thời gian chuẩn bị tối đa 20 giây/câu. Đội được quyền trả lời: đúng được điểm câu hỏi; không trả lời hoặc trả lời sai: không được điểm — các đội còn lại được bấm chuông giành quyền trả lời trong 10 giây tiếp theo; giành chuông trả lời đúng: được điểm và đội thi của lượt đó bị trừ ½ số điểm câu hỏi; giành chuông trả lời sai: bị trừ ½ số điểm câu hỏi.' },
   chung_chung: { title: 'Điều 13.2.b — Gói câu hỏi chung (Vòng chung khảo)', page: '6',
     text: '4 đội cùng trả lời lần lượt 5 câu trong gói câu hỏi chung bằng hình thức bấm chuông giành quyền trả lời, trong vòng 20 giây; đội bấm chuông nhanh nhất trả lời đúng: được điểm; trả lời sai: không được điểm và các đội còn lại bấm chuông giành quyền trong 10 giây tiếp theo — giành quyền trả lời đúng: được điểm, đội giành quyền trả lời trước đó bị trừ ½ số điểm câu hỏi; trả lời sai: bị trừ ½ số điểm câu hỏi.' },
-  diem: { title: 'Điều 14 Khoản 2 — Cách chấm, tính điểm', page: '7–8',
-    text: 'Vòng sơ khảo: tổng điểm tối đa 100 điểm (10 câu × 10 điểm) → ký hiệu Điểm ĐT1, là cơ sở lựa chọn 4 đội vào vòng chung khảo. Vòng chung khảo: điểm hiện có của mỗi đội = Điểm ĐT1; tổng điểm tối đa vòng chung khảo 100 điểm (10 câu × 10 điểm) → ký hiệu Điểm ĐT2, là cơ sở tính thành tích, khen thưởng phần thi tập trung của đội tuyển.' },
+  diem: { title: 'Điều 14 Khoản 2.a — Cách chấm, tính điểm', page: '7–8',
+    text: 'Vòng sơ khảo: tổng điểm tối đa 10 câu hỏi 100 điểm (mỗi câu 10 điểm) → ký hiệu Điểm ĐT1, là cơ sở để tính thành tích chung của đơn vị và lựa chọn 04 đội vào thi vòng chung khảo. Vòng chung khảo: điểm hiện có của mỗi đội tuyển = Điểm ĐT1; tổng điểm tối đa vòng chung khảo 100 điểm (10 câu hỏi, mỗi câu 10 điểm) → ký hiệu Điểm ĐT2, là cơ sở để tính thành tích, khen thưởng phần thi tập trung của đội tuyển.' },
+  diem_ct: { title: 'Điều 14 Khoản 2.a — Công thức tính điểm từng câu', page: '7–8',
+    text: 'Vòng sơ khảo — Khởi động (05 câu): mỗi câu trả lời đúng được 10 điểm; không đưa ra câu trả lời hoặc trả lời sai: 0 điểm. Tăng tốc (05 câu): đội trả lời đúng và nhanh nhất được 10 điểm; đội trả lời đúng và nhanh tiếp theo được số điểm = 10 − (n−1) × 1,0 (n là số thứ tự trả lời của đội, xếp theo thời gian đưa ra đáp án, đội có thời gian trả lời ít hơn xếp trên); không đưa ra câu trả lời hoặc trả lời sai: 0 điểm. Vòng chung khảo — Gói câu hỏi riêng và Gói câu hỏi chung (mỗi câu 10 điểm): đội được quyền trả lời đúng: 10 điểm; không đưa ra câu trả lời hoặc trả lời sai: 0 điểm; đội giành quyền trả lời đúng câu đó: được 10 điểm và bị trừ 5,0 điểm đối với đội để mất quyền trả lời (gói riêng) / đội giành quyền trước đó (gói chung); đội giành quyền trả lời sai: bị trừ 5,0 điểm.' },
 };
 const TEAM_STAGE_LABEL = { khoidong: 'Khởi động', tangtoc: 'Tăng tốc', rieng: 'Gói câu hỏi riêng', chung: 'Gói câu hỏi chung' };
 
@@ -1040,7 +1042,7 @@ V.browse = () => {
       body.appendChild(el('div', 'o' + (isC ? ' c' : ''), `<span class="k">${o.k}.</span><span>${esc(o.t)}${isC ? ' ✓' : ''}</span>`));
     });
     if (q.unmarked) body.appendChild(el('div', 'note', `${ICON.warn}<span>Tài liệu gốc không gạch chân/ghi rõ đáp án cho câu này, nên câu này được loại khỏi các lượt luyện tập.</span>`));
-    body.appendChild(el('div', 'src', `<span>${esc(q.secTitle)}</span><span>·</span><span>Trang ${q.page} tài liệu gốc</span>${q.multi ? '<span>·</span><span>Nhiều đáp án</span>' : ''}`));
+    body.appendChild(el('div', 'src', `<span>${esc(q.secTitle)}</span><span>·</span><span>${q.srcLabel ? esc(q.srcLabel) : 'Trang ' + q.page + ' tài liệu gốc'}</span>${q.multi ? '<span>·</span><span>Nhiều đáp án</span>' : ''}`));
     d.appendChild(body);
     return d;
   }
@@ -1236,7 +1238,7 @@ setInterval(() => {
   };
 
   try {
-    const r = await fetch('data/questions.json');
+    const r = await fetch('data/questions.json?v=2');
     DATA = await r.json();
   } catch (e) {
     $('#boot').innerHTML = '<p style="color:#dc2626">Không tải được dữ liệu câu hỏi. Vui lòng tải lại trang.</p>';
