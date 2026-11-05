@@ -1191,19 +1191,24 @@ V.ref = () => {
  * khu vực này KHÔNG có đồng hồ đếm ngược ép buộc, KHÔNG dùng để tính Điểm ĐT1/ĐT2 — chỉ để ôn
  * luyện thuộc lòng đúng 80 câu gốc của 4 bộ đề, giữ nguyên mọi câu kể cả câu trùng lặp. */
 const D4_STAGE_LABEL = { khoidong: 'Khởi động', tangtoc: 'Tăng tốc', rieng: 'Gói câu hỏi riêng', chung: 'Gói câu hỏi chung' };
-const d4Setup = { scope: '1', mode: 'goc' };
+/* Vòng theo Quy chế (Điều 13.2.a): Vòng sơ khảo = Khởi động + Tăng tốc; Vòng chung khảo = Gói riêng + Gói chung.
+ * Cùng cách chia này đã dùng trong tab "Đội tuyển" (xem startTeamRound: stages = round==='so' ? [...] : [...]). */
+const D4_ROUND_STAGES = { so: ['khoidong', 'tangtoc'], chung: ['rieng', 'chung'], all: ['khoidong', 'tangtoc', 'rieng', 'chung'] };
+const D4_ROUND_LABEL = { so: 'Vòng sơ khảo', chung: 'Vòng chung khảo', all: 'Toàn bộ' };
+const d4Setup = { scope: '1', round: 'all', mode: 'goc' };
 
-function d4Pool(scope) {
+function d4Pool(scope, round) {
   if (!DETHI4) return [];
-  if (scope === 'all') return DETHI4.flat;
-  return DETHI4.bySet[scope] || [];
+  const stages = D4_ROUND_STAGES[round] || D4_ROUND_STAGES.all;
+  const base = scope === 'all' ? DETHI4.flat : (DETHI4.bySet[scope] || []);
+  return base.filter(q => stages.includes(q.stage));
 }
 function d4IsWeak(id) {
   const s = store.d.stats[id];
   return !!s && (s.wrong > 0 || s.box <= 2);
 }
-function d4CountFor(scope, mode) {
-  let pool = d4Pool(scope);
+function d4CountFor(scope, round, mode) {
+  let pool = d4Pool(scope, round);
   if (mode === 'sai') pool = pool.filter(q => d4IsWeak(q.id));
   return pool.length;
 }
@@ -1227,11 +1232,24 @@ function d4Home() {
 
   const card = el('div', 'card pad');
 
+  const f0 = el('div', 'field', `<label>Chọn vòng</label>`);
+  const rchips = el('div', 'chips');
+  const rounds = [['so', 'Sơ khảo'], ['chung', 'Chung khảo'], ['all', 'Toàn bộ']];
+  rounds.forEach(([id, lbl]) => {
+    const c = el('button', 'chip', `${esc(lbl)}<small>${d4Pool(d4Setup.scope, id).length}</small>`);
+    c.dataset.id = id;
+    c.onclick = () => { d4Setup.round = id; syncD4(); };
+    rchips.appendChild(c);
+  });
+  f0.appendChild(rchips);
+  f0.appendChild(el('p', 'muted', 'Sơ khảo = Khởi động + Tăng tốc · Chung khảo = Gói câu hỏi riêng + Gói câu hỏi chung (đúng cách chia vòng của Quy chế, Điều 13.2.a). Có thể vào luyện Chung khảo trực tiếp, không cần làm Sơ khảo trước.')).style.cssText = 'font-size:12.5px;margin-top:8px';
+  card.appendChild(f0);
+
   const f1 = el('div', 'field', `<label>Chọn đề</label>`);
   const chips = el('div', 'chips');
   const scopes = [['1', 'Đề 1'], ['2', 'Đề 2'], ['3', 'Đề 3'], ['4', 'Đề 4'], ['all', 'Cả 4 đề']];
   scopes.forEach(([id, lbl]) => {
-    const c = el('button', 'chip', `${esc(lbl)}<small>${d4Pool(id).length}</small>`);
+    const c = el('button', 'chip', `${esc(lbl)}<small></small>`);
     c.dataset.id = id;
     c.onclick = () => { d4Setup.scope = id; syncD4(); };
     chips.appendChild(c);
@@ -1241,16 +1259,15 @@ function d4Home() {
   const f2 = el('div', 'field', `<label>Chế độ ôn</label>`);
   const sw = el('div', 'switches');
   const modes = [
-    ['goc', 'Theo thứ tự gốc', 'Đúng thứ tự Khởi động → Tăng tốc → Gói riêng → Gói chung như trong đề'],
+    ['goc', 'Theo thứ tự gốc', 'Đúng thứ tự gốc trong phạm vi vòng/đề đã chọn'],
     ['dao', 'Đảo thứ tự câu', 'Xáo trộn thứ tự câu — chọn "Cả 4 đề" để trộn luân phiên cả 4 đề, vẫn giữ các lượt xuất hiện của câu trùng'],
     ['sai', 'Chỉ câu sai / chưa thuộc', 'Lọc theo tiến độ ghi nhớ (hộp Leitner) của riêng 80 câu này'],
   ];
   modes.forEach(([id, lbl, sub]) => {
-    const n = d4CountFor(d4Setup.scope, id);
     const w = el('label', 'sw', `
       <input type="radio" name="d4mode" value="${id}"${d4Setup.mode === id ? ' checked' : ''}><span class="box"></span>
       <span class="lbl">${esc(lbl)}<i>${esc(sub)}</i></span>
-      <span class="tag" style="margin-left:auto">${n}</span>`);
+      <span class="tag" style="margin-left:auto"></span>`);
     w.querySelector('input').onchange = () => { d4Setup.mode = id; syncD4(); };
     sw.appendChild(w);
   });
@@ -1259,33 +1276,40 @@ function d4Home() {
   const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
 
   const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`);
-  go.onclick = () => d4Start(d4Setup.scope, d4Setup.mode);
+  go.onclick = () => d4Start(d4Setup.scope, d4Setup.round, d4Setup.mode);
   card.appendChild(go);
   v.appendChild(card);
 
   function syncD4() {
-    $$('.chip', chips).forEach(c => c.classList.toggle('on', c.dataset.id === d4Setup.scope));
+    $$('.chip', rchips).forEach(c => {
+      c.classList.toggle('on', c.dataset.id === d4Setup.round);
+      c.querySelector('small').textContent = d4Pool(d4Setup.scope, c.dataset.id).length;
+    });
+    $$('.chip', chips).forEach(c => {
+      c.classList.toggle('on', c.dataset.id === d4Setup.scope);
+      c.querySelector('small').textContent = d4Pool(c.dataset.id, d4Setup.round).length;
+    });
     $$('.sw', sw).forEach((w, i) => {
       const id = modes[i][0];
       w.querySelector('input').checked = id === d4Setup.mode;
-      w.querySelector('.tag').textContent = d4CountFor(d4Setup.scope, id);
+      w.querySelector('.tag').textContent = d4CountFor(d4Setup.scope, d4Setup.round, id);
     });
-    const n = d4CountFor(d4Setup.scope, d4Setup.mode);
-    avail.textContent = `Có ${n} câu phù hợp lựa chọn hiện tại.`;
+    const n = d4CountFor(d4Setup.scope, d4Setup.round, d4Setup.mode);
+    avail.textContent = `Có ${n} câu phù hợp lựa chọn hiện tại (${D4_ROUND_LABEL[d4Setup.round]}).`;
     go.disabled = n === 0;
   }
   syncD4();
   return v;
 }
 
-function d4Start(scope, mode) {
-  let pool = d4Pool(scope);
+function d4Start(scope, round, mode) {
+  let pool = d4Pool(scope, round);
   if (mode === 'sai') pool = pool.filter(q => d4IsWeak(q.id));
   if (!pool.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
   let items = pool.slice();
   if (mode === 'dao') items = shuffle(items);
   app.d4 = {
-    scope, mode,
+    scope, round, mode,
     items: items.map(q => ({
       q, order: q.stage !== 'khoidong' ? shuffle(q.opts) : q.opts,
       pick: [], typed: '', done: false, ok: null, revealed: false, graded: null,
@@ -1434,7 +1458,7 @@ function d4Result() {
   const c = el('div', 'card result', `
     <div class="emoji">${emo}</div>
     <div class="big" style="color:${pct >= 75 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)'}">${pct}%</div>
-    <div class="lbl"><b>Ôn 4 đề trọng tâm</b> — đúng ${T.right}/${total} câu <span class="muted" style="font-weight:400">(điểm luyện tập, không phải Điểm ĐT1/ĐT2)</span></div>
+    <div class="lbl"><b>Ôn 4 đề trọng tâm — ${esc(D4_ROUND_LABEL[T.round] || 'Toàn bộ')}</b> — đúng ${T.right}/${total} câu <span class="muted" style="font-weight:400">(điểm luyện tập, không phải Điểm ĐT1/ĐT2)</span></div>
     <div class="rstats">
       <div class="rstat"><b style="color:var(--ok)">${T.right}</b><span>Câu đúng</span></div>
       <div class="rstat"><b style="color:var(--bad)">${T.wrong}</b><span>Câu sai</span></div>

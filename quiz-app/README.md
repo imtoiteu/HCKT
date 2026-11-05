@@ -144,15 +144,29 @@ hỏi riêng, câu 4), tách biệt hoàn toàn khỏi 244 câu ngân hàng chí
 tab "Đội tuyển" — tiến độ ghi nhớ (hộp Leitner) của 80 câu này được theo dõi
 riêng.
 
-**4 chế độ ôn** (chọn "Đề" + "Chế độ ôn" trên màn hình thiết lập):
-- **Theo thứ tự gốc** — ôn riêng 1 đề, đúng thứ tự Khởi động → Tăng tốc → Gói
-  riêng → Gói chung như trong tài liệu.
+**Lọc theo vòng** (chọn "Vòng" trên màn hình thiết lập — độc lập với đề/chế độ
+ôn bên dưới, kết hợp tự do với cả hai):
+- **Sơ khảo** — chỉ lấy câu thuộc phần Khởi động + Tăng tốc (đúng vòng 1 theo
+  Điều 13.2.a).
+- **Chung khảo** — chỉ lấy câu thuộc Gói câu hỏi riêng + Gói câu hỏi chung
+  (đúng vòng 2). Vào thẳng Chung khảo được, **không cần hoàn thành Sơ khảo
+  trước**.
+- **Toàn bộ** — cả 80 câu như trước.
+- Áp dụng được cả khi ôn riêng 1 đề lẫn khi trộn/đảo cả 4 đề — ví dụ "Sơ khảo"
+  + "Cả 4 đề" + "Đảo thứ tự" = trộn luân phiên đúng 40 câu Khởi động/Tăng tốc
+  của cả 4 đề, không lẫn câu Gói riêng/Gói chung vào. Đã kiểm tra bằng script
+  độc lập: 0 câu lọt sai vòng trên toàn bộ 15 tổ hợp (5 phạm vi đề × 3 vòng).
+
+**3 chế độ ôn** (chọn "Đề" + "Chế độ ôn" trên màn hình thiết lập):
+- **Theo thứ tự gốc** — ôn riêng 1 đề, đúng thứ tự gốc trong phạm vi vòng đã
+  chọn (Khởi động → Tăng tốc → Gói riêng → Gói chung, hoặc chỉ nửa đầu/nửa sau
+  nếu đã lọc vòng).
 - **Đảo thứ tự câu** — xáo trộn thứ tự câu trong 1 đề đã chọn; chọn đề = "Cả 4
   đề" để **trộn luân phiên cả 4 đề**, vẫn giữ nguyên từng lượt xuất hiện của
   câu trùng (một câu xuất hiện ở 2 đề thì vẫn được hỏi 2 lần riêng biệt).
 - **Chỉ câu sai / chưa thuộc** — lọc theo tiến độ ghi nhớ của riêng 80 câu
-  này (đã từng trả lời sai, hoặc hộp Leitner ≤ 2), trong phạm vi đề đã chọn
-  (hoặc cả 4 đề).
+  này (đã từng trả lời sai, hoặc hộp Leitner ≤ 2), trong phạm vi đề/vòng đã
+  chọn.
 - Màn hình kết quả ghi rõ mỗi câu **thuộc đề nào, phần nào, số câu gốc** (ví
   dụ "Đề 3 · Gói câu hỏi riêng · Câu 2 gốc").
 - **Không có đồng hồ đếm ngược ép buộc và không tính vào Điểm ĐT1/ĐT2** — đây
@@ -351,3 +365,25 @@ thi chính thức.
   nhiều đáp án) hiển thị đúng "Sai"/đáp án đúng. Gói `jsdom`/`npm` cài thêm
   trong lần kiểm thử này chỉ phục vụ việc này, không phải phụ thuộc runtime
   của ứng dụng (ứng dụng vẫn 0 dependency, chạy bằng `node server.js` thuần).
+
+### 05/11/2026 (tiếp 2) — lọc theo Vòng (Sơ khảo / Chung khảo) trong "Ôn 4 đề trọng tâm"
+
+- Thêm bộ lọc **"Chọn vòng"** (Sơ khảo / Chung khảo / Toàn bộ) vào màn hình
+  thiết lập của tab "Ôn 4 đề trọng tâm", độc lập và kết hợp tự do với bộ lọc
+  "Chọn đề" và "Chế độ ôn" đã có — không đổi giao diện/bố cục các phần khác
+  (`d4Pool`, `D4_ROUND_STAGES` trong `app.js`: Sơ khảo = `khoidong+tangtoc`,
+  Chung khảo = `rieng+chung`, đúng cách chia vòng của Quy chế Điều 13.2.a và
+  đúng cách tab "Đội tuyển" đã chia từ trước).
+- Vào thẳng "Chung khảo" được, không cần hoàn thành "Sơ khảo" trước — không
+  có cổng chặn nào được thêm.
+- Giữ nguyên hoàn toàn nội dung câu hỏi, đáp án, cách chấm (nhị phân chính xác
+  cho Khởi động) và việc giữ câu trùng — bộ lọc chỉ chọn tập con câu hỏi theo
+  `stage`, không sửa dữ liệu.
+- **Kiểm tra không lẫn câu giữa hai vòng**: viết script Node độc lập duyệt cả
+  15 tổ hợp (5 phạm vi đề × 3 lựa chọn vòng), xác nhận đúng số câu kỳ vọng
+  (10/40 cho Sơ khảo hoặc Chung khảo theo phạm vi 1-đề/4-đề, 20/80 cho Toàn
+  bộ) và **0 câu lọt sai `stage`**; xác nhận tập Sơ khảo và Chung khảo không
+  giao nhau và hợp lại đúng bằng tập Toàn bộ, với mọi phạm vi đề. Lặp lại kiểm
+  tra bằng `jsdom` bấm qua giao diện thật (5 tổ hợp phạm vi×vòng×chế độ) qua
+  HTTP tới service đang chạy — 0 câu bị gắn sai "Đề N · Phần · Câu M gốc"
+  trong toàn bộ các lượt duyệt.
