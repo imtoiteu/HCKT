@@ -58,6 +58,7 @@ const store = {
 
 /* ---------------- app state ---------------- */
 let DATA = null, QBY = {};
+let DETHI4 = null; // { sets:[{setNo,stages}], flat:[items in original order], bySet:{1:[...],...} }
 const app = { view: 'home', quiz: null };
 
 /* ---------------- helpers ---------------- */
@@ -119,6 +120,22 @@ V.home = () => {
     <div class="kpi due"><b>${due}</b><span>Cần ôn hôm nay</span></div>
     <div class="kpi bad"><b>${weak}</b><span>Câu còn yếu</span></div>
     <div class="kpi ok"><b>${store.d.streak.days}</b><span>Ngày liên tiếp 🔥</span></div>`));
+
+  if (DETHI4) {
+    const d4card = el('div', 'card pad');
+    d4card.style.cssText = 'margin-top:16px;border:1.5px solid var(--brand);background:linear-gradient(135deg,var(--brand-soft),var(--card))';
+    d4card.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span class="tag" style="background:var(--brand);color:#fff">Trọng tâm</span>
+        <h3 style="margin:0">Ôn 4 đề trọng tâm</h3>
+      </div>
+      <p class="muted" style="font-size:13.5px;line-height:1.55;margin:4px 0 12px">
+        ${DETHI4.flat.length} câu nguyên văn trong 4 "Bộ đề" mô phỏng thi Đội tuyển — ôn theo thứ tự gốc,
+        đảo thứ tự, trộn cả 4 đề, hoặc chỉ ôn câu sai/chưa thuộc.</p>`;
+    const go4 = el('button', 'btn primary block', `${ICON.play} Vào ôn 4 đề`);
+    go4.onclick = () => nav('dethi4');
+    d4card.appendChild(go4);
+    v.appendChild(d4card);
+  }
 
   v.appendChild(el('div', 'sec-title', `<h3>Học theo ngành</h3><span class="muted" style="font-size:12.5px">Chạm để luyện riêng ngành đó</span>`));
   const g = el('div', 'sec-grid');
@@ -525,12 +542,15 @@ const TEAM_RULES = {
 const TEAM_STAGE_LABEL = { khoidong: 'Khởi động', tangtoc: 'Tăng tốc', rieng: 'Gói câu hỏi riêng', chung: 'Gói câu hỏi chung' };
 
 /* ---- Chấm tự luận tự động (word-level sequence alignment, Khởi động) ----
- * Công thức: chuẩn hoá NFC + hạ chữ thường + bỏ dấu câu (\p{P}) + gộp khoảng
- * trắng (không bỏ dấu tiếng Việt, không sửa chính tả, không đoán ý) → tách từ
- * → tìm dãy con chung dài nhất (LCS) giữa đáp án chuẩn và câu trả lời, giữ
- * đúng thứ tự từ. Tỷ lệ khớp = |LCS| / số từ đáp án chuẩn. Điểm câu hỏi =
- * round(tỷ lệ khớp × 10). LCS vốn đã bỏ qua các từ đảo vị trí (không tính là
- * khớp) và không cho từ thừa làm tăng tỷ lệ khớp (tỷ lệ luôn ≤ |ref|/|ref| = 100%). */
+ * Chuẩn hoá: NFC + hạ chữ thường + bỏ dấu câu (\p{P}, thay bằng khoảng trắng
+ * để không làm dính hai từ bị dấu câu ngăn cách) + gộp khoảng trắng thừa
+ * (không bỏ dấu tiếng Việt, không sửa chính tả, không đoán ý) → tách từ.
+ * Kết quả ĐÚNG/SAI = so khớp CHÍNH XÁC toàn bộ mảng từ đã chuẩn hoá với đáp án
+ * chuẩn (cùng số từ, cùng thứ tự, cùng từng từ) — thiếu/thừa/sai từ hoặc đảo
+ * thứ tự đều tính SAI, không có điểm một phần. Đồng thời vẫn tính thêm dãy con
+ * chung dài nhất (LCS) giữa đáp án chuẩn và câu trả lời để hiển thị tỷ lệ
+ * khớp (%) và highlight từng từ — đây CHỈ là phản hồi tham khảo giúp người
+ * học sửa, không được dùng để thay thế kết quả đúng/sai nhị phân ở trên. */
 function normWords(s) {
   const n = String(s || '').normalize('NFC').toLowerCase()
     .replace(/\p{P}/gu, ' ').replace(/\s+/g, ' ').trim();
@@ -550,8 +570,13 @@ function lcsAlign(ref, hyp) {
   }
   return { lcs: dp[n][m], mRef, mHyp };
 }
+function wordsEqual(a, b) { return a.length === b.length && a.every((w, i) => w === b[i]); }
 /** canonicalVariants: mảng các đáp án chuẩn đã xác minh (hiện mỗi câu có đúng 1
- * biến thể từ ngân hàng câu hỏi gốc). Trả về null nếu không có đáp án chuẩn. */
+ * biến thể từ ngân hàng câu hỏi gốc). Trả về null nếu không có đáp án chuẩn.
+ * best.exact = kết quả đúng/sai chính thức (khớp chính xác toàn bộ với MỘT
+ * trong các biến thể chuẩn). best.pct = tỷ lệ khớp LCS, chỉ để hiển thị tham
+ * khảo. Ưu tiên biến thể khớp chính xác; nếu không có, chọn biến thể có tỷ lệ
+ * khớp cao nhất để hiển thị phần khác biệt. */
 function gradeRecall(typed, canonicalVariants) {
   const variants = (canonicalVariants || []).filter(s => s && String(s).trim());
   if (!variants.length) return null;
@@ -562,10 +587,12 @@ function gradeRecall(typed, canonicalVariants) {
     if (!ref.length) return;
     const { lcs, mRef, mHyp } = lcsAlign(ref, hyp);
     const pct = Math.round((lcs / ref.length) * 1000) / 10;
-    if (!best || pct > best.pct) best = { pct, refWords: ref, hypWords: hyp, mRef, mHyp, canonical: ans };
+    const exact = wordsEqual(ref, hyp);
+    const cand = { pct, exact, refWords: ref, hypWords: hyp, mRef, mHyp, canonical: ans };
+    if (!best || (exact && !best.exact) || (exact === best.exact && pct > best.pct)) best = cand;
   });
   if (!best) return null;
-  best.points = Math.round((best.pct / 100) * 10);
+  best.points = best.exact ? 10 : 0;
   return best;
 }
 function wordDiffHtml(words, matched, missClass) {
@@ -649,7 +676,7 @@ function teamHome() {
   const v = el('div');
   v.appendChild(el('div', 'page-head', `<h1>Đội tuyển</h1><p>Mô phỏng "Thi Đội tuyển" trong Hội thi tập trung theo Điều 12–15 Quy chế: Vòng sơ khảo và Vòng chung khảo.</p>`));
   v.appendChild(el('div', 'note', `${ICON.warn}<span>Quy chế mô tả hình thức thi <b>theo đội, nhiều đội thi đồng thời</b> (xếp hạng theo tốc độ, bấm chuông giành quyền trả lời). Khi luyện một mình, ứng dụng chỉ mô phỏng được <b>nội dung câu hỏi, thời gian và kết quả đúng/sai của riêng bạn</b> — không thể tái hiện việc tranh chuông hay trừ điểm giữa nhiều đội. Điểm hiển thị là điểm luyện tập cá nhân để tham khảo, <b>không phải điểm thi chính thức</b>.</span>`));
-  v.appendChild(el('div', 'note', `${ICON.warn}<span><b>Khởi động</b> được chấm tự động theo tỷ lệ từ khớp đúng thứ tự với đáp án chuẩn (không phân biệt hoa/thường, dấu câu, khoảng trắng; giữ nguyên dấu tiếng Việt, không tự sửa chính tả hay đoán ý). Đây là điểm luyện tập để ghi nhớ chính xác câu chữ — khác với cách chấm nhị phân Đúng/Sai chính thức tại hội thi (Điều 14.2.a). Gói câu hỏi riêng/chung ở Vòng chung khảo vẫn tự chấm thủ công như trước.</span>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span><b>Khởi động</b> được chấm tự động, đúng theo cách chấm nhị phân Đúng = 10đ / Sai = 0đ của Điều 14.2.a: chỉ tính Đúng khi câu trả lời khớp <b>chính xác toàn bộ</b> đáp án chuẩn sau khi chuẩn hoá (không phân biệt hoa/thường, dấu câu, khoảng trắng; giữ nguyên dấu tiếng Việt và thứ tự từ, không tự sửa chính tả hay đoán ý) — thiếu/thừa/sai từ hoặc đảo thứ tự đều tính Sai. Tỷ lệ khớp % hiển thị sau khi nộp chỉ là phản hồi tham khảo. Gói câu hỏi riêng/chung ở Vòng chung khảo vẫn tự chấm thủ công như trước.</span>`));
 
   const grid = el('div', 'sec-grid');
   const mkCard = (title, desc, bestVal, bestLbl, cta, onGo) => {
@@ -662,7 +689,7 @@ function teamHome() {
     c.appendChild(b);
     return c;
   };
-  grid.appendChild(mkCard('Vòng sơ khảo', '10 câu: Khởi động (5 câu, 90 giây/câu, tự luận — chấm tự động theo % khớp từ) + Tăng tốc (5 câu, 60 giây/câu, trắc nghiệm). Điều 13.2.b, 14.2.a — trang 5–7.',
+  grid.appendChild(mkCard('Vòng sơ khảo', '10 câu: Khởi động (5 câu, 90 giây/câu, tự luận — chấm tự động Đúng/Sai, khớp chính xác) + Tăng tốc (5 câu, 60 giây/câu, trắc nghiệm). Điều 13.2.b, 14.2.a — trang 5–7.',
     store.d.best.dt1, 'Điểm ĐT1 cao nhất', 'Bắt đầu Vòng sơ khảo', () => startTeamRound('so')));
   grid.appendChild(mkCard('Vòng chung khảo', '10 câu: Gói câu hỏi riêng (5 câu) + Gói câu hỏi chung (5 câu), 20 giây/câu. Điều 13.2.b, 14.2.b — trang 6–8.',
     store.d.best.dt2, 'Điểm ĐT2 cao nhất', 'Bắt đầu Vòng chung khảo', () => startTeamRound('chung')));
@@ -728,7 +755,7 @@ function teamRecallView(st, it) {
     const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
     next.onclick = () => {
       it.done = true;
-      store.grade(q.id, !!(it.graded && it.graded.pct === 100));
+      store.grade(q.id, !!(it.graded && it.graded.exact));
       teamAdvance();
     };
     foot.appendChild(next);
@@ -759,7 +786,9 @@ function gradeAndReveal(it, q) {
   clearTeamTimer();
   const canonical = q.opts.find(o => o.k === q.ans[0]);
   const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
-  if (g && (!it.graded || g.pct > it.graded.pct)) { it.graded = g; it.points = g.points; it.ok = g.pct === 100; }
+  if (g && (!it.graded || (g.exact && !it.graded.exact) || (g.exact === it.graded.exact && g.pct > it.graded.pct))) {
+    it.graded = g; it.points = g.points; it.ok = g.exact;
+  }
   it.revealed = true;
   render();
 }
@@ -773,10 +802,10 @@ function teamAutoGradeBox(it) {
   const g = it.graded;
   box.innerHTML = `
     <div class="gscore">
-      <div class="gpct"><b>${g.pct}%</b><span>Tỷ lệ khớp từ</span></div>
-      <div class="gpts"><b>+${g.points}đ</b><span>Điểm tự động (luyện tập) / 10đ</span></div>
+      <div class="gpts" style="color:${g.exact ? 'var(--ok)' : 'var(--bad)'}"><b>${g.exact ? ICON.check + ' Đúng' : ICON.x + ' Sai'}</b><span>+${g.points}đ / 10đ (Điều 14.2.a)</span></div>
+      <div class="gpct"><b>${g.pct}%</b><span>Tỷ lệ khớp từ (chỉ tham khảo)</span></div>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:8px">Chấm tự động theo tỷ lệ từ khớp đúng thứ tự với đáp án chuẩn (không phân biệt hoa/thường, dấu câu, khoảng trắng thừa; giữ nguyên dấu tiếng Việt). Đây là điểm luyện tập — Điều 14.2.a quy định cách chấm chính thức tại hội thi là nhị phân Đúng = 10đ / Sai = 0đ.</p>
+    <p class="muted" style="font-size:12px;margin-top:8px">Chỉ tính <b>Đúng</b> khi câu trả lời khớp <b>chính xác toàn bộ</b> với đáp án chuẩn sau khi chuẩn hoá (không phân biệt hoa/thường, dấu câu, khoảng trắng thừa; giữ nguyên dấu tiếng Việt và thứ tự từ) — thiếu/thừa/sai từ hoặc đảo thứ tự đều tính Sai. Tỷ lệ khớp % bên trên chỉ là phản hồi tham khảo để sửa bài, <b>không</b> dùng để tính điểm.</p>
     <div class="wordrow"><div class="wlabel">Đáp án chuẩn</div><div class="words">${wordDiffHtml(g.refWords, g.mRef, 'miss')}</div></div>
     <div class="wordrow"><div class="wlabel">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(g.hypWords, g.mHyp, 'bad')}</div></div>
     <div class="glegend"><span class="w ok">khớp</span><span class="w miss">thiếu (có ở đáp án, bạn chưa có)</span><span class="w bad">sai / thừa (bạn viết nhưng không khớp)</span></div>`;
@@ -1157,12 +1186,308 @@ V.ref = () => {
   return v;
 };
 
+/* ---------- ÔN 4 ĐỀ TRỌNG TÂM (giữ nguyên 4 Bộ đề mô phỏng Đội tuyển, CamScanner 5-11-26) ----------
+ * Khác với tab "Đội tuyển" (mô phỏng đúng thời gian/cách tính điểm Điều 12–15):
+ * khu vực này KHÔNG có đồng hồ đếm ngược ép buộc, KHÔNG dùng để tính Điểm ĐT1/ĐT2 — chỉ để ôn
+ * luyện thuộc lòng đúng 80 câu gốc của 4 bộ đề, giữ nguyên mọi câu kể cả câu trùng lặp. */
+const D4_STAGE_LABEL = { khoidong: 'Khởi động', tangtoc: 'Tăng tốc', rieng: 'Gói câu hỏi riêng', chung: 'Gói câu hỏi chung' };
+const d4Setup = { scope: '1', mode: 'goc' };
+
+function d4Pool(scope) {
+  if (!DETHI4) return [];
+  if (scope === 'all') return DETHI4.flat;
+  return DETHI4.bySet[scope] || [];
+}
+function d4IsWeak(id) {
+  const s = store.d.stats[id];
+  return !!s && (s.wrong > 0 || s.box <= 2);
+}
+function d4CountFor(scope, mode) {
+  let pool = d4Pool(scope);
+  if (mode === 'sai') pool = pool.filter(q => d4IsWeak(q.id));
+  return pool.length;
+}
+
+V.dethi4 = () => {
+  if (!DETHI4) {
+    const v = el('div');
+    v.appendChild(el('div', 'page-head', `<h1>Ôn 4 đề trọng tâm</h1>`));
+    v.appendChild(el('div', 'note', `${ICON.warn}<span>Không tải được dữ liệu 4 bộ đề (data/dethi4.json). Vui lòng tải lại trang.</span>`));
+    return v;
+  }
+  if (!app.d4) return d4Home();
+  if (app.d4.finished) return d4Result();
+  return d4QuizView();
+};
+
+function d4Home() {
+  const v = el('div');
+  v.appendChild(el('div', 'page-head', `<h1>Ôn 4 đề trọng tâm</h1><p>Ôn đúng nguyên văn <b>80 câu</b> trong <b>4 "Bộ đề"</b> mô phỏng thi Đội tuyển (CamScanner 5-11-26) — giữ nguyên thứ tự gốc, giữ cả câu trùng giữa các đề/ngân hàng cũ. Không trộn câu ngoài 4 đề vào đây.</p>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span>Khu vực luyện tập riêng, <b>không có đồng hồ đếm ngược</b> và <b>không tính vào Điểm ĐT1/ĐT2</b>. Muốn mô phỏng đúng cấu trúc/thời gian/cách tính điểm chính thức, dùng tab "Đội tuyển".</span>`));
+
+  const card = el('div', 'card pad');
+
+  const f1 = el('div', 'field', `<label>Chọn đề</label>`);
+  const chips = el('div', 'chips');
+  const scopes = [['1', 'Đề 1'], ['2', 'Đề 2'], ['3', 'Đề 3'], ['4', 'Đề 4'], ['all', 'Cả 4 đề']];
+  scopes.forEach(([id, lbl]) => {
+    const c = el('button', 'chip', `${esc(lbl)}<small>${d4Pool(id).length}</small>`);
+    c.dataset.id = id;
+    c.onclick = () => { d4Setup.scope = id; syncD4(); };
+    chips.appendChild(c);
+  });
+  f1.appendChild(chips); card.appendChild(f1);
+
+  const f2 = el('div', 'field', `<label>Chế độ ôn</label>`);
+  const sw = el('div', 'switches');
+  const modes = [
+    ['goc', 'Theo thứ tự gốc', 'Đúng thứ tự Khởi động → Tăng tốc → Gói riêng → Gói chung như trong đề'],
+    ['dao', 'Đảo thứ tự câu', 'Xáo trộn thứ tự câu — chọn "Cả 4 đề" để trộn luân phiên cả 4 đề, vẫn giữ các lượt xuất hiện của câu trùng'],
+    ['sai', 'Chỉ câu sai / chưa thuộc', 'Lọc theo tiến độ ghi nhớ (hộp Leitner) của riêng 80 câu này'],
+  ];
+  modes.forEach(([id, lbl, sub]) => {
+    const n = d4CountFor(d4Setup.scope, id);
+    const w = el('label', 'sw', `
+      <input type="radio" name="d4mode" value="${id}"${d4Setup.mode === id ? ' checked' : ''}><span class="box"></span>
+      <span class="lbl">${esc(lbl)}<i>${esc(sub)}</i></span>
+      <span class="tag" style="margin-left:auto">${n}</span>`);
+    w.querySelector('input').onchange = () => { d4Setup.mode = id; syncD4(); };
+    sw.appendChild(w);
+  });
+  f2.appendChild(sw); card.appendChild(f2);
+
+  const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
+
+  const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`);
+  go.onclick = () => d4Start(d4Setup.scope, d4Setup.mode);
+  card.appendChild(go);
+  v.appendChild(card);
+
+  function syncD4() {
+    $$('.chip', chips).forEach(c => c.classList.toggle('on', c.dataset.id === d4Setup.scope));
+    $$('.sw', sw).forEach((w, i) => {
+      const id = modes[i][0];
+      w.querySelector('input').checked = id === d4Setup.mode;
+      w.querySelector('.tag').textContent = d4CountFor(d4Setup.scope, id);
+    });
+    const n = d4CountFor(d4Setup.scope, d4Setup.mode);
+    avail.textContent = `Có ${n} câu phù hợp lựa chọn hiện tại.`;
+    go.disabled = n === 0;
+  }
+  syncD4();
+  return v;
+}
+
+function d4Start(scope, mode) {
+  let pool = d4Pool(scope);
+  if (mode === 'sai') pool = pool.filter(q => d4IsWeak(q.id));
+  if (!pool.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
+  let items = pool.slice();
+  if (mode === 'dao') items = shuffle(items);
+  app.d4 = {
+    scope, mode,
+    items: items.map(q => ({
+      q, order: q.stage !== 'khoidong' ? shuffle(q.opts) : q.opts,
+      pick: [], typed: '', done: false, ok: null, revealed: false, graded: null,
+    })),
+    i: 0, right: 0, wrong: 0, started: Date.now(),
+  };
+  app.view = 'dethi4'; render();
+}
+
+function d4Tag(q) {
+  return `Đề ${q.setNo} · ${D4_STAGE_LABEL[q.stage]} · Câu ${q.num} gốc`;
+}
+function d4Advance() {
+  const T = app.d4;
+  if (T.i < T.items.length - 1) { T.i++; render(); }
+  else d4Finish();
+}
+function d4Finish() {
+  const T = app.d4;
+  T.right = T.items.filter(it => it.ok === true).length;
+  T.wrong = T.items.filter(it => it.ok === false).length;
+  T.finished = true;
+  T.elapsed = Date.now() - T.started;
+  render();
+}
+
+function d4QuizView() {
+  const T = app.d4, it = T.items[T.i], q = it.q;
+  const v = el('div');
+
+  const bar = el('div', 'quiz-bar');
+  const back = el('button', 'btn ghost', `${ICON.back} Thoát`);
+  back.onclick = () => { if (T.i === 0 || confirm('Thoát và huỷ lượt ôn này?')) { app.d4 = null; nav('dethi4'); } };
+  bar.appendChild(back);
+  bar.appendChild(el('div', 'progress', `<i style="width:${T.i / T.items.length * 100}%"></i>`));
+  bar.appendChild(el('span', 'counter', `${T.i + 1}/${T.items.length}`));
+  bar.appendChild(el('span', 'score-live', `<span class="g">✓ ${T.items.filter(x => x.ok === true).length}</span> · <span class="r">✕ ${T.items.filter(x => x.ok === false).length}</span>`));
+  v.appendChild(bar);
+
+  const card = el('div', 'card qcard');
+  card.appendChild(el('div', 'qtop', `<span class="tag">${esc(d4Tag(q))}</span>` + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '') + (q.uncertain ? `<span class="tag" style="background:var(--warn)">Cần xác minh</span>` : '')));
+  card.appendChild(el('div', 'qtext', esc(q.q)));
+  if (q.uncertain) card.appendChild(el('div', 'note', `${ICON.warn}<span>${esc(q.note || 'Bản quét không rõ đáp án cho câu này, cần xác minh thủ công.')}</span>`));
+
+  if (q.stage === 'khoidong') d4RenderRecall(card, T, it, q); else d4RenderMC(card, T, it, q);
+  v.appendChild(card);
+  return v;
+}
+
+function d4RenderRecall(card, T, it, q) {
+  if (!it.revealed) {
+    const ta = el('textarea', 'recall-in');
+    ta.placeholder = 'Gõ câu trả lời đầy đủ của bạn — hệ thống so khớp chính xác toàn bộ với đáp án chuẩn…';
+    ta.value = it.typed;
+    ta.oninput = () => { it.typed = ta.value; };
+    card.appendChild(ta);
+    const foot = el('div', 'qfoot');
+    const submit = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
+    submit.onclick = () => {
+      const canonical = q.opts.find(o => o.k === q.ans[0]);
+      const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
+      if (g) { it.graded = g; it.ok = g.exact; store.grade(q.id, g.exact); }
+      it.revealed = true; render();
+    };
+    foot.appendChild(submit);
+    card.appendChild(foot);
+  } else {
+    card.appendChild(teamAutoGradeBox(it));
+    const foot = el('div', 'qfoot');
+    const retry = el('button', 'btn', `${ICON.refresh} Thử lại câu này`);
+    retry.onclick = () => { it.typed = ''; it.revealed = false; render(); };
+    foot.appendChild(retry);
+    const last = T.i === T.items.length - 1;
+    const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+    next.onclick = () => { it.done = true; d4Advance(); };
+    foot.appendChild(next);
+    card.appendChild(foot);
+  }
+}
+
+function d4RenderMC(card, T, it, q) {
+  const wrap = el('div', 'opts');
+  it.order.forEach((o, idx) => {
+    const b = el('button', 'opt');
+    b.dataset.k = o.k;
+    b.innerHTML = `<span class="key">${esc(q.opts[idx].k)}</span><span class="txt">${esc(o.t)}</span><span class="mark"></span>`;
+    b.onclick = () => pick(o.k);
+    wrap.appendChild(b);
+  });
+  card.appendChild(wrap);
+  const fbSlot = el('div'); fbSlot.id = 'fbSlot'; card.appendChild(fbSlot);
+  const footSlot = el('div'); footSlot.id = 'mcFoot'; card.appendChild(footSlot);
+  setTimeout(paint);
+
+  function paint() {
+    $$('.opt', wrap).forEach(b => {
+      const k = b.dataset.k; b.className = 'opt';
+      if (it.done) {
+        b.classList.add('locked');
+        const isC = q.ans.includes(k), isP = it.pick.includes(k);
+        if (isC) { b.classList.add('correct'); b.querySelector('.mark').innerHTML = ICON.check; }
+        else if (isP) { b.classList.add('wrong'); b.querySelector('.mark').innerHTML = ICON.x; }
+        else b.classList.add('dim');
+      } else if (it.pick.includes(k)) b.classList.add('sel');
+    });
+    const slot = $('#mcFoot'); if (slot) slot.innerHTML = '';
+    if (!it.done && q.multi) {
+      const foot = el('div', 'qfoot');
+      const chk = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
+      chk.disabled = it.pick.length === 0;
+      chk.onclick = () => finish();
+      foot.appendChild(chk);
+      slot && slot.appendChild(foot);
+    }
+  }
+  function pick(k) {
+    if (it.done) return;
+    if (q.multi) { const i = it.pick.indexOf(k); i < 0 ? it.pick.push(k) : it.pick.splice(i, 1); paint(); }
+    else { it.pick = [k]; paint(); setTimeout(finish, 130); }
+  }
+  function finish() {
+    if (it.done) return;
+    it.done = true;
+    it.ok = it.pick.length > 0 && setEq(it.pick, q.ans);
+    store.grade(q.id, !!it.ok);
+    paint();
+    const corr = q.ans.map(k => `<b>${k.toUpperCase()}</b>. ${esc(q.opts.find(o => o.k === k).t)}`).join('<br>');
+    const fb = el('div', 'feedback ' + (it.ok ? 'good' : 'bad'), (it.ok ? ICON.check : ICON.x) + `<div>${it.ok ? 'Chính xác!' : 'Chưa đúng'}<span class="sub">Đáp án đúng: ${corr}</span></div>`);
+    const fbSlotEl = $('#fbSlot'); if (fbSlotEl) { fbSlotEl.innerHTML = ''; fbSlotEl.appendChild(fb); }
+    const foot = el('div', 'qfoot');
+    const last = T.i === T.items.length - 1;
+    const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+    next.onclick = d4Advance;
+    foot.appendChild(next);
+    const slot = $('#mcFoot'); if (slot) { slot.innerHTML = ''; slot.appendChild(foot); }
+    next.focus();
+  }
+}
+
+function d4Result() {
+  const T = app.d4;
+  const total = T.items.length;
+  const pct = total ? Math.round(T.right / total * 100) : 0;
+  const emo = pct >= 90 ? '🏆' : pct >= 75 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  const v = el('div');
+  const c = el('div', 'card result', `
+    <div class="emoji">${emo}</div>
+    <div class="big" style="color:${pct >= 75 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)'}">${pct}%</div>
+    <div class="lbl"><b>Ôn 4 đề trọng tâm</b> — đúng ${T.right}/${total} câu <span class="muted" style="font-weight:400">(điểm luyện tập, không phải Điểm ĐT1/ĐT2)</span></div>
+    <div class="rstats">
+      <div class="rstat"><b style="color:var(--ok)">${T.right}</b><span>Câu đúng</span></div>
+      <div class="rstat"><b style="color:var(--bad)">${T.wrong}</b><span>Câu sai</span></div>
+      <div class="rstat"><b>${fmtTime(T.elapsed)}</b><span>Thời gian</span></div>
+    </div>`);
+  const cta = el('div', 'hero-cta'); cta.style.justifyContent = 'center'; cta.style.marginTop = '22px';
+  const again = el('button', 'btn primary', `${ICON.refresh} Ôn lượt khác`);
+  again.onclick = () => { app.d4 = null; nav('dethi4'); };
+  cta.appendChild(again);
+  const home = el('button', 'btn ghost', 'Về trang chủ');
+  home.onclick = () => { app.d4 = null; nav('home'); };
+  cta.appendChild(home);
+  c.appendChild(cta);
+  v.appendChild(c);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Xem lại bài làm</h3><span class="muted" style="font-size:12.5px">${total} câu — mỗi câu ghi rõ thuộc đề nào, phần nào, số câu gốc</span>`));
+  const list = el('div', 'review-list');
+  T.items.forEach(it => {
+    const q = it.q;
+    const r = el('div', 'rev ' + (it.ok ? 'hit' : 'miss'));
+    let body = `<div class="qtop" style="margin-bottom:0">
+        <span class="tag">${esc(d4Tag(q))}</span>
+        <span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.ok ? '✓ Đúng' : '✕ Sai'}</span></div>
+      <div class="q">${esc(q.q)}</div>`;
+    if (q.stage === 'khoidong') {
+      if (it.graded) {
+        body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án chuẩn</div><div class="words">${wordDiffHtml(it.graded.refWords, it.graded.mRef, 'miss')}</div>`;
+        body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(it.graded.hypWords, it.graded.mHyp, 'bad')}</div>`;
+      } else {
+        body += `<div class="muted" style="margin-top:8px">(Chưa trả lời)</div>`;
+      }
+    } else {
+      const dk = k => { const p = (it.order || q.opts).findIndex(o => o.k === k); return (p >= 0 ? q.opts[p].k : k).toUpperCase(); };
+      const yours = it.pick.length ? it.pick.map(k => `<div class="ans r"><span class="k">${dk(k)}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('') : `<div class="ans r"><span class="k">–</span><span>Chưa trả lời</span></div>`;
+      const corr = q.ans.map(k => `<div class="ans g"><span class="k">${dk(k)}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+      if (!it.ok) body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Bạn chọn</div>${yours}`;
+      body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án đúng</div>${corr}`;
+    }
+    r.innerHTML = body;
+    list.appendChild(r);
+  });
+  v.appendChild(list);
+  return v;
+}
+
 /* ---------------- router / render ---------------- */
 function nav(v) {
   app.view = v;
   if (v !== 'quiz') app.quiz = null;
   if (v === 'team' && app.team?.finished) app.team = null;
   if (v !== 'team') { clearTeamTimer(); app.team = null; }
+  if (v === 'dethi4' && app.d4?.finished) app.d4 = null;
+  if (v !== 'dethi4') app.d4 = null;
   location.hash = v; render(); scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1176,7 +1501,7 @@ function render() {
 
 function buildBottomBar() {
   const bb = $('#botbar');
-  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', team: 'Đội tuyển', exam: 'Tốc độ', flash: 'Thẻ nhớ', browse: 'Tra cứu', stats: 'Tiến độ', ref: 'Quy chế' };
+  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', team: 'Đội tuyển', dethi4: '4 Đề', exam: 'Tốc độ', flash: 'Thẻ nhớ', browse: 'Tra cứu', stats: 'Tiến độ', ref: 'Quy chế' };
   [...$('#tabs').children].forEach(b => {
     const c = b.cloneNode(true);
     c.querySelector('span').textContent = SHORT[c.dataset.nav] || c.dataset.nav;
@@ -1246,6 +1571,19 @@ setInterval(() => {
   }
   DATA.sections.forEach(s => QBY[s.id] = DATA.questions.filter(q => q.sec === s.id));
 
+  try {
+    const r4 = await fetch('data/dethi4.json?v=1');
+    const raw4 = await r4.json();
+    const STAGE_ORDER = ['khoidong', 'tangtoc', 'rieng', 'chung'];
+    const flat = [];
+    const bySet = {};
+    raw4.sets.forEach(s => {
+      bySet[s.setNo] = [];
+      STAGE_ORDER.forEach(st => (s.stages[st] || []).forEach(q => { flat.push(q); bySet[s.setNo].push(q); }));
+    });
+    DETHI4 = { source: raw4.source, title: raw4.title, sets: raw4.sets, flat, bySet };
+  } catch (e) { DETHI4 = null; }
+
   $$('#tabs button, .brand').forEach(b => b.onclick = () => nav(b.dataset.nav));
   buildBottomBar();
   document.addEventListener('click', e => {
@@ -1264,7 +1602,7 @@ setInterval(() => {
   app.view = V[h] && h !== 'quiz' && h !== 'team' ? h : 'home';
   window.addEventListener('hashchange', () => {
     const v = location.hash.slice(1) || 'home';
-    if (v !== app.view && V[v] && v !== 'quiz' && v !== 'team') { app.view = v; app.quiz = null; clearTeamTimer(); app.team = null; render(); }
+    if (v !== app.view && V[v] && v !== 'quiz' && v !== 'team') { app.view = v; app.quiz = null; clearTeamTimer(); app.team = null; app.d4 = null; render(); }
   });
 
   $('#boot').remove();

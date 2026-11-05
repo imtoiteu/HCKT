@@ -1,9 +1,10 @@
 # Ôn thi HC-KT 2026 — web app luyện thi Đội tuyển
 
 Ứng dụng web ôn luyện cho **Thi Đội tuyển** trong Hội thi tập trung ngành Hậu cần –
-Kỹ thuật năm 2026: vừa ghi nhớ **244 câu hỏi trắc nghiệm** (8 ngành), vừa mô phỏng
-đúng cấu trúc, thời gian và cách tính điểm của **Vòng sơ khảo** và **Vòng chung
-khảo** theo Quy chế Hội thi (Điều 12–15).
+Kỹ thuật năm 2026: ghi nhớ **244 câu hỏi trắc nghiệm** (8 ngành), ôn trọng tâm
+**80 câu nguyên văn của 4 "Bộ đề" mô phỏng thi Đội tuyển**, và mô phỏng đúng
+cấu trúc, thời gian, cách tính điểm của **Vòng sơ khảo** và **Vòng chung khảo**
+theo Quy chế Hội thi (Điều 12–15).
 
 **URL công khai:** http://139.180.211.252/
 
@@ -64,12 +65,12 @@ công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được
   II‑31, II-32, IV‑36, IV‑37) hiển thị nguồn là **"Bộ đề Đội tuyển số N (bổ sung
   5/11/2026)"** thay vì "Trang X tài liệu gốc", vì chúng không nằm trong
   `Bo_cau_hoi_Hoi_thi_0001.pdf` 53 trang.
-- **4 câu trong `CamScanner 5-11-26 07.17.pdf` chưa xác nhận được là trùng hay
-  câu mới hoàn toàn** sau khi tra từ khoá thủ công với 228 câu cũ (ví dụ "Đối
-  tượng nào được khám phát hiện Bệnh nghề nghiệp?", "Trường hợp nào phải kiểm
-  định kỹ thuật an toàn lao động?") — **chưa được thêm** vào ngân hàng chính để
-  tránh trùng lặp không xác định; vẫn lưu đầy đủ trong `data/raw/dethi-doituyen-
-  2026-11-05.json` kèm ghi chú, cần người có bản gốc đầy đủ đối chiếu lại.
+- Toàn bộ 80/80 câu trong `CamScanner 5-11-26 07.17.pdf` đã được đối chiếu lại
+  **trực tiếp với từng trang ảnh quét** (không chỉ tra từ khoá) ngày 05/11/2026:
+  64 câu trùng chính xác với ngân hàng cũ (`dupOf`), 16 câu mới đã thêm
+  (`addedAs`) — không còn câu nào chưa xác định trùng/mới. Xem mục "Ôn 4 đề
+  trọng tâm" bên dưới để biết cách toàn bộ 80 câu gốc (kể cả 64 câu trùng) vẫn
+  được giữ nguyên, không bị loại bỏ, trong một khu vực ôn tập riêng.
 
 ## Tính năng
 
@@ -90,38 +91,79 @@ công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được
 - Tab "Quy chế" hiển thị nguyên văn bản quét 5 trang làm căn cứ, kèm trích dẫn
   điều/trang cho từng quy tắc hiển thị trong tab Đội tuyển.
 
-#### Chấm tự luận tự động (Khởi động)
+#### Chấm tự luận tự động (Khởi động) — so khớp CHÍNH XÁC, nhị phân
 
-Chỉ phần **Khởi động** (Vòng sơ khảo) được chấm tự động; Gói câu hỏi riêng/chung
-ở Vòng chung khảo vẫn tự chấm thủ công như bản trước (hai phần này không có
-định dạng rõ ràng trong quy chế để xác định đáp án chuẩn một cách chắc chắn).
+Chỉ phần **Khởi động** (Vòng sơ khảo, và phần Khởi động trong mỗi "Bộ đề" ở
+tab "Ôn 4 đề trọng tâm") được chấm tự động; Gói câu hỏi riêng/chung ở Vòng
+chung khảo vẫn tự chấm thủ công như trước (không có định dạng rõ ràng trong
+quy chế để xác định đáp án chuẩn một cách chắc chắn).
 
-**Công thức** (xem `normWords`, `lcsAlign`, `gradeRecall` trong `app.js`):
+**Công thức** (xem `normWords`, `lcsAlign`, `wordsEqual`, `gradeRecall` trong
+`app.js` — dùng chung cho cả tab "Đội tuyển" và tab "Ôn 4 đề trọng tâm"):
 1. Chuẩn hoá cả đáp án chuẩn và câu trả lời: Unicode NFC → chữ thường → bỏ dấu
-   câu (`\p{P}`: `. , ; : ! ? ( ) " ' …` …) → gộp khoảng trắng/tab/xuống dòng
+   câu (`\p{P}`: `. , ; : ! ? ( ) " ' …`, thay bằng khoảng trắng để dấu câu
+   dùng ngăn cách từ không làm dính hai từ) → gộp khoảng trắng/tab/xuống dòng
    thừa. **Không bỏ dấu tiếng Việt, không sửa chính tả, không đoán nghĩa.**
-2. Tách thành mảng từ theo khoảng trắng.
-3. Tìm **dãy con chung dài nhất (LCS)** giữa 2 mảng từ — thuật toán quy hoạch
-   động O(n·m), giữ đúng thứ tự từ, bỏ qua từ đảo vị trí (không tính khớp) và
-   không cho từ thừa làm tăng điểm.
-4. **Tỷ lệ khớp (%) = |LCS| / số từ đáp án chuẩn × 100**, làm tròn 1 chữ số
-   thập phân.
-5. **Điểm câu hỏi = round(tỷ lệ khớp / 100 × 10)** — đây là *điểm luyện tập tự
-   động*, khác với cách chấm **nhị phân Đúng=10đ/Sai=0đ** mà Điều 14.2.a quy
-   định chính thức tại hội thi; ứng dụng luôn ghi chú rõ sự khác biệt này.
-- Câu hỏi nhiều đáp án đúng (8/228 câu, mục "chọn nhiều đáp án") bị **loại khỏi
+2. Tách thành mảng từ theo khoảng trắng, giữ nguyên thứ tự.
+3. **Kết quả Đúng/Sai = so khớp CHÍNH XÁC toàn bộ mảng từ** (cùng số từ, cùng
+   từng từ, cùng thứ tự) với đáp án chuẩn. Thiếu từ, thừa từ, sai từ, hoặc đảo
+   thứ tự từ — tất cả đều tính **Sai**, không có điểm một phần. **Điểm câu hỏi
+   = Đúng → 10đ theo đúng cách chấm nhị phân của Điều 14.2.a / Sai → 0đ.**
+4. Song song đó, vẫn tính thêm **dãy con chung dài nhất (LCS)** giữa đáp án
+   chuẩn và câu trả lời (thuật toán quy hoạch động O(n·m), giữ đúng thứ tự từ,
+   không cho từ đảo vị trí hay từ thừa làm tăng tỷ lệ) để ra **tỷ lệ khớp (%)**
+   — tỷ lệ này **chỉ hiển thị làm phản hồi tham khảo** giúp người học thấy
+   mình còn thiếu/sai/thừa từ nào, **không** được dùng để thay thế kết quả
+   Đúng/Sai nhị phân ở bước 3.
+- Câu hỏi nhiều đáp án đúng (9/244 câu, mục "chọn nhiều đáp án") bị **loại khỏi
   Khởi động** vì nối nhiều đáp án trắc nghiệm rời rạc thành 1 chuỗi "đáp án
   chuẩn" sẽ không đáng tin cậy — các câu này vẫn xuất hiện bình thường ở Tăng
   tốc (trắc nghiệm, không đổi). Câu VII-12 (không có đáp án trong tài liệu gốc)
   tiếp tục bị loại khỏi mọi vòng như từ trước.
-- Hỗ trợ kỹ thuật nhiều đáp án chuẩn cho 1 câu (lấy kết quả khớp cao nhất), tuy
-  hiện ngân hàng câu hỏi chỉ có đúng 1 cách diễn đạt/câu nên tạm thời luôn dùng
-  1 biến thể.
-- Màn hình kết quả hiển thị đáp án chuẩn, câu trả lời của bạn, tỷ lệ khớp,
-  điểm, và highlight từng từ: xanh = khớp, đỏ gạch ngang = thiếu (có ở đáp án
-  chuẩn nhưng bạn chưa viết), đỏ gạch chân = sai/thừa. Đáp án chuẩn **không**
-  hiển thị trước khi nộp bài hoặc hết giờ. Có nút "Thử lại câu này" để luyện
-  đến khi thuộc chính xác — điểm giữ lại là điểm **cao nhất** trong các lần thử.
+- Hỗ trợ kỹ thuật nhiều đáp án chuẩn cho 1 câu (ưu tiên biến thể khớp chính
+  xác; nếu không biến thể nào khớp chính xác, hiển thị biến thể có tỷ lệ LCS
+  cao nhất để so sánh), tuy hiện ngân hàng câu hỏi chỉ có đúng 1 cách diễn
+  đạt/câu nên tạm thời luôn dùng 1 biến thể.
+- Màn hình kết quả hiển thị **Đúng/Sai**, đáp án chuẩn, câu trả lời của bạn,
+  tỷ lệ khớp (%, chỉ tham khảo), và highlight từng từ: xanh = khớp, đỏ gạch
+  ngang = thiếu (có ở đáp án chuẩn nhưng bạn chưa viết), đỏ gạch chân =
+  sai/thừa. Đáp án chuẩn **không** hiển thị trước khi nộp bài hoặc hết giờ. Có
+  nút "Thử lại câu này" để luyện đến khi thuộc chính xác — kết quả giữ lại ưu
+  tiên **Đúng** nếu đã từng trả lời đúng ít nhất 1 lần, nếu chưa bao giờ đúng
+  thì giữ lần có tỷ lệ khớp cao nhất để xem phản hồi.
+
+### Ôn 4 đề trọng tâm — tab mới, khu vực nổi bật trên Trang chủ
+
+Ôn đúng **nguyên văn 80 câu** trong **4 "Bộ đề"** mô phỏng thi Đội tuyển, trích
+từ `CamScanner 5-11-26 07.17.pdf` (xem `public/data/dethi4.json`), **giữ
+nguyên toàn bộ câu hỏi, đúng phần thi và thứ tự gốc trong từng đề** — kể cả 64
+câu trùng nội dung với 228 câu cũ hoặc trùng giữa các đề với nhau (không loại
+bỏ/không bỏ qua câu nào chỉ vì trùng). Mỗi câu gắn ID riêng dạng
+`DT{số đề}-{KD|TT|GR|GC}-{số câu gốc}` (ví dụ `DT2-GR-4` = Bộ đề 2, Gói câu
+hỏi riêng, câu 4), tách biệt hoàn toàn khỏi 244 câu ngân hàng chính và khỏi
+tab "Đội tuyển" — tiến độ ghi nhớ (hộp Leitner) của 80 câu này được theo dõi
+riêng.
+
+**4 chế độ ôn** (chọn "Đề" + "Chế độ ôn" trên màn hình thiết lập):
+- **Theo thứ tự gốc** — ôn riêng 1 đề, đúng thứ tự Khởi động → Tăng tốc → Gói
+  riêng → Gói chung như trong tài liệu.
+- **Đảo thứ tự câu** — xáo trộn thứ tự câu trong 1 đề đã chọn; chọn đề = "Cả 4
+  đề" để **trộn luân phiên cả 4 đề**, vẫn giữ nguyên từng lượt xuất hiện của
+  câu trùng (một câu xuất hiện ở 2 đề thì vẫn được hỏi 2 lần riêng biệt).
+- **Chỉ câu sai / chưa thuộc** — lọc theo tiến độ ghi nhớ của riêng 80 câu
+  này (đã từng trả lời sai, hoặc hộp Leitner ≤ 2), trong phạm vi đề đã chọn
+  (hoặc cả 4 đề).
+- Màn hình kết quả ghi rõ mỗi câu **thuộc đề nào, phần nào, số câu gốc** (ví
+  dụ "Đề 3 · Gói câu hỏi riêng · Câu 2 gốc").
+- **Không có đồng hồ đếm ngược ép buộc và không tính vào Điểm ĐT1/ĐT2** — đây
+  là khu vực ôn luyện tự do, tách biệt khỏi tab "Đội tuyển" (vẫn giữ đúng cấu
+  trúc/thời gian/cách tính điểm chính thức của quy chế). Phần Khởi động dùng
+  chung công thức chấm nhị phân chính xác ở mục trên; phần Tăng tốc/Gói
+  riêng/Gói chung chấm trắc nghiệm đúng/sai bình thường.
+- Toàn bộ 80 câu đã được đối chiếu trực tiếp với ảnh quét 16 trang ngày
+  05/11/2026 — **0 câu còn chưa xác minh được đáp án**; nếu phát hiện sai sót,
+  sửa `public/data/dethi4.json` (và `data/raw/dethi-doituyen-2026-11-05.json`
+  để giữ bản đối chiếu đồng bộ).
 
 ### Ôn tập nền tảng (không đổi)
 - **Luyện tập** — chọn ngành, số câu, xáo trộn đáp án; biết đúng/sai ngay; lọc
@@ -179,14 +221,15 @@ quiz-app/
 ├── server.js                 # static server (gzip, cache, SPA fallback), 0 dependency
 ├── public/
 │   ├── index.html
-│   ├── app.js                # router, quiz engine, SRS, Đội tuyển (mô phỏng), thống kê
+│   ├── app.js                # router, quiz engine, SRS, Đội tuyển (mô phỏng), Ôn 4 đề, thống kê
 │   ├── styles.css
-│   ├── data/questions.json   # 244 câu — nguồn dữ liệu duy nhất của app
+│   ├── data/questions.json   # 244 câu — ngân hàng chính (Luyện tập/Thẻ nhớ/Tra cứu/Luyện tốc độ/Đội tuyển)
+│   ├── data/dethi4.json      # 80 câu nguyên văn 4 "Bộ đề" — riêng cho tab "Ôn 4 đề trọng tâm"
 │   └── ref/
 │       ├── tcd-01..23.jpg    # ảnh quét phụ lục thang điểm chấm đơn vị
 │       └── dt-01..05.jpg     # ảnh quét thể lệ Đội tuyển (Điều 11–15, trang gốc 4–8)
 ├── data/raw/chunk-*.json              # bản bóc tách gốc 228 câu theo từng cụm trang (để đối chiếu)
-├── data/raw/dethi-doituyen-2026-11-05.json  # bản bóc tách đầy đủ 80 câu từ CamScanner 5-11-26 (kèm dupOf/addedAs)
+├── data/raw/dethi-doituyen-2026-11-05.json  # bản bóc tách đầy đủ 80 câu từ CamScanner 5-11-26 (nguồn của dethi4.json, kèm dupOf/addedAs để đối chiếu với ngân hàng chính)
 └── deploy/k8s-ingress.yaml   # route k3s/Traefik của VPS cũ — không áp dụng trên VPS mới, giữ lại để tham khảo
 ```
 
@@ -208,10 +251,19 @@ như cấu hình VPS cũ (`deploy/k8s-ingress.yaml` chỉ còn mang tính tham k
 
 ## Cập nhật nội dung câu hỏi
 
-Sửa `public/data/questions.json` (hoặc sửa `data/raw/chunk-*.json` rồi dựng lại),
-sau đó tăng số phiên bản `?v=` trong `public/index.html` **và** trong lệnh gọi
-`fetch('data/questions.json?v=N')` ở `public/app.js` để trình duyệt tải lại
-cache (file JSON được server cache 7 ngày). Không cần khởi động lại service.
+- Ngân hàng chính: sửa `public/data/questions.json` (hoặc sửa
+  `data/raw/chunk-*.json` rồi dựng lại), sau đó tăng số phiên bản `?v=` trong
+  `public/index.html` **và** trong lệnh gọi `fetch('data/questions.json?v=N')`
+  ở `public/app.js`.
+- 4 Bộ đề trọng tâm: sửa `public/data/dethi4.json` (giữ đúng cấu trúc
+  `sets[].stages.{khoidong,tangtoc,rieng,chung}[]`, giữ thứ tự gốc), đồng thời
+  sửa `data/raw/dethi-doituyen-2026-11-05.json` tương ứng để hai file không
+  lệch nhau, rồi tăng số phiên bản `?v=` trong lệnh gọi
+  `fetch('data/dethi4.json?v=N')` ở `public/app.js`.
+- Dù sửa file nào, cũng cần tăng số phiên bản `app.js?v=N` trong
+  `public/index.html` nếu có sửa `app.js`, để trình duyệt tải lại cache (mọi
+  file tĩnh được server cache 7 ngày). Không cần khởi động lại service sau khi
+  sửa nội dung — chỉ cần khởi động lại khi sửa `server.js`.
 
 ## Nhật ký khôi phục 05/11/2026
 
@@ -232,14 +284,15 @@ cache (file JSON được server cache 7 ngày). Không cần khởi động l�
   trùng nội dung + đáp án (chỉ khác cách rút gọn văn bản câu hỏi) — không nhập
   lại để tránh trùng lặp theo đúng yêu cầu. 16 câu là nội dung mới, đã thêm
   vào `questions.json` (ID mới: `VIII-33`, `VII-53`..`VII-63`, `II-31`,
-  `II-32`, `IV-36`, `IV-37`), nâng tổng số câu từ 228 lên 244. 1 câu (Bộ đề số
-  3, Tăng tốc, câu 1) không có gạch chân đáp án trong bản quét mới nhưng
-  trùng nội dung với câu `I-2` đã có đáp án xác minh (gạch chân rõ) nên không
-  thêm câu này như một mục riêng — không có câu nào bị bỏ ngỏ đáp án trong số
-  16 câu mới được thêm. **4 câu** còn chưa xác nhận được là trùng hay mới
-  hoàn toàn sau khi tra từ khoá thủ công — **chưa đưa vào** ngân hàng chính,
-  giữ nguyên trong file bóc tách kèm ghi chú để người có bản gốc đầy đủ đối
-  chiếu lại sau.
+  `II-32`, `IV-36`, `IV-37`), nâng tổng số câu từ 228 lên 244. Không có câu
+  nào bị bỏ ngỏ đáp án trong số 16 câu mới được thêm. **4 câu** còn chưa xác
+  nhận được là trùng hay mới hoàn toàn sau khi tra từ khoá thủ công — **chưa
+  đưa vào** ngân hàng chính, giữ nguyên trong file bóc tách kèm ghi chú để
+  người có bản gốc đầy đủ đối chiếu lại sau. *(Lưu ý: dòng này mô tả đúng
+  trạng thái tại thời điểm viết — xem mục "05/11/2026 (tiếp) — đối chiếu lại
+  toàn bộ 80 câu với ảnh quét" bên dưới để biết các sửa đổi tiếp theo trong
+  cùng ngày, trong đó câu Bộ đề 3/Tăng tốc/câu 1 hoá ra CÓ gạch chân rõ chứ
+  không phải suy luận từ câu `I-2` như ghi chú ban đầu.)*
   - *Kiểm tra lại sau khi nhập:* đối chiếu độc lập toàn bộ 20 câu được đánh
     dấu "không trùng" trong lần bóc tách đầu tiên với 244 câu hiện có bằng
     tra từ khoá theo từng câu — phát hiện 4 câu trong số đó thực ra **trùng
@@ -252,3 +305,49 @@ cache (file JSON được server cache 7 ngày). Không cần khởi động l�
 - Toàn bộ 80 câu bóc tách (kể cả 64 câu trùng, có ghi chú `dupOf`, và câu đã
   thêm có ghi chú `addedAs`) được lưu ở `data/raw/dethi-doituyen-2026-11-05.json`
   để đối chiếu/kiểm tra lại sau này, không bị xoá.
+
+### 05/11/2026 (tiếp) — đối chiếu lại toàn bộ 80 câu với ảnh quét, xây khu vực "Ôn 4 đề trọng tâm"
+
+Yêu cầu tiếp theo trong ngày: ưu tiên cao nhất là ôn tập **đầy đủ và chính
+xác cả 4 bộ đề**, giữ nguyên mọi câu kể cả câu trùng (không loại bỏ như cách
+tiếp cận gộp vào ngân hàng chính ở trên), và tách hẳn khỏi chế độ mô phỏng
+thi chính thức.
+
+- **Đối chiếu lại trực tiếp cả 16 trang ảnh quét** (không chỉ tra từ khoá) cho
+  toàn bộ 80 câu của 4 "Bộ đề" — từng câu, từng phương án, từng đáp án gạch
+  chân. Kết quả: 79/80 câu khớp chính xác với lần bóc tách trước; phát hiện
+  **1 lỗi thật sự**: câu Bộ đề 3/Tăng tốc/câu 1 ("Chủ đề thực hiện nhiệm vụ
+  chủ yếu... Kế hoạch số 160/KH-HCKT...") bị ghi nhầm là "không có ý nào gạch
+  chân" ở lần bóc tách trước, trong khi ảnh trang 9–10 thực ra có gạch chân rõ
+  ở phương án b ("Quyết tâm nghiên cứu, sản xuất vũ khí trang bị tiên tiến,
+  hiện đại.") — đã sửa lại `uncertain:false`, `ans:["b"]` trong
+  `data/raw/dethi-doituyen-2026-11-05.json`, không còn câu nào `uncertain`
+  trong 80 câu.
+- Xây `public/data/dethi4.json`: toàn bộ 80 câu, giữ nguyên thứ tự gốc (Khởi
+  động → Tăng tốc → Gói riêng → Gói chung, câu 1→5 mỗi phần) trong từng Bộ đề
+  1–4, **không loại bỏ câu trùng**, ID riêng `DT{đề}-{KD|TT|GR|GC}-{câu}` tách
+  biệt khỏi 244 câu ngân hàng chính.
+- Thêm tab/khu vực nổi bật **"Ôn 4 đề trọng tâm"** trên Trang chủ và thanh điều
+  hướng (`V.dethi4` trong `app.js`) — 3 chế độ ôn (thứ tự gốc / đảo thứ tự
+  trong 1 đề hoặc trộn luân phiên cả 4 đề / chỉ câu sai-chưa thuộc), không có
+  đồng hồ đếm ngược, không tính vào Điểm ĐT1/ĐT2, màn hình kết quả ghi rõ
+  "Đề N · Phần · Câu M gốc" cho từng câu.
+- **Đổi cách chấm Khởi động sang nhị phân chính xác** (áp dụng cho cả tab
+  "Đội tuyển" lẫn "Ôn 4 đề trọng tâm", dùng chung một hàm `gradeRecall`):
+  trước đây tính điểm theo tỷ lệ % khớp LCS (được điểm một phần); nay **chỉ
+  tính Đúng (10đ) khi khớp chính xác toàn bộ** sau chuẩn hoá — thiếu/thừa/sai
+  từ hoặc đảo thứ tự đều tính Sai (0đ). Tỷ lệ khớp % vẫn hiển thị nhưng chỉ để
+  tham khảo, không dùng để tính điểm — đúng theo yêu cầu "chỉ tính khớp hoàn
+  toàn khi hai câu trả lời giống nhau sau chuẩn hoá" và đúng với cách chấm
+  nhị phân chính thức của Điều 14.2.a tại tab "Đội tuyển".
+- **Kiểm thử**: viết test độc lập bằng Node (ngoài trình duyệt) xác nhận hàm
+  chấm nhị phân đúng mọi trường hợp biên (dấu câu không làm dính từ, giữ dấu
+  tiếng Việt, từ đảo thứ tự → Sai, từ thừa → Sai, câu trống → Sai). Vì VPS
+  không có trình duyệt/X server, đã cài tạm `jsdom` qua `npm` để mô phỏng DOM
+  thật, tải trang qua HTTP từ chính service đang chạy, và **click qua toàn bộ
+  80 câu** ở chế độ "Cả 4 đề · Theo thứ tự gốc" bằng câu trả lời đúng xác
+  minh — 0 lỗi, kết quả 100%, tag "Đề N · Phần · Câu M gốc" khớp đúng từng
+  câu; kiểm thêm luồng trả lời sai (cả tự luận lẫn trắc nghiệm, kể cả câu
+  nhiều đáp án) hiển thị đúng "Sai"/đáp án đúng. Gói `jsdom`/`npm` cài thêm
+  trong lần kiểm thử này chỉ phục vụ việc này, không phải phụ thuộc runtime
+  của ứng dụng (ứng dụng vẫn 0 dependency, chạy bằng `node server.js` thuần).

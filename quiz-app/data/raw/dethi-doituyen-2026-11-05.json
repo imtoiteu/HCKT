@@ -1201,8 +1201,8 @@
               "b"
             ],
             "dupOf": "I-2",
-            "uncertain": true,
-            "note": "Bản scan KHÔNG có ý nào được gạch chân (đã kiểm tra cả 2 trang chứa câu này). Đáp án 'b' suy ra từ đối chiếu với câu I-2 đã có đáp án xác minh (gạch chân rõ) trong ngân hàng 228 câu cũ — cùng số Kế hoạch/Quyết định, cùng 4 phương án. Không tự chấm điểm nếu không có xác minh độc lập."
+            "uncertain": false,
+            "note": "Xác nhận lại trực tiếp từ ảnh trang 9-10 (đối chiếu độc lập lần 2): phương án b (\"Quyết tâm nghiên cứu, sản xuất vũ khí trang bị tiên tiến, hiện đại.\") có gạch chân rõ, không phải không có đáp án như ghi chú lần bóc tách đầu."
           },
           {
             "num": 2,
