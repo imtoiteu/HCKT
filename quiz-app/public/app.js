@@ -527,6 +527,7 @@ function quizResult() {
 }
 
 /* ---------- ĐỘI TUYỂN (mô phỏng Hội thi tập trung, Điều 12–15 Quy chế) ---------- */
+const teamSetup = { hint: false, steal: false };
 const TEAM_RULES = {
   noidung: { title: 'Điều 12 Khoản 2 — Nội dung thi Đội tuyển', page: '5',
     text: 'Nhận thức, hiểu biết về kiến thức chuyên ngành; về phong trào thi đua Ngành Hậu cần và thực hiện CVĐ50; truyền thống của ngành Hậu cần – Kỹ thuật Tổng cục.' },
@@ -614,12 +615,25 @@ function pickTeamQuestions(n, exclude, excludeMulti) {
  * PER CÂU (không phải cho cả phần thi), nên mỗi câu mới hợp lệ có đồng hồ
  * riêng; đây không phải "reset để gian lận" mà đúng theo quy chế. */
 function teamSeconds(kind) { return kind === 'khoidong' ? 90 : kind === 'tangtoc' ? 60 : 20; }
+/* Gói riêng/Gói chung: 20s KHÔNG phải "thời hạn nhập xong câu trả lời" — quy
+ * chế không nêu thời lượng trình bày câu trả lời, nên ứng dụng không tự đặt
+ * giới hạn đó. Gói riêng: 20s là "thời gian chuẩn bị" trước khi trả lời. Gói
+ * chung: 20s là cửa sổ "giành quyền trả lời" (bấm chuông) trước khi trả lời. */
 const TIME_CITE = {
-  khoidong: '90 giây/câu — Điều 13.2.b, trang 5–6',
-  tangtoc: '60 giây/câu — Điều 13.2.b, trang 6',
-  rieng: '20 giây/câu — Điều 13.2.b, trang 6',
-  chung: '20 giây/câu — Điều 13.2.b, trang 6',
+  khoidong: '90 giây/câu (đọc câu hỏi + trả lời) — Điều 13.2.b, trang 5–6',
+  tangtoc: '60 giây/câu (đọc câu hỏi + trả lời) — Điều 13.2.b, trang 6',
+  rieng: '20 giây chuẩn bị/câu (trước khi trả lời, không giới hạn thời gian trả lời) — Điều 13.2.b, trang 6',
+  chung: '20 giây giành quyền trả lời/câu (bấm chuông, không giới hạn thời gian trả lời sau khi giành quyền) — Điều 13.2.b, trang 6',
 };
+/** Trạng thái sẵn sàng trả lời ban đầu của 1 câu Gói riêng/Gói chung:
+ * - Không bật giờ: bỏ qua pha chuẩn bị/giành quyền, vào thẳng ô trả lời.
+ * - Gói riêng (có giờ): bắt đầu ở pha "chuẩn bị" (ready=false).
+ * - Gói chung (có giờ): bắt đầu ở pha "giành quyền" (ready=false), phải bấm
+ *   chuông mới được trả lời. */
+function rcInitReady(kind, timed) {
+  if (kind !== 'rieng' && kind !== 'chung') return true;
+  return !timed;
+}
 let teamTimerHandle = null;
 function clearTeamTimer() { if (teamTimerHandle) { clearInterval(teamTimerHandle); teamTimerHandle = null; } }
 /** elId: id phần tử hiển thị đồng hồ (mặc định 'teamTimer', dùng chung cho cả
@@ -644,15 +658,21 @@ function startTeamTimer(seconds, onZero, elId) {
 }
 
 function startTeamRound(round) {
+  const hint = !!teamSetup.hint, steal = !!teamSetup.steal;
   const stages = round === 'so' ? ['khoidong', 'tangtoc'] : ['rieng', 'chung'];
   const used = [];
   const stageData = stages.map(kind => {
     const qs = pickTeamQuestions(5, used, kind === 'khoidong');
     qs.forEach(q => used.push(q.id));
-    return { kind, items: qs.map(q => ({ q, order: shuffle(q.opts), pick: [], done: false, ok: null, points: 0, typed: '', revealed: false, graded: null })) };
+    return {
+      kind, items: qs.map(q => ({
+        q, order: shuffle(q.opts), pick: [], done: false, ok: null, points: 0, typed: '',
+        revealed: false, graded: null, ready: rcInitReady(kind, true), missed: false, steal: null, citeArticle: null,
+      })),
+    };
   });
   app.team = {
-    round, stages: stageData, si: 0, qi: 0, total: 0, finished: false,
+    round, hint, steal, stages: stageData, si: 0, qi: 0, total: 0, finished: false,
     baseline: round === 'chung' ? (store.d.lastDT1 ?? 0) : 0,
   };
   app.view = 'team'; render();
@@ -689,14 +709,28 @@ V.team = () => {
   if (!T) return teamHome();
   if (T.finished) return teamResult();
   const { st, it } = teamCurrentItem();
-  return st.kind === 'tangtoc' ? teamMCView(st, it) : teamRecallView(st, it);
+  const useMC = st.kind === 'tangtoc' || (T.hint && (st.kind === 'rieng' || st.kind === 'chung'));
+  return useMC ? teamMCView(st, it) : teamRecallView(st, it);
 };
 
 function teamHome() {
   const v = el('div');
   v.appendChild(el('div', 'page-head', `<h1>Đội tuyển</h1><p>Mô phỏng "Thi Đội tuyển" trong Hội thi tập trung theo Điều 12–15 Quy chế: Vòng sơ khảo và Vòng chung khảo.</p>`));
   v.appendChild(el('div', 'note', `${ICON.warn}<span>Quy chế mô tả hình thức thi <b>theo đội, nhiều đội thi đồng thời</b> (xếp hạng theo tốc độ, bấm chuông giành quyền trả lời). Khi luyện một mình, ứng dụng chỉ mô phỏng được <b>nội dung câu hỏi, thời gian và kết quả đúng/sai của riêng bạn</b> — không thể tái hiện việc tranh chuông hay trừ điểm giữa nhiều đội. Điểm hiển thị là điểm luyện tập cá nhân để tham khảo, <b>không phải điểm thi chính thức</b>.</span>`));
-  v.appendChild(el('div', 'note', `${ICON.warn}<span><b>Khởi động</b> được chấm tự động, đúng theo cách chấm nhị phân Đúng = 10đ / Sai = 0đ của Điều 14.2.a: chỉ tính Đúng khi câu trả lời khớp <b>chính xác toàn bộ</b> đáp án chuẩn sau khi chuẩn hoá (không phân biệt hoa/thường, dấu câu, khoảng trắng; giữ nguyên dấu tiếng Việt và thứ tự từ, không tự sửa chính tả hay đoán ý) — thiếu/thừa/sai từ hoặc đảo thứ tự đều tính Sai. Tỷ lệ khớp % hiển thị sau khi nộp chỉ là phản hồi tham khảo. Gói câu hỏi riêng/chung ở Vòng chung khảo vẫn tự chấm thủ công như trước.</span>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span><b>Khởi động</b> (90s/câu, tính cả thời gian trả lời — Điều 13.2.b) được chấm tự động theo tiêu chí luyện thuộc của ứng dụng: khớp <b>chính xác toàn bộ</b> đáp án chuẩn sau khi chuẩn hoá (không phân biệt hoa/thường, dấu câu, khoảng trắng; giữ nguyên dấu tiếng Việt và thứ tự từ) — thiếu/thừa/sai từ hoặc đảo thứ tự đều tính Sai. Cơ cấu điểm nhị phân (10đ/0đ, không có điểm một phần) đúng theo Điều 14.2.a; cách <b>xác định</b> đúng/sai bằng so khớp chữ là lựa chọn của ứng dụng, không phải cách BGK thực tế chấm (BGK là giám khảo con người, nghe trả lời trực tiếp).</span>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span><b>Gói câu hỏi riêng/Gói câu hỏi chung</b> (Vòng chung khảo): Điều 13.2.b gọi đây là "trả lời trực tiếp", <b>không</b> mô tả là trắc nghiệm hay trên máy tính — khác Khởi động/Tăng tốc. Mặc định ứng dụng dùng ô nhập tự do để mô phỏng việc này, chấm tự động bằng cùng tiêu chí so khớp chữ ở trên (trừ câu nhiều đáp án đúng — tự chấm thủ công). Gói riêng: 20s là thời gian <b>chuẩn bị trước khi trả lời</b>, không phải hạn nộp. Gói chung: 20s là cửa sổ <b>giành quyền trả lời</b> (bấm chuông), không phải hạn nộp. Quy chế không nêu thời lượng trình bày câu trả lời nên ứng dụng không giới hạn thêm.</span>`));
+
+  const opt = el('div', 'card pad'); opt.style.marginBottom = '16px';
+  opt.appendChild(el('h3', '', 'Tuỳ chọn cho Gói câu hỏi riêng/chung'));
+  const sw1 = el('label', 'sw', `<input type="checkbox"${teamSetup.hint ? ' checked' : ''}><span class="box"></span>
+    <span class="lbl">Ôn có gợi ý (hiện phương án để chọn)<i>Mô phỏng hỗ trợ học — quy chế không mô tả hình thức trắc nghiệm cho 2 phần này; tắt để luyện đúng "trả lời trực tiếp"</i></span>`);
+  sw1.querySelector('input').onchange = e => { teamSetup.hint = e.target.checked; };
+  opt.appendChild(sw1);
+  const sw2 = el('label', 'sw', `<input type="checkbox"${teamSetup.steal ? ' checked' : ''}><span class="box"></span>
+    <span class="lbl">Luyện thêm tình huống "Giành quyền trả lời" (10s)<i>Bài tập riêng, tuỳ chọn, xuất hiện sau khi trả lời sai — không cộng vào điểm/thời gian câu chính (Điều 13.2.b)</i></span>`);
+  sw2.querySelector('input').onchange = e => { teamSetup.steal = e.target.checked; };
+  opt.appendChild(sw2);
+  v.appendChild(opt);
 
   const grid = el('div', 'sec-grid');
   const mkCard = (title, desc, bestVal, bestLbl, cta, onGo) => {
@@ -711,7 +745,7 @@ function teamHome() {
   };
   grid.appendChild(mkCard('Vòng sơ khảo', '10 câu: Khởi động (5 câu, 90 giây/câu, tự luận — chấm tự động Đúng/Sai, khớp chính xác) + Tăng tốc (5 câu, 60 giây/câu, trắc nghiệm). Điều 13.2.b, 14.2.a — trang 5–7.',
     store.d.best.dt1, 'Điểm ĐT1 cao nhất', 'Bắt đầu Vòng sơ khảo', () => startTeamRound('so')));
-  grid.appendChild(mkCard('Vòng chung khảo', '10 câu: Gói câu hỏi riêng (5 câu) + Gói câu hỏi chung (5 câu), 20 giây/câu. Điều 13.2.b, 14.2.b — trang 6–8.',
+  grid.appendChild(mkCard('Vòng chung khảo', '10 câu: Gói câu hỏi riêng (5 câu, 20s chuẩn bị/câu) + Gói câu hỏi chung (5 câu, 20s giành quyền/câu) — trả lời trực tiếp, không giới hạn thêm. Điều 13.2.b, 14.2.b — trang 6–8.',
     store.d.best.dt2, 'Điểm ĐT2 cao nhất', 'Bắt đầu Vòng chung khảo', () => startTeamRound('chung')));
   v.appendChild(grid);
 
@@ -741,35 +775,42 @@ function teamBar(T) {
 }
 
 function teamRecallView(st, it) {
-  const T = app.team, q = it.q, seconds = teamSeconds(st.kind);
-  const autoGrade = st.kind === 'khoidong';
+  const T = app.team, q = it.q, kind = st.kind, seconds = teamSeconds(kind);
+  const isKhoidong = kind === 'khoidong';
+  const autoGradeable = isKhoidong || !q.multi;
+  const cite = isKhoidong ? 'Điều 14.2.a' : 'Điều 14.2.b';
   const v = el('div');
   v.appendChild(teamBar(T));
 
   const card = el('div', 'card qcard');
-  card.appendChild(el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">${esc(TEAM_STAGE_LABEL[st.kind])}</span>` + (autoGrade ? `<span class="tag ok">Chấm tự động</span>` : '')));
+  const tagExtra = autoGradeable ? `<span class="tag ok">Chấm tự động</span>` : `<span class="tag multi">Nhiều đáp án — tự chấm</span>`;
+  card.appendChild(el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">${esc(TEAM_STAGE_LABEL[kind])}</span>` + tagExtra));
   card.appendChild(el('div', 'qtext', esc(q.q)));
+  if (!isKhoidong) card.appendChild(rcFormatNote());
 
-  const onTimeout = () => autoGrade ? gradeAndReveal(it, q) : (() => { it.revealed = true; render(); })();
-
-  if (!it.revealed) {
+  if (!it.ready) {
+    rcPhaseUI(card, kind, seconds,
+      () => { it.ready = true; render(); },
+      () => { it.ready = true; it.missed = true; it.revealed = true; it.done = true; it.ok = false; it.points = 0; store.grade(q.id, false); render(); });
+  } else if (!it.revealed) {
     const ta = el('textarea', 'recall-in');
-    ta.placeholder = autoGrade
+    ta.placeholder = autoGradeable
       ? 'Gõ câu trả lời đầy đủ của bạn — hệ thống sẽ tự so khớp từng từ với đáp án chuẩn…'
-      : 'Soạn câu trả lời của bạn (chỉ để tự đối chiếu — không được chấm tự động)…';
+      : 'Soạn câu trả lời của bạn (câu nhiều đáp án — tự đối chiếu, không chấm tự động)…';
     ta.value = it.typed;
     ta.oninput = () => { it.typed = ta.value; };
     card.appendChild(ta);
     const foot = el('div', 'qfoot');
     const submit = el('button', 'btn primary', `Nộp & xem đáp án ${ICON.arrow}`);
-    submit.onclick = once(() => { clearTeamTimer(); autoGrade ? gradeAndReveal(it, q) : (it.revealed = true, render()); });
+    submit.onclick = once(() => { autoGradeable ? gradeAndReveal(it, q, cite) : (it.revealed = true, render()); });
     foot.appendChild(submit);
     card.appendChild(foot);
-  } else if (autoGrade) {
-    card.appendChild(teamAutoGradeBox(it));
+  } else if (autoGradeable) {
+    card.appendChild(it.missed ? rcMissedBox() : teamAutoGradeBox(it));
+    if (!isKhoidong && T.steal && rcStealEligible(kind, it)) renderStealPractice(card, it, q);
     const foot = el('div', 'qfoot');
     const retry = el('button', 'btn', `${ICON.refresh} Thử lại câu này`);
-    retry.onclick = () => { it.typed = ''; it.revealed = false; render(); };
+    retry.onclick = () => { it.typed = ''; it.revealed = false; it.missed = false; render(); };
     foot.appendChild(retry);
     const last = T.si === T.stages.length - 1 && T.qi === st.items.length - 1;
     const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
@@ -786,23 +827,33 @@ function teamRecallView(st, it) {
       ? `<div class="lead" style="margin-top:14px;color:var(--ink2)">Câu trả lời của bạn</div><div class="your">${esc(it.typed)}</div>` : '';
     const box = el('div', 'recall-ans', `<div class="lead">Đáp án đúng (tài liệu gốc)</div>${ans}${yours}`);
     card.appendChild(box);
-    const self = el('div', 'self-grade');
-    self.appendChild(el('p', 'muted', 'Tự chấm — bạn tự đối chiếu và đánh giá, đây không phải điểm thi chính thức.'));
-    const row = el('div', 'rate');
-    const ok = el('button', 'btn primary', `${ICON.check} Tôi trả lời đúng (+10đ)`);
-    ok.onclick = once(() => { it.done = true; it.ok = true; it.points = 10; teamAdvance(); });
-    const bad = el('button', 'btn danger', `${ICON.x} Sai / không kịp (0đ)`);
-    bad.onclick = once(() => { it.done = true; it.ok = false; it.points = 0; teamAdvance(); });
-    row.appendChild(ok); row.appendChild(bad);
-    self.appendChild(row);
-    card.appendChild(self);
+    if (!it.done) {
+      const self = el('div', 'self-grade');
+      self.appendChild(el('p', 'muted', 'Câu nhiều đáp án đúng — tự đối chiếu và đánh giá (không chấm tự động được); đây không phải điểm thi chính thức.'));
+      const row = el('div', 'rate');
+      const ok = el('button', 'btn primary', `${ICON.check} Tôi trả lời đúng (+10đ)`);
+      ok.onclick = once(() => { it.done = true; it.ok = true; it.points = 10; store.grade(q.id, true); render(); });
+      const bad = el('button', 'btn danger', `${ICON.x} Sai / không kịp (0đ)`);
+      bad.onclick = once(() => { it.done = true; it.ok = false; it.points = 0; store.grade(q.id, false); render(); });
+      row.appendChild(ok); row.appendChild(bad);
+      self.appendChild(row);
+      card.appendChild(self);
+    } else {
+      card.appendChild(el('p', '', `<b style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'}">${it.ok ? '✓ Bạn tự đánh giá: Đúng (+10đ)' : '✕ Bạn tự đánh giá: Sai (0đ)'}</b>`));
+      if (!isKhoidong && T.steal && rcStealEligible(kind, it)) renderStealPractice(card, it, q);
+      const foot = el('div', 'qfoot');
+      const last = T.si === T.stages.length - 1 && T.qi === st.items.length - 1;
+      const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+      next.onclick = once(teamAdvance);
+      foot.appendChild(next);
+      card.appendChild(foot);
+    }
   }
   v.appendChild(card);
-  if (!it.revealed) startTeamTimer(seconds, onTimeout);
   return v;
 }
 
-function gradeAndReveal(it, q) {
+function gradeAndReveal(it, q, citeArticle) {
   if (it.revealed) return; // chặn chấm/khoá 2 lần nếu nộp tay và hết giờ trùng thời điểm
   clearTeamTimer();
   const canonical = q.opts.find(o => o.k === q.ans[0]);
@@ -810,6 +861,7 @@ function gradeAndReveal(it, q) {
   if (g && (!it.graded || (g.exact && !it.graded.exact) || (g.exact === it.graded.exact && g.pct > it.graded.pct))) {
     it.graded = g; it.points = g.points; it.ok = g.exact;
   }
+  it.citeArticle = citeArticle || it.citeArticle;
   it.revealed = true;
   render();
 }
@@ -821,28 +873,116 @@ function teamAutoGradeBox(it) {
     return box;
   }
   const g = it.graded;
+  const cite = it.citeArticle || 'Điều 14.2.a';
   box.innerHTML = `
     <div class="gscore">
-      <div class="gpts" style="color:${g.exact ? 'var(--ok)' : 'var(--bad)'}"><b>${g.exact ? ICON.check + ' Đúng' : ICON.x + ' Sai'}</b><span>+${g.points}đ / 10đ (Điều 14.2.a)</span></div>
+      <div class="gpts" style="color:${g.exact ? 'var(--ok)' : 'var(--bad)'}"><b>${g.exact ? ICON.check + ' Đúng' : ICON.x + ' Sai'}</b><span>+${g.points}đ / 10đ (thang điểm nhị phân ${esc(cite)})</span></div>
       <div class="gpct"><b>${g.pct}%</b><span>Tỷ lệ khớp từ (chỉ tham khảo)</span></div>
     </div>
-    <p class="muted" style="font-size:12px;margin-top:8px">Chỉ tính <b>Đúng</b> khi câu trả lời khớp <b>chính xác toàn bộ</b> với đáp án chuẩn sau khi chuẩn hoá (không phân biệt hoa/thường, dấu câu, khoảng trắng thừa; giữ nguyên dấu tiếng Việt và thứ tự từ) — thiếu/thừa/sai từ hoặc đảo thứ tự đều tính Sai. Tỷ lệ khớp % bên trên chỉ là phản hồi tham khảo để sửa bài, <b>không</b> dùng để tính điểm.</p>
+    <p class="muted" style="font-size:12px;margin-top:8px">Đây là <b>tiêu chí luyện thuộc lòng của riêng ứng dụng</b> — chỉ tính <b>Đúng</b> khi câu trả lời khớp <b>chính xác toàn bộ</b> với đáp án chuẩn sau khi chuẩn hoá (không phân biệt hoa/thường, dấu câu, khoảng trắng thừa; giữ nguyên dấu tiếng Việt và thứ tự từ) — thiếu/thừa/sai từ hoặc đảo thứ tự đều tính Sai. Tỷ lệ khớp % bên trên chỉ là phản hồi tham khảo để sửa bài, <b>không</b> dùng để tính điểm. Cơ cấu điểm nhị phân (không có điểm một phần) là đúng theo ${esc(cite)}; cách <b>xác định</b> "đúng/sai" này là lựa chọn mô phỏng của ứng dụng để luyện ghi nhớ câu chữ — BGK thực tế là giám khảo con người.</p>
     <div class="wordrow"><div class="wlabel">Đáp án chuẩn</div><div class="words">${wordDiffHtml(g.refWords, g.mRef, 'miss')}</div></div>
     <div class="wordrow"><div class="wlabel">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(g.hypWords, g.mHyp, 'bad')}</div></div>
     <div class="glegend"><span class="w ok">khớp</span><span class="w miss">thiếu (có ở đáp án, bạn chưa có)</span><span class="w bad">sai / thừa (bạn viết nhưng không khớp)</span></div>`;
   return box;
 }
 
+/* ---------- Gói câu hỏi riêng / Gói câu hỏi chung — "trả lời trực tiếp" ----------
+ * Điều 13.2.b KHÔNG mô tả 2 phần này là trắc nghiệm/trên máy tính (khác hẳn
+ * Khởi động, Tăng tốc) — dùng cụm "đưa ra câu trả lời" / "bấm chuông giành
+ * quyền trả lời". Mặc định ứng dụng dùng ô nhập tự do để mô phỏng "trả lời
+ * trực tiếp"; có thể bật "Ôn có gợi ý" để hiện lại các phương án in trong bộ
+ * đề dưới dạng trắc nghiệm — đây LÀ LỰA CHỌN MÔ PHỎNG hỗ trợ học, quy chế
+ * không mô tả hình thức chọn đáp án cho 2 phần này nên không được gọi là
+ * "đúng quy chế". */
+function rcFormatNote() {
+  return el('div', 'note', `${ICON.warn}<span>Điều 13.2.b gọi đây là <b>"trả lời trực tiếp"</b> (kèm bấm chuông giành quyền) — không mô tả hình thức chọn đáp án như Khởi động/Tăng tốc. Ô nhập bên dưới là cách <b>ứng dụng mô phỏng</b> để luyện nhớ câu trả lời; BGK thực tế nghe đội trả lời trực tiếp, không chấm bằng so khớp chữ.</span>`);
+}
+/** Vẽ pha "chuẩn bị" (Gói riêng) hoặc "giành quyền trả lời" (Gói chung) trước
+ * khi được nhập câu trả lời. onReady(): chuyển sang ô trả lời. onMiss(): chỉ
+ * dùng cho Gói chung khi hết 20s mà không bấm chuông — quy chế không nêu
+ * bước giành lại quyền cho trường hợp không ai bấm chuông, nên coi là bỏ lỡ. */
+function rcPhaseUI(card, kind, seconds, onReady, onMiss) {
+  const box = el('div', 'prep-box');
+  if (kind === 'rieng') {
+    box.innerHTML = `<div class="lead">${ICON.warn.replace('warn','')}Đang trong thời gian chuẩn bị…</div><p class="muted" style="font-size:13px;margin:6px 0 12px">Tối đa ${seconds}s (Điều 13.2.b, trang 6). Quy chế không nêu thời lượng trình bày câu trả lời sau đó, nên ứng dụng không giới hạn thêm — hết giờ chuẩn bị sẽ tự mở ô trả lời, hoặc bấm nút dưới để trả lời sớm hơn.</p>`;
+    const go = el('button', 'btn primary', `${ICON.arrow} Trả lời ngay`);
+    go.onclick = once(() => { clearTeamTimer(); onReady(); });
+    box.appendChild(go);
+    card.appendChild(box);
+    startTeamTimer(seconds, once(() => onReady()));
+  } else {
+    box.innerHTML = `<div class="lead">Giành quyền trả lời</div><p class="muted" style="font-size:13px;margin:6px 0 12px">Trong ${seconds}s (Điều 13.2.b, trang 6): bấm chuông để giành quyền trả lời, rồi trả lời không giới hạn thêm giờ. Hết ${seconds}s mà chưa bấm: coi như không giành được quyền ở câu này.</p>`;
+    const buzz = el('button', 'btn primary big', `🔔 Bấm chuông`);
+    buzz.onclick = once(() => { clearTeamTimer(); onReady(); });
+    box.appendChild(buzz);
+    card.appendChild(box);
+    startTeamTimer(seconds, once(() => onMiss()));
+  }
+}
+/** Luyện thêm (tuỳ chọn, tách biệt): mô phỏng đội khác giành quyền trả lời
+ * trong 10s sau khi đội chính trả lời sai/không có câu trả lời (Điều 13.2.b).
+ * KHÔNG cộng vào điểm/thời gian của câu chính, không tự động nối tiếp — chỉ
+ * bắt đầu khi người dùng chủ động bấm, và được ghi nhận/hiển thị riêng. */
+function renderStealPractice(card, it, q) {
+  if (it.steal && it.steal.revealed) {
+    const g = it.steal.graded;
+    const box = el('div', 'grade-box'); box.style.marginTop = '14px';
+    box.innerHTML = `<div class="lead" style="margin-bottom:8px">Kết quả tình huống luyện thêm "Giành quyền trả lời" (không tính vào điểm câu chính)</div>` +
+      (g ? `<div class="gscore"><div class="gpts" style="color:${g.exact ? 'var(--ok)' : 'var(--bad)'}"><b>${g.exact ? ICON.check + ' Đúng' : ICON.x + ' Sai'}</b></div></div>
+        <div class="wordrow"><div class="wlabel">Đáp án chuẩn</div><div class="words">${wordDiffHtml(g.refWords, g.mRef, 'miss')}</div></div>
+        <div class="wordrow"><div class="wlabel">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(g.hypWords, g.mHyp, 'bad')}</div></div>`
+        : `<p class="muted">Câu nhiều đáp án — không tự chấm được, tự đối chiếu với đáp án đúng ở trên.</p>`);
+    card.appendChild(box);
+    return;
+  }
+  const wrap = el('div', 'steal-wrap'); wrap.style.marginTop = '14px';
+  if (!it.steal) {
+    wrap.appendChild(el('div', 'note', `${ICON.warn}<span><b>Luyện thêm (tuỳ chọn, tách riêng):</b> mô phỏng tình huống một đội khác bấm chuông giành quyền trả lời trong 10 giây sau khi đội của bạn trả lời sai/không có câu trả lời (Điều 13.2.b, trang 6). Bài tập bổ sung này <b>không</b> cộng vào điểm hay thời gian của câu vừa rồi.</span>`));
+    const go = el('button', 'btn', `🔔 Thử tình huống này (10s)`);
+    go.onclick = once(() => { it.steal = { typed: '', revealed: false, graded: null }; render(); });
+    wrap.appendChild(go);
+  } else {
+    const ta = el('textarea', 'recall-in');
+    ta.placeholder = 'Mô phỏng đội khác giành quyền — gõ câu trả lời…';
+    ta.value = it.steal.typed;
+    ta.oninput = () => { it.steal.typed = ta.value; };
+    wrap.appendChild(ta);
+    const submit = el('button', 'btn primary', 'Nộp tình huống này');
+    submit.onclick = once(() => {
+      clearTeamTimer();
+      const canonical = q.opts.find(o => o.k === q.ans[0]);
+      const g = !q.multi ? gradeRecall(it.steal.typed, canonical ? [canonical.t] : []) : null;
+      it.steal.graded = g; it.steal.revealed = true;
+      render();
+    });
+    wrap.appendChild(submit);
+    startTeamTimer(10, once(() => { clearTeamTimer(); it.steal.revealed = true; render(); }));
+  }
+  card.appendChild(wrap);
+}
+function rcStealEligible(kind, it) {
+  if (kind === 'rieng') return it.ok === false;
+  return it.ready && !it.missed && it.ok === false; // chung: chỉ khi đã bấm chuông & trả lời sai
+}
+function rcMissedBox() {
+  const box = el('div', 'grade-box');
+  box.innerHTML = `<div class="gscore"><div class="gpts" style="color:var(--bad)"><b>${ICON.x} Không giành được quyền trả lời</b><span>+0đ</span></div></div>
+    <p class="muted" style="font-size:12px;margin-top:8px">Hết thời gian giành quyền trả lời (bấm chuông) mà chưa bấm — không có câu trả lời cho câu này.</p>`;
+  return box;
+}
+
 function teamMCView(st, it) {
-  const T = app.team, q = it.q, seconds = teamSeconds('tangtoc');
+  const T = app.team, q = it.q, seconds = teamSeconds(st.kind);
   const v = el('div');
   v.appendChild(teamBar(T));
 
+  const isHint = st.kind !== 'tangtoc';
   const card = el('div', 'card qcard');
   const top = el('div', 'qtop');
-  top.innerHTML = `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">Tăng tốc</span>` + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '');
+  top.innerHTML = `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">${esc(TEAM_STAGE_LABEL[st.kind])}</span>` + (isHint ? `<span class="tag" style="background:var(--warn)">Ôn có gợi ý</span>` : '') + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '');
   card.appendChild(top);
   card.appendChild(el('div', 'qtext', esc(q.q)));
+  if (isHint) card.appendChild(el('div', 'note', `${ICON.warn}<span><b>Ôn có gợi ý:</b> Điều 13.2.b không mô tả Gói câu hỏi riêng/chung là trắc nghiệm — đây là lựa chọn <b>mô phỏng hỗ trợ học</b> (hiện lại các phương án in trong bộ đề để nhận diện thay vì nhớ lại), không phải hình thức thi thật. Tắt "Ôn có gợi ý" ở màn hình thiết lập để luyện đúng hình thức trả lời trực tiếp.</span>`));
 
   const wrap = el('div', 'opts');
   it.order.forEach((o, idx) => {
@@ -895,8 +1035,9 @@ function teamMCView(st, it) {
     store.grade(q.id, !!it.ok);
     paint();
     const corr = q.ans.map(k => `<b>${k.toUpperCase()}</b>. ${esc(q.opts.find(o => o.k === k).t)}`).join('<br>');
+    const okMsg = isHint ? 'Chính xác (chế độ Ôn có gợi ý — luyện tập)' : 'Chính xác (+10đ nếu bạn là đội nhanh & đúng nhất)';
     const fb = el('div', 'feedback ' + (it.ok ? 'good' : 'bad'),
-      (it.ok ? ICON.check : ICON.x) + `<div>${it.ok ? 'Chính xác (+10đ nếu bạn là đội nhanh & đúng nhất)' : 'Chưa đúng — 0đ'}<span class="sub">Đáp án đúng: ${corr}</span></div>`);
+      (it.ok ? ICON.check : ICON.x) + `<div>${it.ok ? okMsg : 'Chưa đúng — 0đ'}<span class="sub">Đáp án đúng: ${corr}</span></div>`);
     $('#fbSlot').innerHTML = ''; $('#fbSlot').appendChild(fb);
     const foot = el('div', 'qfoot');
     const last = T.si === T.stages.length - 1 && T.qi === st.items.length - 1;
@@ -944,17 +1085,23 @@ function teamResult() {
   const list = el('div', 'review-list');
   T.stages.forEach(st => st.items.forEach(it => {
     const q = it.q;
+    const wasMC = st.kind === 'tangtoc' || (T.hint && (st.kind === 'rieng' || st.kind === 'chung'));
     const r = el('div', 'rev ' + (it.ok ? 'hit' : 'miss'));
     const corr = q.ans.map(k => `<div class="ans g"><span class="k">${k.toUpperCase()}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
-    const scoreTag = (st.kind === 'khoidong' && it.graded)
-      ? `${it.graded.pct}% · +${it.points}đ`
+    const scoreTag = it.missed ? 'Không giành được quyền'
+      : (st.kind === 'khoidong' && it.graded) ? `${it.graded.pct}% · +${it.points}đ`
       : (it.ok ? `✓ +${it.points}đ` : '✕ 0đ');
+    const dk = k => { const p = (it.order || q.opts).findIndex(o => o.k === k); return (p >= 0 ? q.opts[p].k : k).toUpperCase(); };
+    const yourPick = (wasMC && it.pick && it.pick.length) ? `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-top:8px">Bạn chọn</div>${it.pick.map(k => `<div class="ans r"><span class="k">${dk(k)}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('')}` : '';
+    const yourTyped = (!wasMC && it.typed.trim()) ? `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-top:8px">Bạn trả lời</div><div class="your">${esc(it.typed)}</div>` : '';
+    const stealInfo = (!wasMC && it.steal && it.steal.revealed)
+      ? `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-top:10px">Tình huống luyện thêm "Giành quyền trả lời" (không tính điểm câu này)</div><div class="muted">${it.steal.graded ? (it.steal.graded.exact ? '✓ Đúng' : '✕ Sai') + ' — ' : ''}bạn gõ: ${esc(it.steal.typed || '(trống)')}</div>` : '';
     r.innerHTML = `<div class="qtop" style="margin-bottom:0">
         <span class="tag">${esc(TEAM_STAGE_LABEL[st.kind])}</span>
         <span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${scoreTag}</span></div>
       <div class="q">${esc(q.q)}</div>
-      ${st.kind !== 'tangtoc' && it.typed.trim() ? `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;margin-top:8px">Bạn trả lời</div><div class="your">${esc(it.typed)}</div>` : ''}
-      <div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án đúng</div>${corr}`;
+      ${yourPick}${yourTyped}
+      <div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án đúng</div>${corr}${stealInfo}`;
     list.appendChild(r);
   }));
   v.appendChild(list);
@@ -1216,7 +1363,7 @@ const D4_STAGE_LABEL = { khoidong: 'Khởi động', tangtoc: 'Tăng tốc', rie
  * Cùng cách chia này đã dùng trong tab "Đội tuyển" (xem startTeamRound: stages = round==='so' ? [...] : [...]). */
 const D4_ROUND_STAGES = { so: ['khoidong', 'tangtoc'], chung: ['rieng', 'chung'], all: ['khoidong', 'tangtoc', 'rieng', 'chung'] };
 const D4_ROUND_LABEL = { so: 'Vòng sơ khảo', chung: 'Vòng chung khảo', all: 'Toàn bộ' };
-const d4Setup = { scope: '1', round: 'all', mode: 'goc', timed: false };
+const d4Setup = { scope: '1', round: 'all', mode: 'goc', timed: false, hint: false, steal: false };
 
 function d4Pool(scope, round) {
   if (!DETHI4) return [];
@@ -1296,14 +1443,25 @@ function d4Home() {
 
   const f3 = el('div', 'field', `<label>Thời gian</label>`);
   const w3 = el('label', 'sw', `<input type="checkbox"${d4Setup.timed ? ' checked' : ''}><span class="box"></span>
-    <span class="lbl">Bật đồng hồ đếm ngược theo đúng Quy chế<i>Khởi động 90s/câu · Tăng tốc 60s/câu · Gói riêng/chung 20s/câu (Điều 13.2.b) — tắt để ôn chậm, không giới hạn giờ</i></span>`);
+    <span class="lbl">Bật đồng hồ đếm ngược theo đúng Quy chế<i>Khởi động 90s/câu · Tăng tốc 60s/câu · Gói riêng 20s chuẩn bị/câu · Gói chung 20s giành quyền/câu (Điều 13.2.b) — tắt để ôn chậm, không giới hạn giờ</i></span>`);
   w3.querySelector('input').onchange = e => { d4Setup.timed = e.target.checked; };
   f3.appendChild(w3); card.appendChild(f3);
+
+  const f4 = el('div', 'field', `<label>Gói câu hỏi riêng / chung</label>`);
+  const w4 = el('label', 'sw', `<input type="checkbox"${d4Setup.hint ? ' checked' : ''}><span class="box"></span>
+    <span class="lbl">Ôn có gợi ý (hiện phương án để chọn)<i>Mô phỏng hỗ trợ học — Điều 13.2.b gọi đây là "trả lời trực tiếp", không mô tả trắc nghiệm; mặc định tắt, dùng ô nhập tự do</i></span>`);
+  w4.querySelector('input').onchange = e => { d4Setup.hint = e.target.checked; };
+  f4.appendChild(w4);
+  const w5 = el('label', 'sw', `<input type="checkbox"${d4Setup.steal ? ' checked' : ''}><span class="box"></span>
+    <span class="lbl">Luyện thêm tình huống "Giành quyền trả lời" (10s)<i>Bài tập riêng, tuỳ chọn, sau khi trả lời sai — không cộng vào điểm/thời gian câu chính (Điều 13.2.b)</i></span>`);
+  w5.querySelector('input').onchange = e => { d4Setup.steal = e.target.checked; };
+  f4.appendChild(w5);
+  card.appendChild(f4);
 
   const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
 
   const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`);
-  go.onclick = () => d4Start(d4Setup.scope, d4Setup.round, d4Setup.mode, d4Setup.timed);
+  go.onclick = () => d4Start(d4Setup.scope, d4Setup.round, d4Setup.mode, d4Setup.timed, d4Setup.hint, d4Setup.steal);
   card.appendChild(go);
   v.appendChild(card);
 
@@ -1329,17 +1487,18 @@ function d4Home() {
   return v;
 }
 
-function d4Start(scope, round, mode, timed) {
+function d4Start(scope, round, mode, timed, hint, steal) {
   let pool = d4Pool(scope, round);
   if (mode === 'sai') pool = pool.filter(q => d4IsWeak(q.id));
   if (!pool.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
   let items = pool.slice();
   if (mode === 'dao') items = shuffle(items);
   app.d4 = {
-    scope, round, mode, timed: !!timed,
+    scope, round, mode, timed: !!timed, hint: !!hint, steal: !!steal,
     items: items.map(q => ({
-      q, order: q.stage !== 'khoidong' ? shuffle(q.opts) : q.opts,
+      q, order: (q.stage === 'tangtoc' || (hint && (q.stage === 'rieng' || q.stage === 'chung'))) ? shuffle(q.opts) : q.opts,
       pick: [], typed: '', done: false, ok: null, revealed: false, graded: null,
+      ready: rcInitReady(q.stage, !!timed), missed: false, steal: null, citeArticle: null,
     })),
     i: 0, right: 0, wrong: 0, started: Date.now(),
   };
@@ -1379,48 +1538,96 @@ function d4QuizView() {
   bar.appendChild(el('span', 'score-live', `<span class="g">✓ ${T.items.filter(x => x.ok === true).length}</span> · <span class="r">✕ ${T.items.filter(x => x.ok === false).length}</span>`));
   v.appendChild(bar);
 
+  const isRC = q.stage === 'rieng' || q.stage === 'chung';
+  const useMC = q.stage === 'tangtoc' || (isRC && T.hint);
+  const autoGradeable = q.stage === 'khoidong' || !useMC && (!q.multi);
+  const extraTag = isRC
+    ? (T.hint ? `<span class="tag" style="background:var(--warn)">Ôn có gợi ý</span>` : (autoGradeable ? `<span class="tag ok">Chấm tự động</span>` : `<span class="tag multi">Nhiều đáp án — tự chấm</span>`))
+    : (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '');
   const card = el('div', 'card qcard');
-  card.appendChild(el('div', 'qtop', `<span class="tag">${esc(d4Tag(q))}</span>` + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '') + (q.uncertain ? `<span class="tag" style="background:var(--warn)">Cần xác minh</span>` : '')));
+  card.appendChild(el('div', 'qtop', `<span class="tag">${esc(d4Tag(q))}</span>` + extraTag + (q.uncertain ? `<span class="tag" style="background:var(--warn)">Cần xác minh</span>` : '')));
   card.appendChild(el('div', 'qtext', esc(q.q)));
   if (q.uncertain) card.appendChild(el('div', 'note', `${ICON.warn}<span>${esc(q.note || 'Bản quét không rõ đáp án cho câu này, cần xác minh thủ công.')}</span>`));
+  if (isRC && T.hint) card.appendChild(el('div', 'note', `${ICON.warn}<span><b>Ôn có gợi ý:</b> Điều 13.2.b không mô tả Gói câu hỏi riêng/chung là trắc nghiệm — đây là lựa chọn <b>mô phỏng hỗ trợ học</b>, không phải hình thức thi thật. Tắt ở màn hình thiết lập để luyện đúng "trả lời trực tiếp".</span>`));
+  else if (isRC) card.appendChild(rcFormatNote());
 
-  if (q.stage === 'khoidong') d4RenderRecall(card, T, it, q); else d4RenderMC(card, T, it, q);
+  if (useMC) d4RenderMC(card, T, it, q); else d4RenderRecall(card, T, it, q);
   v.appendChild(card);
   return v;
 }
 
 function d4RenderRecall(card, T, it, q) {
+  const isKhoidong = q.stage === 'khoidong';
+  const kind = q.stage;
+  const autoGradeable = isKhoidong || !q.multi;
+  const cite = isKhoidong ? 'Điều 14.2.a' : 'Điều 14.2.b';
   const doGrade = once(() => {
     if (it.revealed) return;
     clearTeamTimer();
     const canonical = q.opts.find(o => o.k === q.ans[0]);
     const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
-    if (g) { it.graded = g; it.ok = g.exact; store.grade(q.id, g.exact); }
+    if (g) { it.graded = g; it.ok = g.exact; it.citeArticle = cite; store.grade(q.id, g.exact); }
     it.revealed = true; render();
   });
+
+  if (!isKhoidong && !it.ready) {
+    rcPhaseUI(card, kind, teamSeconds(kind),
+      () => { it.ready = true; render(); },
+      () => { it.ready = true; it.missed = true; it.revealed = true; it.done = true; it.ok = false; store.grade(q.id, false); render(); });
+    return;
+  }
   if (!it.revealed) {
     const ta = el('textarea', 'recall-in');
-    ta.placeholder = 'Gõ câu trả lời đầy đủ của bạn — hệ thống so khớp chính xác toàn bộ với đáp án chuẩn…';
+    ta.placeholder = autoGradeable
+      ? 'Gõ câu trả lời đầy đủ của bạn — hệ thống so khớp chính xác toàn bộ với đáp án chuẩn…'
+      : 'Soạn câu trả lời của bạn (câu nhiều đáp án — tự đối chiếu, không chấm tự động)…';
     ta.value = it.typed;
     ta.oninput = () => { it.typed = ta.value; };
     card.appendChild(ta);
     const foot = el('div', 'qfoot');
     const submit = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
-    submit.onclick = doGrade;
+    submit.onclick = once(() => { autoGradeable ? doGrade() : (it.revealed = true, render()); });
     foot.appendChild(submit);
     card.appendChild(foot);
-    if (T.timed) startTeamTimer(teamSeconds(q.stage), doGrade); else clearTeamTimer();
-  } else {
-    card.appendChild(teamAutoGradeBox(it));
+    if (isKhoidong && T.timed) startTeamTimer(teamSeconds(kind), doGrade); else clearTeamTimer();
+  } else if (autoGradeable) {
+    card.appendChild(it.missed ? rcMissedBox() : teamAutoGradeBox(it));
+    if (!isKhoidong && T.steal && rcStealEligible(kind, it)) renderStealPractice(card, it, q);
     const foot = el('div', 'qfoot');
     const retry = el('button', 'btn', `${ICON.refresh} Thử lại câu này`);
-    retry.onclick = () => { it.typed = ''; it.revealed = false; render(); };
+    retry.onclick = () => { it.typed = ''; it.revealed = false; it.missed = false; render(); };
     foot.appendChild(retry);
     const last = T.i === T.items.length - 1;
     const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
     next.onclick = once(() => { it.done = true; d4Advance(); });
     foot.appendChild(next);
     card.appendChild(foot);
+  } else {
+    const ans = q.ans.map(k => `<div class="val"><span class="k">${k.toUpperCase()}</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+    const yours = it.typed.trim()
+      ? `<div class="lead" style="margin-top:14px;color:var(--ink2)">Câu trả lời của bạn</div><div class="your">${esc(it.typed)}</div>` : '';
+    card.appendChild(el('div', 'recall-ans', `<div class="lead">Đáp án đúng (tài liệu gốc)</div>${ans}${yours}`));
+    if (!it.done) {
+      const self = el('div', 'self-grade');
+      self.appendChild(el('p', 'muted', 'Câu nhiều đáp án đúng — tự đối chiếu và đánh giá (không chấm tự động được).'));
+      const row = el('div', 'rate');
+      const ok = el('button', 'btn primary', `${ICON.check} Tôi trả lời đúng`);
+      ok.onclick = once(() => { it.done = true; it.ok = true; store.grade(q.id, true); render(); });
+      const bad = el('button', 'btn danger', `${ICON.x} Sai / không kịp`);
+      bad.onclick = once(() => { it.done = true; it.ok = false; store.grade(q.id, false); render(); });
+      row.appendChild(ok); row.appendChild(bad);
+      self.appendChild(row);
+      card.appendChild(self);
+    } else {
+      card.appendChild(el('p', '', `<b style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'}">${it.ok ? '✓ Bạn tự đánh giá: Đúng' : '✕ Bạn tự đánh giá: Sai'}</b>`));
+      if (T.steal && rcStealEligible(kind, it)) renderStealPractice(card, it, q);
+      const foot = el('div', 'qfoot');
+      const last = T.i === T.items.length - 1;
+      const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+      next.onclick = once(d4Advance);
+      foot.appendChild(next);
+      card.appendChild(foot);
+    }
   }
 }
 
@@ -1514,17 +1721,31 @@ function d4Result() {
   const list = el('div', 'review-list');
   T.items.forEach(it => {
     const q = it.q;
+    const isRC = q.stage === 'rieng' || q.stage === 'chung';
+    const wasMC = q.stage === 'tangtoc' || (isRC && T.hint);
     const r = el('div', 'rev ' + (it.ok ? 'hit' : 'miss'));
     let body = `<div class="qtop" style="margin-bottom:0">
         <span class="tag">${esc(d4Tag(q))}</span>
-        <span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.ok ? '✓ Đúng' : '✕ Sai'}</span></div>
+        <span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.missed ? '✕ Không giành được quyền' : (it.ok ? '✓ Đúng' : '✕ Sai')}</span></div>
       <div class="q">${esc(q.q)}</div>`;
-    if (q.stage === 'khoidong') {
+    if (!wasMC) {
       if (it.graded) {
         body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án chuẩn</div><div class="words">${wordDiffHtml(it.graded.refWords, it.graded.mRef, 'miss')}</div>`;
         body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(it.graded.hypWords, it.graded.mHyp, 'bad')}</div>`;
+      } else if (it.missed) {
+        body += `<div class="muted" style="margin-top:8px">(Không bấm chuông kịp trong thời gian giành quyền trả lời)</div>`;
+      } else if (q.multi) {
+        const corr = q.ans.map(k => `<div class="ans g"><span class="k">${k.toUpperCase()}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+        body += `<div class="muted" style="margin-top:8px">(Câu nhiều đáp án — tự chấm) Câu trả lời của bạn: ${it.typed.trim() ? esc(it.typed) : '(chưa trả lời)'}</div>`;
+        body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án đúng</div>${corr}`;
       } else {
         body += `<div class="muted" style="margin-top:8px">(Chưa trả lời)</div>`;
+      }
+      if (it.steal && it.steal.revealed) {
+        body += `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:10px">Tình huống luyện thêm "Giành quyền trả lời" (không tính vào kết quả câu này)</div>`;
+        body += it.steal.graded
+          ? `<div class="muted">${it.steal.graded.exact ? '✓ Đúng' : '✕ Sai'} — bạn gõ: ${esc(it.steal.typed || '(trống)')}</div>`
+          : `<div class="muted">Bạn gõ: ${esc(it.steal.typed || '(trống)')} (câu nhiều đáp án — tự đối chiếu)</div>`;
       }
     } else {
       const dk = k => { const p = (it.order || q.opts).findIndex(o => o.k === k); return (p >= 0 ? q.opts[p].k : k).toUpperCase(); };

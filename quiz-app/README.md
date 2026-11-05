@@ -75,40 +75,77 @@ công theo từng trang/ảnh. Đáp án đúng trong tài liệu gốc được
 ## Tính năng
 
 ### Đội tuyển (mô phỏng Hội thi) — tab mới
-- **Vòng sơ khảo**: Khởi động (5 câu tự luận, 90s/câu, **chấm tự động**) +
-  Tăng tốc (5 câu trắc nghiệm, 60s/câu) → **Điểm ĐT1**/100. Đúng theo
-  Điều 13.2.b, 14.2.a (trang 5–7).
-- **Vòng chung khảo**: Gói câu hỏi riêng + Gói câu hỏi chung (mỗi gói 5 câu,
-  20s/câu, tự luận, **tự chấm thủ công** như trước) → cộng vào mốc Điểm ĐT1
-  gần nhất thành **Điểm ĐT2 ước tính**/100. Đúng theo Điều 13.2.b, 14.2.b
-  (trang 6–8).
+- **Vòng sơ khảo**: Khởi động (5 câu tự luận, 90s/câu — tính cả thời gian trả
+  lời, **chấm tự động**) + Tăng tốc (5 câu trắc nghiệm, 60s/câu) → **Điểm
+  ĐT1**/100. Đúng theo Điều 13.2.b, 14.2.a (trang 5–7).
+- **Vòng chung khảo**: Gói câu hỏi riêng + Gói câu hỏi chung (mỗi gói 5 câu)
+  → cộng vào mốc Điểm ĐT1 gần nhất thành **Điểm ĐT2 ước tính**/100. Đúng theo
+  Điều 13.2.b, 14.2.b (trang 6–8). **Điều 13.2.b gọi 2 phần này là "trả lời
+  trực tiếp"**, không mô tả là trắc nghiệm/trên máy tính như Khởi động/Tăng
+  tốc — mặc định ứng dụng dùng **ô nhập tự do** (không hiện sẵn phương án),
+  chấm tự động bằng cùng tiêu chí so khớp chữ ở mục dưới (trừ câu nhiều đáp
+  án đúng — tự chấm thủ công). Có thể bật tuỳ chọn **"Ôn có gợi ý"** để hiện
+  lại các phương án A/B/C/D in trong bộ đề dưới dạng trắc nghiệm — ứng dụng
+  ghi rõ đây **là lựa chọn mô phỏng hỗ trợ học**, quy chế không mô tả hình
+  thức chọn đáp án cho 2 phần này nên không được gọi là "đúng quy chế".
 - **Đồng hồ đếm ngược bắt buộc, theo đúng quy chế, tính riêng từng câu** (Điều
   13.2.b quy định thời gian theo mỗi câu, không phải cho cả phần thi, nên mỗi
-  câu mới hợp lệ có đồng hồ riêng — không phải "reset để gian lận"): Khởi động
-  90s/câu (trang 5–6), Tăng tốc 60s/câu (trang 6), Gói riêng/Gói chung 20s/câu
-  (trang 6). Hiển thị cạnh số câu trên thanh điều hướng của bài làm (đổi màu
-  cảnh báo khi còn dưới 1/3 thời gian). Hết giờ tự khoá câu, lưu lại bài đã
-  làm/đã chọn và tự chuyển bước đúng như khi bấm nộp tay — không mất câu trả
-  lời đã nhập. Không bị chậm/dừng khi chuyển tab hay thu nhỏ trình duyệt (tính
-  theo mốc thời gian tuyệt đối, không cộng dồn theo số lần tick). Tải lại
-  trang giữa lượt mô phỏng không lấy thêm được giờ — toàn bộ trạng thái chỉ ở
-  bộ nhớ trình duyệt, tải lại sẽ mất luôn lượt làm đó (có hộp thoại cảnh báo
-  trước khi rời/tải lại trang để tránh mất bài do vô ý).
+  câu mới hợp lệ có đồng hồ riêng — không phải "reset để gian lận"):
+  - Khởi động: 90s/câu, **tính cả thời gian trả lời** (trang 5–6) — không đổi.
+  - Tăng tốc: 60s/câu (trang 6) — không đổi.
+  - **Gói câu hỏi riêng: 20s là thời gian CHUẨN BỊ trước khi trả lời**, không
+    phải hạn nộp bài (trang 6). Màn hình hiện pha "Đang chuẩn bị…" (không có ô
+    nhập), hết 20s tự chuyển sang ô trả lời — hoặc bấm "Trả lời ngay" để vào
+    sớm hơn. Sau đó **không giới hạn thêm thời gian trả lời** vì quy chế không
+    nêu thời lượng trình bày câu trả lời.
+  - **Gói câu hỏi chung: 20s là cửa sổ GIÀNH QUYỀN trả lời** (bấm chuông),
+    không phải hạn nộp bài (trang 6). Màn hình hiện nút **"🔔 Bấm chuông"**;
+    bấm trong 20s để chuyển sang ô trả lời (không giới hạn thêm giờ); hết 20s
+    mà chưa bấm thì coi là **không giành được quyền trả lời câu đó** (0đ) —
+    quy chế không mô tả bước giành lại quyền cho trường hợp không ai bấm
+    chuông, nên không tự suy ra một bước như vậy.
+  - Hiển thị cạnh số câu trên thanh điều hướng của bài làm (đổi màu cảnh báo
+    khi còn dưới 1/3 thời gian). Hết giờ tự khoá câu, lưu lại bài đã
+    làm/đã chọn và tự chuyển bước đúng như khi bấm nộp tay — không mất câu trả
+    lời đã nhập. Không bị chậm/dừng khi chuyển tab hay thu nhỏ trình duyệt
+    (tính theo mốc thời gian tuyệt đối, không cộng dồn theo số lần tick). Tải
+    lại trang giữa lượt mô phỏng không lấy thêm được giờ — toàn bộ trạng thái
+    chỉ ở bộ nhớ trình duyệt, tải lại sẽ mất luôn lượt làm đó (có hộp thoại
+    cảnh báo trước khi rời/tải lại trang để tránh mất bài do vô ý).
+- **Pha "giành lại quyền trả lời" (10s) KHÔNG bị biến thành lượt thử lại của
+  chính đội vừa trả lời sai** — Điều 13.2.b mô tả đây là cơ hội cho MỘT ĐỘI
+  KHÁC, không phải thêm giờ cho đội đã trả lời sai, nên ứng dụng không tự
+  cộng nối 20s + 10s thành 30s cho cùng một lượt. Có tuỳ chọn riêng **"Luyện
+  thêm tình huống Giành quyền trả lời (10s)"**: sau khi trả lời sai/không có
+  câu trả lời, nếu bật tuỳ chọn này sẽ hiện thêm một bài tập **tách biệt, cần
+  bấm mới bắt đầu**, có đồng hồ 10s riêng — kết quả hiển thị riêng, **không**
+  cộng vào điểm hay thời gian của câu chính.
 - Vì quy chế mô tả thi đấu **nhiều đội cùng lúc** (xếp hạng theo tốc độ, bấm
   chuông giành quyền trả lời), khi luyện một mình ứng dụng chỉ mô phỏng được nội
   dung, thời gian và đúng/sai của riêng người dùng — **không** mô phỏng việc
-  tranh chuông/trừ điểm giữa các đội. Mọi điểm số trong tab này là **điểm luyện
-  tập cá nhân**, ứng dụng luôn ghi chú rõ đây không phải điểm thi chính thức.
+  tranh chuông/trừ điểm giữa các đội thật sự cùng lúc. Mọi điểm số trong tab
+  này là **điểm luyện tập cá nhân**, ứng dụng luôn ghi chú rõ đây không phải
+  điểm thi chính thức.
 - Câu hỏi được ưu tiên chọn theo hộp Leitner thấp nhất (câu còn yếu) trước.
 - Tab "Quy chế" hiển thị nguyên văn bản quét 5 trang làm căn cứ, kèm trích dẫn
   điều/trang cho từng quy tắc hiển thị trong tab Đội tuyển.
 
-#### Chấm tự luận tự động (Khởi động) — so khớp CHÍNH XÁC, nhị phân
+#### Chấm tự luận tự động — so khớp CHÍNH XÁC, nhị phân
 
-Chỉ phần **Khởi động** (Vòng sơ khảo, và phần Khởi động trong mỗi "Bộ đề" ở
-tab "Ôn 4 đề trọng tâm") được chấm tự động; Gói câu hỏi riêng/chung ở Vòng
-chung khảo vẫn tự chấm thủ công như trước (không có định dạng rõ ràng trong
-quy chế để xác định đáp án chuẩn một cách chắc chắn).
+Áp dụng cho **Khởi động** (Vòng sơ khảo, và phần Khởi động trong mỗi "Bộ đề"
+ở tab "Ôn 4 đề trọng tâm") và **Gói câu hỏi riêng/Gói câu hỏi chung** khi
+không bật "Ôn có gợi ý" (trừ câu nhiều đáp án đúng — quy chế không mô tả cách
+xác định đáp án chuẩn khi phải ghép nhiều ý trắc nghiệm rời rạc thành 1 câu
+trả lời tự do, nên các câu này **tự chấm thủ công** bằng 2 nút Đúng/Sai, như
+Khởi động từng làm với câu nhiều đáp án).
+
+**Quan trọng — đây là tiêu chí luyện thuộc của ứng dụng, không phải cách BGK
+chấm chính thức**: Điều 14.2.a/b chỉ quy định **cơ cấu điểm nhị phân** (đúng
+= 10đ, sai = 0đ, không có điểm một phần) — quy chế **không** quy định thuật
+toán xác định "đúng/sai" cho câu trả lời trực tiếp bằng lời nói (BGK thực tế
+là giám khảo con người, có thể chấp nhận cách diễn đạt khác nghĩa tương
+đương). Việc dùng tiêu chí "khớp chính xác từng chữ" dưới đây là **lựa chọn
+của ứng dụng** để luyện nhớ đúng câu chữ, được ghi chú rõ trong giao diện.
 
 **Công thức** (xem `normWords`, `lcsAlign`, `wordsEqual`, `gradeRecall` trong
 `app.js` — dùng chung cho cả tab "Đội tuyển" và tab "Ôn 4 đề trọng tâm"):
@@ -120,7 +157,7 @@ quy chế để xác định đáp án chuẩn một cách chắc chắn).
 3. **Kết quả Đúng/Sai = so khớp CHÍNH XÁC toàn bộ mảng từ** (cùng số từ, cùng
    từng từ, cùng thứ tự) với đáp án chuẩn. Thiếu từ, thừa từ, sai từ, hoặc đảo
    thứ tự từ — tất cả đều tính **Sai**, không có điểm một phần. **Điểm câu hỏi
-   = Đúng → 10đ theo đúng cách chấm nhị phân của Điều 14.2.a / Sai → 0đ.**
+   = Đúng → 10đ theo đúng cơ cấu điểm nhị phân của Điều 14.2.a/b / Sai → 0đ.**
 4. Song song đó, vẫn tính thêm **dãy con chung dài nhất (LCS)** giữa đáp án
    chuẩn và câu trả lời (thuật toán quy hoạch động O(n·m), giữ đúng thứ tự từ,
    không cho từ đảo vị trí hay từ thừa làm tăng tỷ lệ) để ra **tỷ lệ khớp (%)**
@@ -183,17 +220,31 @@ riêng.
   dụ "Đề 3 · Gói câu hỏi riêng · Câu 2 gốc").
 - **Không tính vào Điểm ĐT1/ĐT2** — đây là khu vực ôn luyện, tách biệt khỏi
   tab "Đội tuyển" (mô phỏng mới là nơi giữ đúng cấu trúc/thời gian/cách tính
-  điểm chính thức *bắt buộc* của quy chế). Phần Khởi động dùng chung công
-  thức chấm nhị phân chính xác ở mục trên; phần Tăng tốc/Gói riêng/Gói chung
-  chấm trắc nghiệm đúng/sai bình thường.
+  điểm chính thức *bắt buộc* của quy chế).
+- **Hình thức Khởi động/Tăng tốc không đổi** (tự luận chấm tự động / trắc
+  nghiệm). **Gói câu hỏi riêng/Gói câu hỏi chung mặc định dùng ô nhập tự do**
+  (không hiện sẵn phương án) để đúng với "trả lời trực tiếp" theo Điều
+  13.2.b — chấm tự động bằng cùng tiêu chí so khớp chữ (trừ câu nhiều đáp án
+  đúng — tự chấm thủ công). Bật tuỳ chọn **"Ôn có gợi ý"** trên màn hình thiết
+  lập để quay lại hiện phương án A/B/C/D như trước, có ghi chú rõ đây là lựa
+  chọn mô phỏng hỗ trợ học, không phải hình thức thi thật.
 - **Đồng hồ đếm ngược ở đây là tuỳ chọn** (gạt công tắc "Thời gian" trên màn
   hình thiết lập, mặc định **tắt** để ôn chậm không giới hạn giờ). Khi bật,
-  dùng đúng thời lượng/cách tính của Điều 13.2.b như tab "Đội tuyển" (Khởi
-  động 90s/câu, Tăng tốc 60s/câu, Gói riêng/Gói chung 20s/câu — theo đúng
-  `stage` của từng câu, không phụ thuộc đề/vòng/chế độ ôn đã chọn), chỉ bắt
-  đầu đếm khi câu đã hiển thị, hết giờ tự khoá và chấm bằng bài đã làm (không
-  mất câu trả lời), không bị chậm khi chuyển tab, và chuyển câu không reset
-  "để gian lận" vì quy chế vốn tính theo từng câu chứ không theo cả phần thi.
+  dùng đúng thời lượng/cách tính của Điều 13.2.b như tab "Đội tuyển": Khởi
+  động 90s/câu (tính cả thời gian trả lời), Tăng tốc 60s/câu, **Gói câu hỏi
+  riêng 20s CHUẨN BỊ trước khi trả lời** (nút "Trả lời ngay" để vào sớm hơn,
+  không giới hạn thêm giờ trả lời), **Gói câu hỏi chung 20s GIÀNH QUYỀN** (nút
+  "Bấm chuông"; hết giờ chưa bấm = không giành được quyền, 0đ; sau khi bấm thì
+  không giới hạn thêm giờ trả lời) — áp dụng theo đúng `stage` của từng câu,
+  không phụ thuộc đề/vòng/chế độ ôn đã chọn. Hết giờ tự khoá và chấm bằng bài
+  đã làm (không mất câu trả lời), không bị chậm khi chuyển tab, và chuyển câu
+  không reset "để gian lận" vì quy chế vốn tính theo từng câu chứ không theo
+  cả phần thi.
+- **Tuỳ chọn "Luyện thêm tình huống Giành quyền trả lời" (10s)**: sau khi trả
+  lời sai/không có câu trả lời ở Gói riêng/chung, nếu bật sẽ hiện thêm một bài
+  tập tách biệt (cần bấm mới bắt đầu, đồng hồ 10s riêng) mô phỏng việc một đội
+  khác giành quyền (Điều 13.2.b) — kết quả hiển thị riêng, **không** cộng vào
+  điểm/thời gian của câu chính, không tự động nối tiếp thành 30 giây.
 - Toàn bộ 80 câu đã được đối chiếu trực tiếp với ảnh quét 16 trang ngày
   05/11/2026 — **0 câu còn chưa xác minh được đáp án**; nếu phát hiện sai sót,
   sửa `public/data/dethi4.json` (và `data/raw/dethi-doituyen-2026-11-05.json`
@@ -454,3 +505,73 @@ thi chính thức.
   ôn 4 đề có bật giờ còn dang dở — tải lại/đóng tab giữa chừng vẫn **không lấy
   thêm được giờ** (toàn bộ trạng thái chỉ ở bộ nhớ, tải lại mất hết lượt làm,
   không phải "được reset đồng hồ"); cảnh báo chỉ để tránh mất bài do vô ý.
+
+### 05/11/2026 (tiếp 4) — sửa lại hình thức Gói câu hỏi riêng/chung: không phải trắc nghiệm
+
+Người dùng đặt câu hỏi: "Chung khảo có thực sự là trắc nghiệm, mỗi câu 20
+giây không?" sau khi thấy tab "Ôn 4 đề trọng tâm" hiển thị trắc nghiệm cho
+Gói câu hỏi riêng/chung. **Đọc lại trực tiếp cả hai PDF** (không dựa vào code
+hiện có làm bằng chứng) cho kết quả: **không** — Điều 13.2.a–b (trang 5–6)
+gọi 2 phần này là **"trả lời trực tiếp"**, dùng cụm "đưa ra câu trả lời" /
+"bấm chuông giành quyền trả lời" — khác hẳn cách diễn đạt "trên máy tính
+(soạn thảo đáp án)" của Khởi động và "trắc nghiệm trên máy tính (lựa chọn
+đáp án đúng)" của Tăng tốc ngay trên cùng trang. Chính `CamScanner 5-11-26`
+cũng tự đặt tiêu đề mục này là *"Vòng chung khảo (Trả lời trực tiếp, nếu sai
+các đội bấm chuông giành quyền trả lời)"* ở cả 4 Bộ đề. "20 giây" có thật
+nhưng là 2 ý nghĩa khác nhau (chuẩn bị ở Gói riêng, giành quyền/bấm chuông ở
+Gói chung), không phải thời hạn chọn đáp án, và còn thiếu một pha 10 giây
+"giành lại quyền trả lời" mà bản trước chưa có. Các phương án A/B/C/D in
+trong bộ đề nhiều khả năng là tài liệu chuẩn bị/đối chiếu cho BGK chứ không
+phải lựa chọn hiển thị cho thí sinh — nhưng quy chế không khẳng định minh thị
+điều này, nên README chỉ ghi là suy luận có căn cứ, không phải sự thật đã xác
+nhận 100%.
+
+**Thay đổi đã triển khai** (áp dụng nhất quán cho cả tab "Đội tuyển" và "Ôn 4
+đề trọng tâm", giữ nguyên giao diện/bố cục tổng thể, giữ nguyên bộ lọc Sơ
+khảo-Chung khảo, chức năng đảo câu, câu trùng):
+1. Gói câu hỏi riêng/chung mặc định dùng ô nhập tự do, không hiện sẵn phương
+   án; nộp bài mới hiện đáp án chuẩn. Thêm tuỳ chọn **"Ôn có gợi ý"** (tắt
+   theo mặc định) để quay lại hiện trắc nghiệm, ghi rõ đây là mô phỏng hỗ trợ
+   học, không phải hình thức thi thật — dùng lại `teamMCView`/`d4RenderMC` đã
+   có, chỉ tổng quát hoá để nhận đúng thời lượng theo `stage` thay vì cố định
+   cho Tăng tốc.
+2. Vẫn dùng đáp án gạch chân đã đối chiếu từng câu với ảnh quét (0/40 câu Gói
+   riêng/chung còn chưa rõ đáp án — xem log "tiếp 2") để chấm theo tiêu chí so
+   khớp chữ đã thống nhất; 2 câu nhiều đáp án đúng (`DT1-GC-2`, `DT4-GC-1`)
+   không tự chấm được theo cách này nên chuyển sang tự chấm thủ công (2 nút
+   Đúng/Sai), như cách Khởi động đã làm với câu nhiều đáp án từ trước. Diễn
+   giải trong giao diện (`teamAutoGradeBox`) nay ghi rõ: cơ cấu điểm nhị phân
+   là theo Điều 14.2.a/b, còn **cách xác định đúng/sai bằng so khớp chữ là
+   lựa chọn của ứng dụng để luyện thuộc, không phải cách BGK thực tế chấm**.
+3. Sửa lại ý nghĩa đồng hồ: thêm `rcPhaseUI` — Gói riêng vẽ pha "Đang chuẩn
+   bị…" (nút "Trả lời ngay" để vào sớm), Gói chung vẽ pha "Giành quyền trả
+   lời" với nút "🔔 Bấm chuông"; sau khi vào ô trả lời thì **không đặt thêm
+   giới hạn giờ nào** vì quy chế không nêu thời lượng trình bày câu trả lời.
+   Hết 20s mà Gói chung chưa bấm chuông → `rcMissedBox()` báo "Không giành
+   được quyền trả lời", không tự chuyển sang ô trả lời.
+4. Thêm `renderStealPractice` (tuỳ chọn, tắt theo mặc định): sau khi trả lời
+   sai/không có câu trả lời ở Gói riêng/chung, hiện nút riêng để luyện tình
+   huống "Giành quyền trả lời (10s)" — phải bấm mới bắt đầu, có đồng hồ 10s
+   và ô nhập riêng, kết quả hiển thị tách biệt (`it.steal`), **không** cộng
+   vào `it.points`/`it.ok` của câu chính.
+5. README không còn khẳng định các phương án A/B/C/D "chỉ dành cho BGK" như
+   một sự thật — đã nêu rõ đây là suy luận từ cách hành văn, tách bạch phần
+   quy chế nêu trực tiếp (hình thức "trả lời trực tiếp", bấm chuông, mốc thời
+   gian, cách cộng/trừ điểm) với phần là lựa chọn mô phỏng của ứng dụng (ô
+   nhập mặc định, chế độ gợi ý, tiêu chí chấm so khớp chữ, bài tập giành
+   quyền luyện thêm).
+
+**Kiểm thử** bằng `jsdom` bấm thật qua service đang chạy: chạy lại trọn vẹn
+80 câu ở chế độ mặc định (ô nhập tự do, không giờ) — 0 lỗi, điểm 100%, bao
+gồm cả 2 câu nhiều đáp án qua luồng tự chấm thủ công mới; xác nhận chế độ có
+giờ cho Gói riêng hiện đúng pha "chuẩn bị" (không có ô nhập) rồi nút "Trả lời
+ngay" chuyển đúng sang ô nhập và chấm đúng; xác nhận Gói chung hiện đúng nút
+"Bấm chuông", và giả lập hết 20s không bấm (ghi đè `Date.now`) cho đúng kết
+quả "Không giành được quyền trả lời"; xác nhận bật "Ôn có gợi ý" quay lại
+đúng giao diện trắc nghiệm có ghi chú rõ là mô phỏng; xác nhận tuỳ chọn luyện
+"Giành quyền trả lời" hiện đúng bài tập tách biệt và **không** làm thay đổi
+điểm của câu chính sau khi nộp; lặp lại ở tab "Đội tuyển" (luôn bắt buộc có
+giờ) với cùng các kịch bản, xác nhận trích dẫn đổi đúng giữa Điều 14.2.a
+(Khởi động) và 14.2.b (Gói riêng/chung); chạy lại bộ lọc Sơ khảo/Chung khảo
+(15 tổ hợp phạm vi×vòng) — vẫn 0 câu lẫn vòng; chạy lại luồng "Luyện tập" cũ
+— không hồi quy.
