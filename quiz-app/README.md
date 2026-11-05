@@ -575,3 +575,59 @@ giờ) với cùng các kịch bản, xác nhận trích dẫn đổi đúng gi�
 (Khởi động) và 14.2.b (Gói riêng/chung); chạy lại bộ lọc Sơ khảo/Chung khảo
 (15 tổ hợp phạm vi×vòng) — vẫn 0 câu lẫn vòng; chạy lại luồng "Luyện tập" cũ
 — không hồi quy.
+
+### 05/11/2026 (tiếp 5) — sửa đáp án chuẩn tham chiếu cho chế độ trả lời tự do
+
+Lỗi được báo: Đề 3 → Khởi động → Câu 3 gốc ("Theo Nghị định số 02/2026/NĐ-CP,
+tiêu chuẩn diện tích nhà trong quân đội được quy định theo?") dùng **"Cả hai
+phương án trên."** làm đáp án chuẩn để chấm ở chế độ nhập tự do, trong khi
+người học không nhìn thấy các phương án a)/b) để biết "hai phương án trên" là
+gì — không thể gõ đúng được.
+
+**Rà soát toàn bộ 80 câu** (không chỉ câu được báo) tìm mọi đáp án đúng có
+dạng tham chiếu ("Cả…", "Tất cả…", "…trên", "A và B đúng"…) bằng regex quét cả
+2 lượt (hẹp rồi mở rộng, cùng kết quả) rồi đối chiếu thủ công — phát hiện
+đúng **4 câu** đáp án đúng là tham chiếu kiểu này (loại các trường hợp cụm từ
+"cả"/"tất cả" chỉ xuất hiện trong phương án SAI, không phải đáp án đúng, nên
+không cần sửa):
+
+| Đề | Phần | Câu gốc | ID | Đáp án trước (chỉ tham chiếu) | Đáp án sau dùng để chấm/hiển thị ở chế độ tự do |
+|---|---|---|---|---|---|
+| 3 | Khởi động | 3 | `DT3-KD-3` | "Cả hai phương án trên." | "Cấp bậc quân hàm và chức vụ." |
+| 2 | Gói câu hỏi chung | 1 | `DT2-GC-1` | "Cả a, b, c, d." | "Lần đầu trước khi đưa đối tượng kiểm định vào sử dụng; định kỳ khi đối tượng kiểm định đến hạn kiểm định lại; sau khi lắp đặt lại đối tượng kiểm định hoặc có cải tạo, sửa chữa làm thay đổi kết cấu, thông số kỹ thuật của đối tượng kiểm định; theo yêu cầu của đơn vị sử dụng hoặc theo yêu cầu của Cơ quan An toàn, bảo hộ lao động quân đội." |
+| 3 | Gói câu hỏi chung | 3 | `DT3-GC-3` | "Cả a, b, c." | "Kiểm tra tình trạng kỹ thuật và đồng bộ của trang bị kỹ thuật; bảo quản trang bị kỹ thuật và dụng cụ, thiết bị khác, sửa chữa hỏng hóc nếu có; kiểm tra hồ sơ, ghi chép sổ sách đăng ký thống kê." |
+| 1 | Tăng tốc | 3 | `DT1-TT-3` | "Cả a, b, c" | *(không sửa — xem lý do bên dưới)* |
+
+Nội dung mở rộng lấy nguyên văn các phương án được tham chiếu, ghép theo đúng
+thứ tự gốc (a → b → c → d), không đổi số liệu/đơn vị/điều kiện, chỉ nối bằng
+dấu `;` hoặc "và" cho liền mạch — không tự suy đoán hay bịa thêm nội dung.
+`DT1-TT-3` **không cần sửa** vì Tăng tốc luôn là trắc nghiệm ở cả 2 tab (dù
+bật/tắt "Ôn có gợi ý" cũng không đổi), người học luôn nhìn thấy đủ phương án
+a/b/c nên tham chiếu "Cả a, b, c" không gây ra lỗi tương tự. Không gặp câu
+nào dạng "Không phương án nào đúng" trong 80 câu — nếu phát sinh sau này,
+quy ước là đánh dấu `uncertain` thay vì tự ghép các phương án sai lại.
+
+**Triển khai**: thêm trường mới `ansFull` (mảng, có thể nhiều biến thể) vào
+đúng 3 câu trên trong `public/data/dethi4.json` và bản đối chiếu
+`data/raw/dethi-doituyen-2026-11-05.json` — **không đổi** `opts`/`ans` (khoá
+đáp án gốc cho trắc nghiệm giữ nguyên, dùng nguyên khi bật "Ôn có gợi ý").
+Thêm hàm `canonicalAnswers(q)` trong `app.js`: trả về `q.ansFull` nếu có,
+nếu không thì trả về đúng nội dung phương án khoá đáp án gốc như trước — áp
+dụng tại cả 3 nơi gọi `gradeRecall` cho chế độ trả lời tự do (chấm câu
+chính, chấm "Thử tình huống" giành quyền trả lời, và hiển thị "Đáp án chuẩn"
++ highlight thiếu/thừa/sai từ, vì cả 3 đều dùng chung kết quả của
+`gradeRecall`) — sửa một chỗ, áp dụng nhất quán cho mọi nơi hiển thị/chấm,
+đúng yêu cầu không chỉ sửa phần hiển thị mà chấm vẫn theo chuỗi tham chiếu cũ.
+
+**Kiểm thử** bằng hàm thật trích từ `app.js` (không phải viết lại logic để
+test) và bằng `jsdom` bấm qua giao diện thật trên service đang chạy, cho cả
+3 câu: gõ đúng nội dung đã mở rộng → **Đúng**; gõ nguyên văn cụm tham chiếu cũ
+("Cả hai phương án trên.", "Cả a, b, c, d.", "Cả a, b, c.") → **Sai** (0%,
+không còn được tính đúng); gõ thiếu một vế → **Sai**, từ còn thiếu được tô
+đỏ gạch ngang đúng vị trí; "Đáp án chuẩn" hiển thị sau khi nộp cũng đổi sang
+nội dung đã mở rộng, không còn hiện cụm tham chiếu cũ. Xác nhận chế độ trắc
+nghiệm ("Ôn có gợi ý") vẫn hiện nguyên văn "Cả a, b, c." làm phương án, bấm
+đúng khoá đáp án gốc vẫn được tính đúng bình thường — không đổi. Chạy lại bộ
+kiểm thử 80-câu-đúng cũ: điểm giảm còn 96% nếu vẫn gõ 3 cụm tham chiếu cũ
+(đúng như kỳ vọng, xác nhận lỗi đã được chặn), quay lại 100% khi gõ đúng nội
+dung đã mở rộng — không có câu nào khác bị ảnh hưởng ngoài 3 câu trên.

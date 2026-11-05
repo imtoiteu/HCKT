@@ -938,8 +938,11 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-57.",
-            "addedAs": "VII-57"
+            "note": "Không tìm thấy trong 228 câu cũ — đã thêm vào ngân hàng với ID VII-57. | Đáp án gốc chỉ tham chiếu (\"Cả a, b, c, d.\") — đã mở rộng đầy đủ nội dung các phương án được tham chiếu vào ansFull để chấm chế độ trả lời tự do (05/11/2026); khoá đáp án gốc (opts/ans) giữ nguyên cho chế độ trắc nghiệm.",
+            "addedAs": "VII-57",
+            "ansFull": [
+              "Lần đầu trước khi đưa đối tượng kiểm định vào sử dụng; định kỳ khi đối tượng kiểm định đến hạn kiểm định lại; sau khi lắp đặt lại đối tượng kiểm định hoặc có cải tạo, sửa chữa làm thay đổi kết cấu, thông số kỹ thuật của đối tượng kiểm định; theo yêu cầu của đơn vị sử dụng hoặc theo yêu cầu của Cơ quan An toàn, bảo hộ lao động quân đội."
+            ]
           },
           {
             "num": 2,
@@ -1124,7 +1127,10 @@
             ],
             "dupOf": "IV-14",
             "uncertain": false,
-            "note": ""
+            "note": "Đáp án gốc chỉ tham chiếu (\"Cả hai phương án trên.\") — đã mở rộng đầy đủ nội dung các phương án được tham chiếu vào ansFull để chấm chế độ trả lời tự do (05/11/2026); khoá đáp án gốc (opts/ans) giữ nguyên cho chế độ trắc nghiệm.",
+            "ansFull": [
+              "Cấp bậc quân hàm và chức vụ."
+            ]
           },
           {
             "num": 4,
@@ -1527,8 +1533,11 @@
             ],
             "dupOf": null,
             "uncertain": false,
-            "note": "Có câu VII-41 trong ngân hàng cũ cùng chủ đề nhưng PHƯƠNG ÁN TRẢ LỜI khác hẳn (không phải cùng một câu) — không phải trùng. Đã thêm vào ngân hàng với ID VII-59.",
-            "addedAs": "VII-59"
+            "note": "Có câu VII-41 trong ngân hàng cũ cùng chủ đề nhưng PHƯƠNG ÁN TRẢ LỜI khác hẳn (không phải cùng một câu) — không phải trùng. Đã thêm vào ngân hàng với ID VII-59. | Đáp án gốc chỉ tham chiếu (\"Cả a, b, c.\") — đã mở rộng đầy đủ nội dung các phương án được tham chiếu vào ansFull để chấm chế độ trả lời tự do (05/11/2026); khoá đáp án gốc (opts/ans) giữ nguyên cho chế độ trắc nghiệm.",
+            "addedAs": "VII-59",
+            "ansFull": [
+              "Kiểm tra tình trạng kỹ thuật và đồng bộ của trang bị kỹ thuật; bảo quản trang bị kỹ thuật và dụng cụ, thiết bị khác, sửa chữa hỏng hóc nếu có; kiểm tra hồ sơ, ghi chép sổ sách đăng ký thống kê."
+            ]
           },
           {
             "num": 4,

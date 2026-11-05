@@ -600,6 +600,19 @@ function gradeRecall(typed, canonicalVariants) {
   best.points = best.exact ? 10 : 0;
   return best;
 }
+/** Mảng đáp án chuẩn dùng để chấm chế độ TRẢ LỜI TỰ DO (gradeRecall). Ưu
+ * tiên `q.ansFull` nếu có — đáp án đã mở rộng đầy đủ nội dung các phương án
+ * được tham chiếu, dùng khi khoá đáp án gốc chỉ là một tham chiếu kiểu "Cả
+ * hai phương án trên" / "Cả a, b, c" mà người học không nhìn thấy các
+ * phương án (xem data/raw/dethi-doituyen-2026-11-05.json, mục "Rà soát đáp
+ * án tham chiếu"). Nếu không có `ansFull`, dùng đúng nội dung phương án khoá
+ * đáp án gốc như trước. KHÔNG dùng cho chế độ trắc nghiệm — chế độ đó luôn
+ * giữ nguyên khoá đáp án gốc q.ans/q.opts không đổi. */
+function canonicalAnswers(q) {
+  if (q.ansFull && q.ansFull.length) return q.ansFull;
+  const canonical = q.opts.find(o => o.k === q.ans[0]);
+  return canonical ? [canonical.t] : [];
+}
 function wordDiffHtml(words, matched, missClass) {
   if (!words.length) return `<span class="muted" style="font-style:normal">(không có câu trả lời)</span>`;
   return words.map((w, i) => `<span class="w ${matched[i] ? 'ok' : missClass}">${esc(w)}</span>`).join(' ');
@@ -856,8 +869,7 @@ function teamRecallView(st, it) {
 function gradeAndReveal(it, q, citeArticle) {
   if (it.revealed) return; // chặn chấm/khoá 2 lần nếu nộp tay và hết giờ trùng thời điểm
   clearTeamTimer();
-  const canonical = q.opts.find(o => o.k === q.ans[0]);
-  const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
+  const g = gradeRecall(it.typed, canonicalAnswers(q));
   if (g && (!it.graded || (g.exact && !it.graded.exact) || (g.exact === it.graded.exact && g.pct > it.graded.pct))) {
     it.graded = g; it.points = g.points; it.ok = g.exact;
   }
@@ -950,8 +962,7 @@ function renderStealPractice(card, it, q) {
     const submit = el('button', 'btn primary', 'Nộp tình huống này');
     submit.onclick = once(() => {
       clearTeamTimer();
-      const canonical = q.opts.find(o => o.k === q.ans[0]);
-      const g = !q.multi ? gradeRecall(it.steal.typed, canonical ? [canonical.t] : []) : null;
+      const g = !q.multi ? gradeRecall(it.steal.typed, canonicalAnswers(q)) : null;
       it.steal.graded = g; it.steal.revealed = true;
       render();
     });
@@ -1564,8 +1575,7 @@ function d4RenderRecall(card, T, it, q) {
   const doGrade = once(() => {
     if (it.revealed) return;
     clearTeamTimer();
-    const canonical = q.opts.find(o => o.k === q.ans[0]);
-    const g = gradeRecall(it.typed, canonical ? [canonical.t] : []);
+    const g = gradeRecall(it.typed, canonicalAnswers(q));
     if (g) { it.graded = g; it.ok = g.exact; it.citeArticle = cite; store.grade(q.id, g.exact); }
     it.revealed = true; render();
   });
@@ -1862,7 +1872,7 @@ setInterval(() => {
   DATA.sections.forEach(s => QBY[s.id] = DATA.questions.filter(q => q.sec === s.id));
 
   try {
-    const r4 = await fetch('data/dethi4.json?v=1');
+    const r4 = await fetch('data/dethi4.json?v=2');
     const raw4 = await r4.json();
     const STAGE_ORDER = ['khoidong', 'tangtoc', 'rieng', 'chung'];
     const flat = [];
