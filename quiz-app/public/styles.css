@@ -248,7 +248,8 @@ kbd{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;pad
 .rev .ans.g{color:var(--ok)} .rev .ans.r{color:var(--bad)}
 
 /* ---------- flashcard ---------- */
-.flash{min-height:330px;display:flex;flex-direction:column;justify-content:center;padding:30px 24px;text-align:center;cursor:pointer;user-select:none}
+.flash{position:relative;min-height:330px;display:flex;flex-direction:column;justify-content:center;padding:30px 24px;text-align:center;cursor:pointer;user-select:none}
+.flash .star-btn{position:absolute;top:10px;right:10px;background:var(--card);box-shadow:var(--shadow)}
 .flash .fq{font-size:18px;font-weight:650;line-height:1.6}
 .flash .fa{margin-top:22px;padding-top:20px;border-top:1px dashed var(--line2);animation:fade .25s ease}
 .flash .fa .lead{font-size:11.5px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;color:var(--ok);margin-bottom:10px}

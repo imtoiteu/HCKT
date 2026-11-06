@@ -15,7 +15,7 @@ const noAcc = s => s.normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd'
 const ICON = {
   check: '<svg viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>',
   x: '<svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>',
-  star: '<svg viewBox="0 0 24 24"><path d="M12 2.6l2.9 5.9 6.5.9-4.7 4.6 1.1 6.5L12 17.4 6.2 20.5l1.1-6.5L2.6 9.4l6.5-.9z"/></svg>',
+  star: '<svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>',
   arrow: '<svg viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></svg>',
   back: '<svg viewBox="0 0 24 24"><path d="M19 12H5M11 18l-6-6 6-6"/></svg>',
   play: '<svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8z"/></svg>',
@@ -57,8 +57,9 @@ const store = {
 };
 
 /* ---------------- app state ---------------- */
-let DATA = null, QBY = {};
+let DATA = null, QBY = {}, QID = {};
 let DETHI4 = null; // { sets:[{setNo,stages}], flat:[items in original order], bySet:{1:[...],...} }
+let D4BYID = {};
 const app = { view: 'home', quiz: null };
 
 /* ---------------- helpers ---------------- */
@@ -66,6 +67,53 @@ function shuffle(a) { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { co
 function secColor(id) { const s = DATA.sections.find(x => x.id === id); return s ? s.color : 'var(--brand)'; }
 function secShort(id) { const s = DATA.sections.find(x => x.id === id); return s ? s.short : id; }
 function answerable(q) { return q.ans.length > 0; }
+
+/* ---------------- Đánh dấu "Cần ôn lại" (bookmark, dùng chung store.d.starred) ----------------
+ * Một ID đã đánh dấu chỉ tồn tại ĐÚNG MỘT LẦN trong store.d.starred (dạng
+ * {id:1}, không phải mảng) nên không thể có "bản sao trùng lặp" dù câu đó
+ * được bấm đánh dấu từ Luyện tập, Đội tuyển hay Tra cứu — cùng 1 ID (ngân
+ * hàng chính) luôn dùng chung đúng 1 trạng thái đánh dấu ở mọi nơi. Câu
+ * trong "Ôn 4 đề trọng tâm" dùng ID riêng (DT{đề}-{phần}-{câu}) nên một câu
+ * nội dung giống nhau nhưng xuất hiện ở 2 đề khác nhau vẫn là 2 mục đánh dấu
+ * độc lập — đúng theo cách toàn bộ tính năng "Ôn 4 đề" đã thiết kế từ trước
+ * (giữ nguyên câu trùng ở từng đề như các câu riêng biệt, không gộp). */
+/** Tra cứu 1 câu hỏi đã đánh dấu theo id, trả về đối tượng chuẩn hoá hoặc
+ * null nếu id không còn tồn tại trong dữ liệu hiện có (phòng trường hợp dữ
+ * liệu câu hỏi đổi khác ở lần cập nhật sau — bỏ qua an toàn, không crash). */
+function resolveMarked(id) {
+  const bq = QID[id];
+  if (bq) return { id, source: 'bank', kind: 'mc', topic: bq.sec, topicLabel: `${bq.sec}. ${bq.secShort}`, q: bq };
+  const dq = D4BYID[id];
+  if (dq) return { id, source: 'dethi4', kind: dq.stage === 'tangtoc' ? 'mc' : 'recall', topic: 'D' + dq.setNo, topicLabel: `Đề ${dq.setNo}`, q: dq };
+  return null;
+}
+function markedList() {
+  return Object.keys(store.d.starred).map(resolveMarked).filter(Boolean);
+}
+function markedTag(item) {
+  return item.source === 'bank'
+    ? `${item.q.sec}. ${item.q.secShort} · Câu ${item.q.num}`
+    : d4Tag(item.q);
+}
+/** Nút đánh dấu/bỏ đánh dấu dùng chung ở mọi nơi hiển thị câu hỏi (Luyện tập,
+ * Luyện tốc độ, Thẻ ghi nhớ, Tra cứu, Đội tuyển, Ôn 4 đề, Cần ôn lại) — bấm
+ * được bất cứ lúc nào (kể cả khi đang làm bài/xem đáp án), không đụng vào
+ * điểm/thời gian/tiến độ. `onToggle` (tuỳ chọn) chạy thêm sau khi đổi trạng
+ * thái, dùng để vẽ lại danh sách ở tab "Cần ôn lại" mà không cần render()
+ * toàn trang. */
+function starBtn(id, { kbdHint, onToggle } = {}) {
+  const sb = el('button', 'star-btn' + (store.d.starred[id] ? ' on' : ''), ICON.star);
+  sb.title = kbdHint ? 'Đánh dấu cần ôn (phím S)' : 'Đánh dấu cần ôn';
+  sb.setAttribute('aria-label', 'Đánh dấu cần ôn');
+  sb.onclick = e => {
+    e.preventDefault(); e.stopPropagation();
+    store.star(id);
+    sb.classList.toggle('on');
+    toast(store.d.starred[id] ? 'Đã đánh dấu cần ôn 🔖' : 'Đã bỏ đánh dấu');
+    if (onToggle) onToggle(!!store.d.starred[id]);
+  };
+  return sb;
+}
 function toast(msg) {
   const t = el('div', 'toast', esc(msg)); $('#toasts').appendChild(t);
   setTimeout(() => { t.style.opacity = '0'; t.style.transition = 'opacity .3s'; setTimeout(() => t.remove(), 320); }, 1900);
@@ -341,10 +389,7 @@ V.quiz = () => {
   const top = el('div', 'qtop');
   top.innerHTML = `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span>
     <span class="tag">Câu ${q.num}</span>` + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '');
-  const sb = el('button', 'star-btn' + (store.d.starred[q.id] ? ' on' : ''), ICON.star);
-  sb.title = 'Đánh dấu để ôn lại (phím S)';
-  sb.onclick = () => { store.star(q.id); sb.classList.toggle('on'); toast(store.d.starred[q.id] ? 'Đã đánh dấu ★' : 'Đã bỏ đánh dấu'); };
-  top.appendChild(sb);
+  top.appendChild(starBtn(q.id, { kbdHint: true }));
   card.appendChild(top);
   card.appendChild(el('div', 'qtext', esc(q.q)));
 
@@ -797,7 +842,9 @@ function teamRecallView(st, it) {
 
   const card = el('div', 'card qcard');
   const tagExtra = autoGradeable ? `<span class="tag ok">Chấm tự động</span>` : `<span class="tag multi">Nhiều đáp án — tự chấm</span>`;
-  card.appendChild(el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">${esc(TEAM_STAGE_LABEL[kind])}</span>` + tagExtra));
+  const topEl = el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">${esc(TEAM_STAGE_LABEL[kind])}</span>` + tagExtra);
+  topEl.appendChild(starBtn(q.id));
+  card.appendChild(topEl);
   card.appendChild(el('div', 'qtext', esc(q.q)));
   if (!isKhoidong) card.appendChild(rcFormatNote());
 
@@ -991,6 +1038,7 @@ function teamMCView(st, it) {
   const card = el('div', 'card qcard');
   const top = el('div', 'qtop');
   top.innerHTML = `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag">${esc(TEAM_STAGE_LABEL[st.kind])}</span>` + (isHint ? `<span class="tag" style="background:var(--warn)">Ôn có gợi ý</span>` : '') + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '');
+  top.appendChild(starBtn(q.id));
   card.appendChild(top);
   card.appendChild(el('div', 'qtext', esc(q.q)));
   if (isHint) card.appendChild(el('div', 'note', `${ICON.warn}<span><b>Ôn có gợi ý:</b> Điều 13.2.b không mô tả Gói câu hỏi riêng/chung là trắc nghiệm — đây là lựa chọn <b>mô phỏng hỗ trợ học</b> (hiện lại các phương án in trong bộ đề để nhận diện thay vì nhớ lại), không phải hình thức thi thật. Tắt "Ôn có gợi ý" ở màn hình thiết lập để luyện đúng hình thức trả lời trực tiếp.</span>`));
@@ -1174,6 +1222,7 @@ V.flash = () => {
       ? `<div class="fa"><div class="lead">Đáp án đúng</div>${q.ans.map(k => `<div class="val"><span class="k">${k.toUpperCase()}</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('')}</div>`
       : `<div class="hint">Chạm vào thẻ hoặc nhấn <kbd>Space</kbd> để xem đáp án</div>`);
   if (!flash.shown) card.onclick = () => { flash.shown = true; render(); };
+  card.appendChild(starBtn(q.id));
   v.appendChild(card);
 
   if (flash.shown) {
@@ -1240,9 +1289,7 @@ V.browse = () => {
     const d = el('details', 'bq');
     if (browse.showAns) d.open = false;
     const sum = el('summary', '', `<span class="no" style="background:${secColor(q.sec)}">${q.sec}·${q.num}</span><span>${esc(q.q)}</span>`);
-    const sbn = el('button', 'star-btn' + (store.d.starred[q.id] ? ' on' : ''), ICON.star);
-    sbn.onclick = e => { e.preventDefault(); e.stopPropagation(); store.star(q.id); sbn.classList.toggle('on'); };
-    sum.appendChild(sbn);
+    sum.appendChild(starBtn(q.id));
     d.appendChild(sum);
     const body = el('div', 'body');
     q.opts.forEach(o => {
@@ -1556,7 +1603,9 @@ function d4QuizView() {
     ? (T.hint ? `<span class="tag" style="background:var(--warn)">Ôn có gợi ý</span>` : (autoGradeable ? `<span class="tag ok">Chấm tự động</span>` : `<span class="tag multi">Nhiều đáp án — tự chấm</span>`))
     : (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : '');
   const card = el('div', 'card qcard');
-  card.appendChild(el('div', 'qtop', `<span class="tag">${esc(d4Tag(q))}</span>` + extraTag + (q.uncertain ? `<span class="tag" style="background:var(--warn)">Cần xác minh</span>` : '')));
+  const d4Top = el('div', 'qtop', `<span class="tag">${esc(d4Tag(q))}</span>` + extraTag + (q.uncertain ? `<span class="tag" style="background:var(--warn)">Cần xác minh</span>` : ''));
+  d4Top.appendChild(starBtn(q.id));
+  card.appendChild(d4Top);
   card.appendChild(el('div', 'qtext', esc(q.q)));
   if (q.uncertain) card.appendChild(el('div', 'note', `${ICON.warn}<span>${esc(q.note || 'Bản quét không rõ đáp án cho câu này, cần xác minh thủ công.')}</span>`));
   if (isRC && T.hint) card.appendChild(el('div', 'note', `${ICON.warn}<span><b>Ôn có gợi ý:</b> Điều 13.2.b không mô tả Gói câu hỏi riêng/chung là trắc nghiệm — đây là lựa chọn <b>mô phỏng hỗ trợ học</b>, không phải hình thức thi thật. Tắt ở màn hình thiết lập để luyện đúng "trả lời trực tiếp".</span>`));
@@ -1771,6 +1820,369 @@ function d4Result() {
   return v;
 }
 
+/* ---------- CẦN ÔN LẠI (đánh dấu 🔖 gom từ mọi nơi: ngân hàng chính + 4 đề) ----------
+ * Luyện tại đây KHÔNG tính giờ, không phải mô phỏng thi — mỗi câu vẫn chấm
+ * đúng theo hình thức gốc của nó (trắc nghiệm hoặc trả lời trực tiếp) và vẫn
+ * cập nhật tiến độ ghi nhớ (hộp Leitner) như Luyện tập bình thường, nhưng
+ * KHÔNG tự động bỏ đánh dấu dù trả lời đúng — chỉ người học chủ động bấm
+ * đánh dấu mới được bỏ. */
+const reviewSetup = { type: 'all', topic: 'all', order: 'seq' };
+
+function reviewFiltered() {
+  let items = markedList();
+  if (reviewSetup.type !== 'all') items = items.filter(it => it.kind === reviewSetup.type);
+  if (reviewSetup.topic !== 'all') items = items.filter(it => it.topic === reviewSetup.topic);
+  // thứ tự hiển thị/ôn mặc định ổn định: ngân hàng chính trước (theo ngành, số câu), rồi 4 đề (theo đề, phần, số câu)
+  const stageIdx = { khoidong: 0, tangtoc: 1, rieng: 2, chung: 3 };
+  return items.sort((a, b) => {
+    if (a.source !== b.source) return a.source === 'bank' ? -1 : 1;
+    if (a.source === 'bank') return a.topic === b.topic ? a.q.num - b.q.num : a.topic.localeCompare(b.topic);
+    if (a.q.setNo !== b.q.setNo) return a.q.setNo - b.q.setNo;
+    if (a.q.stage !== b.q.stage) return stageIdx[a.q.stage] - stageIdx[b.q.stage];
+    return a.q.num - b.q.num;
+  });
+}
+function reviewTopics(typeFilter) {
+  let items = markedList();
+  if (typeFilter !== 'all') items = items.filter(it => it.kind === typeFilter);
+  const map = new Map();
+  items.forEach(it => { const cur = map.get(it.topic) || { id: it.topic, label: it.topicLabel, count: 0 }; cur.count++; map.set(it.topic, cur); });
+  return [...map.values()].sort((a, b) => a.label.localeCompare(b.label, 'vi'));
+}
+
+V.review = () => {
+  if (!app.review) return reviewHome();
+  if (app.review.finished) return reviewResult();
+  return reviewQuizView();
+};
+
+function reviewHome() {
+  const v = el('div');
+  v.appendChild(el('div', 'page-head', `<h1>Cần ôn lại</h1><p>Gom tất cả câu hỏi bạn đã đánh dấu 🔖 — dù là trắc nghiệm ở Luyện tập/Luyện tốc độ/Thẻ ghi nhớ/Tra cứu/Đội tuyển hay trả lời trực tiếp ở "Ôn 4 đề trọng tâm" — để luyện tập trung một chỗ.</p>`));
+
+  const all = markedList();
+  if (!all.length) {
+    v.appendChild(el('div', 'empty', `<div class="ic">🔖</div><p>Chưa có câu nào được đánh dấu.<br>Nhấn biểu tượng <b>🔖</b> ở góc mỗi câu hỏi (khi làm bài, xem đáp án hay tra cứu) để thêm câu đó vào đây.</p>`));
+    return v;
+  }
+
+  const card = el('div', 'card pad');
+  card.appendChild(el('p', '', `Tổng cộng <b>${all.length}</b> câu đã đánh dấu.`)).style.cssText = 'font-size:14px;margin-bottom:14px';
+
+  const f1 = el('div', 'field', `<label>Loại câu hỏi</label>`);
+  const typeChips = el('div', 'chips');
+  const types = [['all', 'Tất cả'], ['mc', 'Trắc nghiệm'], ['recall', 'Tự luận']];
+  types.forEach(([id, lbl]) => {
+    const n = id === 'all' ? all.length : all.filter(it => it.kind === id).length;
+    const c = el('button', 'chip', `${esc(lbl)}<small>${n}</small>`);
+    c.dataset.id = id;
+    c.onclick = () => { reviewSetup.type = id; reviewSetup.topic = 'all'; renderReviewHome(); };
+    typeChips.appendChild(c);
+  });
+  f1.appendChild(typeChips); card.appendChild(f1);
+
+  const f2 = el('div', 'field', `<label>Chủ đề / nhóm</label>`);
+  const topicChips = el('div', 'chips');
+  f2.appendChild(topicChips); card.appendChild(f2);
+
+  const f3 = el('div', 'field', `<label>Thứ tự luyện</label>`);
+  const orderChips = el('div', 'chips');
+  [['seq', 'Theo thứ tự'], ['random', 'Ngẫu nhiên']].forEach(([id, lbl]) => {
+    const c = el('button', 'chip', esc(lbl));
+    c.dataset.id = id;
+    c.onclick = () => { reviewSetup.order = id; syncReview(); };
+    orderChips.appendChild(c);
+  });
+  f3.appendChild(orderChips); card.appendChild(f3);
+
+  const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
+  const go = el('button', 'btn primary big block', `${ICON.play} Ôn tất cả câu đã đánh dấu`);
+  go.style.marginTop = '10px';
+  go.onclick = () => reviewStart(reviewFiltered(), reviewSetup.order === 'random');
+  card.appendChild(go);
+  v.appendChild(card);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Danh sách đã đánh dấu</h3><span class="muted" style="font-size:12.5px">Bấm 🔖 để bỏ đánh dấu ngay tại đây</span>`));
+  const list = el('div', 'review-list');
+  v.appendChild(list);
+
+  function syncReview() {
+    $$('.chip', typeChips).forEach(c => c.classList.toggle('on', c.dataset.id === reviewSetup.type));
+    $$('.chip', orderChips).forEach(c => c.classList.toggle('on', c.dataset.id === reviewSetup.order));
+    const topics = reviewTopics(reviewSetup.type);
+    topicChips.innerHTML = '';
+    const allTopicChip = el('button', 'chip', `Tất cả<small>${topics.reduce((a, t) => a + t.count, 0)}</small>`);
+    allTopicChip.dataset.id = 'all';
+    allTopicChip.onclick = () => { reviewSetup.topic = 'all'; syncReview(); };
+    topicChips.appendChild(allTopicChip);
+    topics.forEach(t => {
+      const c = el('button', 'chip', `${esc(t.label)}<small>${t.count}</small>`);
+      c.dataset.id = t.id;
+      c.onclick = () => { reviewSetup.topic = t.id; syncReview(); };
+      topicChips.appendChild(c);
+    });
+    $$('.chip', topicChips).forEach(c => c.classList.toggle('on', c.dataset.id === reviewSetup.topic));
+
+    const filtered = reviewFiltered();
+    avail.textContent = `Có ${filtered.length} câu phù hợp lựa chọn hiện tại.`;
+    go.disabled = filtered.length === 0;
+    go.innerHTML = `${ICON.play} Ôn tất cả câu đã đánh dấu (${filtered.length})`;
+
+    list.innerHTML = '';
+    if (!filtered.length) {
+      list.appendChild(el('div', 'empty', `<div class="ic">🔍</div><p>Không có câu nào khớp bộ lọc hiện tại.</p>`));
+    } else {
+      filtered.forEach(item => list.appendChild(markedRow(item)));
+    }
+  }
+  syncReview();
+  return v;
+}
+function markedRow(item) {
+  const r = el('div', 'rev');
+  r.innerHTML = `<div class="qtop" style="margin-bottom:6px">
+      <span class="tag">${esc(markedTag(item))}</span>
+      <span class="tag ${item.kind === 'mc' ? '' : 'multi'}">${item.kind === 'mc' ? 'Trắc nghiệm' : 'Tự luận'}</span>
+    </div>
+    <div class="q">${esc(item.q.q)}</div>`;
+  const actions = el('div', 'qfoot'); actions.style.marginTop = '10px';
+  const go1 = el('button', 'btn', `${ICON.play} Luyện câu này`);
+  go1.onclick = () => reviewStart([item], false);
+  actions.appendChild(go1);
+  actions.appendChild(el('div', 'spacer'));
+  actions.appendChild(starBtn(item.id, { onToggle: () => renderReviewHome() }));
+  r.appendChild(actions);
+  return r;
+}
+function renderReviewHome() { if (app.view === 'review' && !app.review) render(); }
+
+function reviewStart(items, randomize) {
+  if (!items.length) { toast('Không có câu nào phù hợp.'); return; }
+  let pool = items.slice();
+  if (randomize) pool = shuffle(pool);
+  app.review = {
+    items: pool.map(item => ({
+      item,
+      order: item.kind === 'mc' ? shuffle(item.q.opts) : item.q.opts,
+      pick: [], typed: '', done: false, ok: null, revealed: false, graded: null,
+    })),
+    i: 0, right: 0, wrong: 0, started: Date.now(),
+  };
+  app.view = 'review'; render();
+}
+function reviewAdvance() {
+  const T = app.review;
+  if (T.i < T.items.length - 1) { T.i++; render(); }
+  else reviewFinish();
+}
+function reviewFinish() {
+  const T = app.review;
+  T.right = T.items.filter(it => it.ok === true).length;
+  T.wrong = T.items.filter(it => it.ok === false).length;
+  T.finished = true;
+  T.elapsed = Date.now() - T.started;
+  render();
+}
+
+function reviewQuizView() {
+  const T = app.review, it = T.items[T.i], item = it.item, q = item.q;
+  const v = el('div');
+
+  const bar = el('div', 'quiz-bar');
+  const back = el('button', 'btn ghost', `${ICON.back} Thoát`);
+  back.onclick = () => { if (T.i === 0 || confirm('Thoát và huỷ lượt ôn này?')) { app.review = null; nav('review'); } };
+  bar.appendChild(back);
+  bar.appendChild(el('div', 'progress', `<i style="width:${T.i / T.items.length * 100}%"></i>`));
+  bar.appendChild(el('span', 'counter', `${T.i + 1}/${T.items.length}`));
+  bar.appendChild(el('span', 'score-live', `<span class="g">✓ ${T.items.filter(x => x.ok === true).length}</span> · <span class="r">✕ ${T.items.filter(x => x.ok === false).length}</span>`));
+  v.appendChild(bar);
+
+  const card = el('div', 'card qcard');
+  const topEl = el('div', 'qtop', `<span class="tag">${esc(markedTag(item))}</span>` + (q.multi ? `<span class="tag multi">Chọn nhiều đáp án</span>` : ''));
+  topEl.appendChild(starBtn(item.id));
+  card.appendChild(topEl);
+  card.appendChild(el('div', 'qtext', esc(q.q)));
+
+  if (item.kind === 'mc') reviewRenderMC(card, T, it, item, q); else reviewRenderRecall(card, T, it, item, q);
+  v.appendChild(card);
+  return v;
+}
+
+function reviewRenderMC(card, T, it, item, q) {
+  const wrap = el('div', 'opts');
+  it.order.forEach((o, idx) => {
+    const b = el('button', 'opt');
+    b.dataset.k = o.k;
+    b.innerHTML = `<span class="key">${esc(q.opts[idx].k)}</span><span class="txt">${esc(o.t)}</span><span class="mark"></span>`;
+    b.onclick = () => pick(o.k);
+    wrap.appendChild(b);
+  });
+  card.appendChild(wrap);
+  const fbSlot = el('div'); fbSlot.id = 'fbSlot'; card.appendChild(fbSlot);
+  const footSlot = el('div'); footSlot.id = 'mcFoot'; card.appendChild(footSlot);
+  setTimeout(paint);
+
+  function paint() {
+    $$('.opt', wrap).forEach(b => {
+      const k = b.dataset.k; b.className = 'opt';
+      if (it.done) {
+        b.classList.add('locked');
+        const isC = q.ans.includes(k), isP = it.pick.includes(k);
+        if (isC) { b.classList.add('correct'); b.querySelector('.mark').innerHTML = ICON.check; }
+        else if (isP) { b.classList.add('wrong'); b.querySelector('.mark').innerHTML = ICON.x; }
+        else b.classList.add('dim');
+      } else if (it.pick.includes(k)) b.classList.add('sel');
+    });
+    const slot = $('#mcFoot'); if (slot) slot.innerHTML = '';
+    if (!it.done && q.multi) {
+      const foot = el('div', 'qfoot');
+      const chk = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
+      chk.disabled = it.pick.length === 0;
+      chk.onclick = () => finish();
+      foot.appendChild(chk);
+      slot && slot.appendChild(foot);
+    }
+  }
+  function pick(k) {
+    if (it.done) return;
+    if (q.multi) { const i = it.pick.indexOf(k); i < 0 ? it.pick.push(k) : it.pick.splice(i, 1); paint(); }
+    else { it.pick = [k]; paint(); setTimeout(finish, 130); }
+  }
+  function finish() {
+    if (it.done) return;
+    it.done = true;
+    it.ok = it.pick.length > 0 && setEq(it.pick, q.ans);
+    store.grade(q.id, !!it.ok);
+    paint();
+    const corr = q.ans.map(k => `<b>${k.toUpperCase()}</b>. ${esc(q.opts.find(o => o.k === k).t)}`).join('<br>');
+    const fb = el('div', 'feedback ' + (it.ok ? 'good' : 'bad'), (it.ok ? ICON.check : ICON.x) + `<div>${it.ok ? 'Chính xác!' : 'Chưa đúng'}<span class="sub">Đáp án đúng: ${corr}</span></div>`);
+    const fbSlotEl = $('#fbSlot'); if (fbSlotEl) { fbSlotEl.innerHTML = ''; fbSlotEl.appendChild(fb); }
+    const foot = el('div', 'qfoot');
+    const last = T.i === T.items.length - 1;
+    const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+    next.onclick = once(reviewAdvance);
+    foot.appendChild(next);
+    const slot = $('#mcFoot'); if (slot) { slot.innerHTML = ''; slot.appendChild(foot); }
+    next.focus();
+  }
+}
+
+function reviewRenderRecall(card, T, it, item, q) {
+  const autoGradeable = !q.multi;
+  const cite = item.source === 'bank' ? 'tiêu chí luyện thuộc của ứng dụng' : (q.stage === 'khoidong' ? 'Điều 14.2.a' : 'Điều 14.2.b');
+  const doGrade = once(() => {
+    if (it.revealed) return;
+    const g = gradeRecall(it.typed, canonicalAnswers(q));
+    if (g) { it.graded = g; it.ok = g.exact; it.citeArticle = cite; store.grade(q.id, g.exact); }
+    it.revealed = true; render();
+  });
+  if (!it.revealed) {
+    const ta = el('textarea', 'recall-in');
+    ta.placeholder = autoGradeable
+      ? 'Gõ câu trả lời đầy đủ của bạn — hệ thống so khớp chính xác toàn bộ với đáp án chuẩn…'
+      : 'Soạn câu trả lời của bạn (câu nhiều đáp án — tự đối chiếu, không chấm tự động)…';
+    ta.value = it.typed;
+    ta.oninput = () => { it.typed = ta.value; };
+    card.appendChild(ta);
+    const foot = el('div', 'qfoot');
+    const submit = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
+    submit.onclick = autoGradeable ? doGrade : once(() => { it.revealed = true; render(); });
+    foot.appendChild(submit);
+    card.appendChild(foot);
+  } else if (autoGradeable) {
+    card.appendChild(teamAutoGradeBox(it));
+    const foot = el('div', 'qfoot');
+    const retry = el('button', 'btn', `${ICON.refresh} Thử lại câu này`);
+    retry.onclick = () => { it.typed = ''; it.revealed = false; render(); };
+    foot.appendChild(retry);
+    const last = T.i === T.items.length - 1;
+    const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+    next.onclick = once(() => { it.done = true; reviewAdvance(); });
+    foot.appendChild(next);
+    card.appendChild(foot);
+  } else {
+    const ans = q.ans.map(k => `<div class="val"><span class="k">${k.toUpperCase()}</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+    const yours = it.typed.trim()
+      ? `<div class="lead" style="margin-top:14px;color:var(--ink2)">Câu trả lời của bạn</div><div class="your">${esc(it.typed)}</div>` : '';
+    card.appendChild(el('div', 'recall-ans', `<div class="lead">Đáp án đúng (tài liệu gốc)</div>${ans}${yours}`));
+    if (!it.done) {
+      const self = el('div', 'self-grade');
+      self.appendChild(el('p', 'muted', 'Câu nhiều đáp án đúng — tự đối chiếu và đánh giá (không chấm tự động được).'));
+      const row = el('div', 'rate');
+      const ok = el('button', 'btn primary', `${ICON.check} Tôi trả lời đúng`);
+      ok.onclick = once(() => { it.done = true; it.ok = true; store.grade(q.id, true); render(); });
+      const bad = el('button', 'btn danger', `${ICON.x} Sai / không kịp`);
+      bad.onclick = once(() => { it.done = true; it.ok = false; store.grade(q.id, false); render(); });
+      row.appendChild(ok); row.appendChild(bad);
+      self.appendChild(row);
+      card.appendChild(self);
+    } else {
+      card.appendChild(el('p', '', `<b style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'}">${it.ok ? '✓ Bạn tự đánh giá: Đúng' : '✕ Bạn tự đánh giá: Sai'}</b>`));
+      const foot = el('div', 'qfoot');
+      const last = T.i === T.items.length - 1;
+      const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+      next.onclick = once(reviewAdvance);
+      foot.appendChild(next);
+      card.appendChild(foot);
+    }
+  }
+}
+
+function reviewResult() {
+  const T = app.review;
+  const total = T.items.length;
+  const pct = total ? Math.round(T.right / total * 100) : 0;
+  const emo = pct >= 90 ? '🏆' : pct >= 75 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  const v = el('div');
+  const c = el('div', 'card result', `
+    <div class="emoji">${emo}</div>
+    <div class="big" style="color:${pct >= 75 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)'}">${pct}%</div>
+    <div class="lbl"><b>Cần ôn lại</b> — đúng ${T.right}/${total} câu <span class="muted" style="font-weight:400">(không tự bỏ đánh dấu — bấm 🔖 nếu đã thuộc)</span></div>
+    <div class="rstats">
+      <div class="rstat"><b style="color:var(--ok)">${T.right}</b><span>Câu đúng</span></div>
+      <div class="rstat"><b style="color:var(--bad)">${T.wrong}</b><span>Câu sai</span></div>
+      <div class="rstat"><b>${fmtTime(T.elapsed)}</b><span>Thời gian</span></div>
+    </div>`);
+  const cta = el('div', 'hero-cta'); cta.style.justifyContent = 'center'; cta.style.marginTop = '22px';
+  const again = el('button', 'btn primary', `${ICON.refresh} Ôn lượt khác`);
+  again.onclick = () => { app.review = null; nav('review'); };
+  cta.appendChild(again);
+  const home = el('button', 'btn ghost', 'Về trang chủ');
+  home.onclick = () => { app.review = null; nav('home'); };
+  cta.appendChild(home);
+  c.appendChild(cta);
+  v.appendChild(c);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Xem lại bài làm</h3><span class="muted" style="font-size:12.5px">${total} câu — bấm 🔖 để bỏ đánh dấu câu đã thuộc</span>`));
+  const list = el('div', 'review-list');
+  T.items.forEach(it => {
+    const item = it.item, q = item.q;
+    const r = el('div', 'rev ' + (it.ok ? 'hit' : 'miss'));
+    const topRow = el('div', 'qtop'); topRow.style.marginBottom = '0';
+    topRow.innerHTML = `<span class="tag">${esc(markedTag(item))}</span><span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.ok ? '✓ Đúng' : '✕ Sai'}</span>`;
+    topRow.appendChild(starBtn(item.id));
+    r.appendChild(topRow);
+    r.appendChild(el('div', 'q', esc(q.q)));
+    if (item.kind === 'recall') {
+      if (it.graded) {
+        r.appendChild(el('div', '', `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án chuẩn</div><div class="words">${wordDiffHtml(it.graded.refWords, it.graded.mRef, 'miss')}</div><div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(it.graded.hypWords, it.graded.mHyp, 'bad')}</div>`));
+      } else {
+        const corr = q.ans.map(k => `<div class="ans g"><span class="k">${k.toUpperCase()}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+        r.appendChild(el('div', '', `<div class="muted" style="margin-top:8px">(Câu nhiều đáp án — tự chấm) Bạn trả lời: ${it.typed.trim() ? esc(it.typed) : '(chưa trả lời)'}</div><div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án đúng</div>${corr}`));
+      }
+    } else {
+      const dk = k => { const p = (it.order || q.opts).findIndex(o => o.k === k); return (p >= 0 ? q.opts[p].k : k).toUpperCase(); };
+      const yours = it.pick.length ? it.pick.map(k => `<div class="ans r"><span class="k">${dk(k)}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('') : `<div class="ans r"><span class="k">–</span><span>Chưa trả lời</span></div>`;
+      const corr = q.ans.map(k => `<div class="ans g"><span class="k">${dk(k)}.</span><span>${esc(q.opts.find(o => o.k === k).t)}</span></div>`).join('');
+      if (!it.ok) r.appendChild(el('div', '', `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Bạn chọn</div>${yours}`));
+      r.appendChild(el('div', '', `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án đúng</div>${corr}`));
+    }
+    list.appendChild(r);
+  });
+  v.appendChild(list);
+  return v;
+}
+
 /* ---------------- router / render ---------------- */
 function nav(v) {
   app.view = v;
@@ -1779,6 +2191,8 @@ function nav(v) {
   if (v !== 'team') { clearTeamTimer(); app.team = null; }
   if (v === 'dethi4' && app.d4?.finished) app.d4 = null;
   if (v !== 'dethi4') { clearTeamTimer(); app.d4 = null; }
+  if (v === 'review' && app.review?.finished) app.review = null;
+  if (v !== 'review') app.review = null;
   location.hash = v; render(); scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -1792,7 +2206,7 @@ function render() {
 
 function buildBottomBar() {
   const bb = $('#botbar');
-  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', team: 'Đội tuyển', dethi4: '4 Đề', exam: 'Tốc độ', flash: 'Thẻ nhớ', browse: 'Tra cứu', stats: 'Tiến độ', ref: 'Quy chế' };
+  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', team: 'Đội tuyển', dethi4: '4 Đề', exam: 'Tốc độ', flash: 'Thẻ nhớ', browse: 'Tra cứu', review: 'Cần ôn', stats: 'Tiến độ', ref: 'Quy chế' };
   [...$('#tabs').children].forEach(b => {
     const c = b.cloneNode(true);
     c.querySelector('span').textContent = SHORT[c.dataset.nav] || c.dataset.nav;
@@ -1870,6 +2284,7 @@ setInterval(() => {
     return;
   }
   DATA.sections.forEach(s => QBY[s.id] = DATA.questions.filter(q => q.sec === s.id));
+  DATA.questions.forEach(q => QID[q.id] = q);
 
   try {
     const r4 = await fetch('data/dethi4.json?v=2');
@@ -1882,6 +2297,7 @@ setInterval(() => {
       STAGE_ORDER.forEach(st => (s.stages[st] || []).forEach(q => { flat.push(q); bySet[s.setNo].push(q); }));
     });
     DETHI4 = { source: raw4.source, title: raw4.title, sets: raw4.sets, flat, bySet };
+    flat.forEach(q => D4BYID[q.id] = q);
   } catch (e) { DETHI4 = null; }
 
   $$('#tabs button, .brand').forEach(b => b.onclick = () => nav(b.dataset.nav));

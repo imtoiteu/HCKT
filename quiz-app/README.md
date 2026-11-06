@@ -683,3 +683,82 @@ mở rộng ở `DT3-KD-3`/`DT2-GC-1`/`DT3-GC-3`) — không hồi quy. **Không
 duyệt hay màn hình — `jsdom` không dựng layout/CSS đầy đủ như trình duyệt
 thật, chỉ xác nhận đúng quy tắc CSS được áp dụng; cần người dùng tự mở trang
 để xác nhận hình ảnh cuối cùng.
+
+### 06/11/2026 — tính năng "Đánh dấu câu hỏi cần ôn" (🔖) + tab "Cần ôn lại"
+
+Thêm nút đánh dấu/bỏ đánh dấu 🔖 ở **mọi nơi hiển thị câu hỏi** (Luyện tập,
+Luyện tốc độ, Thẻ ghi nhớ, Tra cứu, Đội tuyển, Ôn 4 đề trọng tâm) và một tab
+mới **"Cần ôn lại"** gom toàn bộ câu đã đánh dấu từ mọi nơi lại một chỗ để
+luyện tập trung.
+
+**Thiết kế dữ liệu**: dùng chung `store.d.starred` (object dạng `{id: 1}`,
+không phải mảng) — một ID chỉ có đúng một mục, nên bấm đánh dấu cùng 1 câu từ
+Luyện tập, Tra cứu hay Đội tuyển đều ra cùng một trạng thái, không thể trùng
+lặp. ID câu hỏi dùng khoá ổn định có sẵn (`I-1`… cho ngân hàng 244 câu,
+`DT{đề}-{phần}-{số}` cho 80 câu "4 đề trọng tâm") — không dựa vào vị trí/thứ
+tự hiển thị, nên xáo trộn đáp án hay đổi thứ tự danh sách không làm mất dấu.
+Hai nguồn dữ liệu không trùng ID với nhau (đã kiểm tra), nên không cần hợp
+nhất. Lưu cùng `localStorage` key `hckt2026.v1` như toàn bộ tiến độ/thống kê
+khác — ứng dụng hiện không có hệ thống tài khoản nên không có nguy cơ mất dấu
+khi "đăng nhập lại"; nếu sau này có tài khoản, chỉ cần đồng bộ hoá đối tượng
+`starred` này như các trường `stats`/`history` khác.
+
+**Đánh dấu**: hàm `starBtn(id, opts)` dựng sẵn nút 🔖 dùng chung cho mọi màn
+hình, bấm được bất cứ lúc nào (đang làm bài, đã xem đáp án, đang xem lại kết
+quả) — chỉ gọi `store.star(id)` và cập nhật class `.on`, không đụng vào
+điểm số/đồng hồ/tiến độ Leitner của câu đó. Icon bookmark dùng lại đúng
+`ICON.star` (đã đổi từ hình sao sang hình bookmark cho đúng yêu cầu), nút có
+kích thước cố định 30×30px (CSS `.star-btn` có sẵn từ trước, không phình to
+thẻ câu hỏi).
+
+**Tab "Cần ôn lại"**: màn hình danh sách hiển thị tổng số câu đã đánh dấu, bộ
+lọc theo loại (Tất cả/Trắc nghiệm/Tự luận) và theo chủ đề/ngành (ngân hàng
+chính) hoặc theo đề (4 đề trọng tâm) — số lượng mỗi lựa chọn cập nhật theo bộ
+lọc đang chọn. Có thể luyện từng câu riêng (nút "Luyện câu này" ngay trong
+danh sách) hoặc "Ôn tất cả câu đã đánh dấu" (phù hợp bộ lọc hiện tại), theo
+thứ tự gốc hoặc ngẫu nhiên. Khi luyện, mỗi câu được chấm **đúng theo hình
+thức gốc của chính nó** — trắc nghiệm (một/nhiều đáp án) dùng lại UI chấm của
+`V.quiz`, tự luận dùng lại UI chấm/so khớp từ của `teamRecallView`/`d4QuizView`
+(bao gồm cả câu nhiều đáp án đúng phải tự đối chiếu) — không viết lại logic
+chấm, chỉ tái dùng. Lượt luyện ở đây **không tính giờ** (không phải mô phỏng
+thi) nhưng vẫn gọi `store.grade()` để cập nhật hộp Leitner như bình thường;
+khác với mọi nơi khác, trả lời đúng ở đây **không tự bỏ đánh dấu** — đúng yêu
+cầu "chỉ bỏ đánh dấu khi người học chủ động thực hiện". Có thể bỏ đánh dấu
+ngay trong danh sách hoặc ngay trong lúc luyện/xem kết quả bằng cùng nút 🔖.
+Khi danh sách trống, hiển thị hướng dẫn cách đánh dấu.
+
+**Giao diện**: tái dùng toàn bộ class CSS đã có (`.chips`/`.chip`, `.field`,
+`.card.pad`, `.empty`, `.review-list`/`.rev`, `.star-btn`) — chỉ thêm đúng 2
+dòng CSS mới (`.flash{position:relative}` và `.flash .star-btn{position:
+absolute}` để đặt nút 🔖 lên góc thẻ ghi nhớ không chiếm layout). Không cần
+CSS mới cho giao diện di động vì toàn bộ `.chip`/`.btn`/`.star-btn` đã có quy
+tắc responsive từ trước.
+
+**Nối tab**: thêm nút `data-nav="review"` vào `<nav id="tabs">` trong
+`index.html` — thanh điều hướng dưới cho di động (`buildBottomBar()`) tự
+nhân bản từ `#tabs` nên không cần sửa thêm gì cho mobile; thêm nhãn rút gọn
+"Cần ôn" vào bảng `SHORT` dùng riêng cho thanh dưới. Thêm quy tắc reset
+`app.review` khi vào/ra tab (giống `app.team`/`app.d4`) để quay lại tab sau
+khi xem kết quả không bị kẹt ở màn hình cũ.
+
+**Kiểm thử** bằng Playwright (Chromium, 32 kịch bản, chạy qua
+`node server.js` thật trên cổng cục bộ — không phải logic viết lại để test):
+đánh dấu/bỏ đánh dấu và đổi trạng thái icon; đánh dấu từ Tra cứu rồi xác nhận
+Thẻ ghi nhớ cũng có nút 🔖 (UI dùng chung) và tab "Cần ôn lại" chỉ liệt kê
+**đúng 1 dòng** cho 1 ID (không trùng lặp); lưu `localStorage` sống sót qua
+`page.reload()`; lọc theo loại hiển thị đủ 3 nhãn; luyện "Ôn tất cả câu đã
+đánh dấu" tới màn kết quả, chấm điểm đúng, và xác nhận đánh dấu **không** bị
+tự xoá sau khi trả lời; đánh dấu trong câu hỏi Đội tuyển (Gói riêng, đang
+chạy đồng hồ pha "chuẩn bị") không làm đồng hồ dừng/nhảy số hay làm câu hỏi
+tự chuyển tiếp; đánh dấu câu "Ôn 4 đề" ghi đúng ID dạng `DT…`; viewport
+iPhone 12 — thanh điều hướng dưới có tab "Cần ôn", không tràn ngang trang ở
+cả tab "Cần ôn lại" và Tra cứu, nút 🔖 giữ kích thước ≤36×36px. **32/32 đạt**.
+Không kiểm thử được trên thiết bị di động thật (chỉ giả lập viewport bằng
+Playwright) — cần người dùng tự mở trên điện thoại để xác nhận cảm giác chạm
+cuối cùng.
+
+**Giới hạn còn lại**: lọc theo "chủ đề/nhóm kiến thức" hiện dùng đúng 2 cấp
+nhóm dữ liệu sẵn có (8 ngành của ngân hàng chính, 4 "đề" của khu vực trọng
+tâm) — chưa có nhãn chủ đề chi tiết hơn vì dữ liệu nguồn không có trường này;
+nếu cần nhóm nhỏ hơn (theo điều/nội dung) sẽ cần bổ sung trường phân loại mới
+vào dữ liệu câu hỏi trước.
