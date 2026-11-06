@@ -762,3 +762,124 @@ nhóm dữ liệu sẵn có (8 ngành của ngân hàng chính, 4 "đề" của 
 tâm) — chưa có nhãn chủ đề chi tiết hơn vì dữ liệu nguồn không có trường này;
 nếu cần nhóm nhỏ hơn (theo điều/nội dung) sẽ cần bổ sung trường phân loại mới
 vào dữ liệu câu hỏi trước.
+
+### 06/11/2026 (tiếp) — chia "Ôn 4 đề trọng tâm" thành Vòng sơ khảo/Vòng chung khảo riêng cho từng đề
+
+Nâng cấp mục "Ôn 4 đề trọng tâm": mỗi đề trong 4 "Bộ đề" giờ có 2 nút nổi bật
+**Vòng sơ khảo** và **Vòng chung khảo**, mô phỏng đúng cấu trúc/đồng hồ/cách
+tính điểm của Điều 13–14 Quy chế Hội thi — giống cách tab "Đội tuyển" đã làm
+— nhưng tính riêng cho đúng 10 câu gốc của từng đề (không lấy câu ngẫu nhiên
+từ cả ngân hàng như tab "Đội tuyển"), lưu điểm cao nhất và lịch sử riêng theo
+từng đề × từng vòng.
+
+**Kiểm tra cấu trúc dữ liệu trước khi chia** (theo đúng yêu cầu bảo toàn nội
+dung gốc): cả 4 đề trong `public/data/dethi4.json` đã có sẵn **đúng 5+5+5+5
+câu** cho 4 giai đoạn `khoidong`/`tangtoc`/`rieng`/`chung` — đây là phân loại
+**gốc từ tài liệu quét** (CamScanner 5-11-26, đã bóc tách thủ công theo đúng
+cấu trúc in trong đề, không phải do ứng dụng tự suy đoán/phân loại lại) nên
+**không cần và không áp dụng** bất kỳ quy tắc phân loại "hợp lý dựa trên dạng
+câu" nào — mỗi đề đã đủ đúng 20 câu, chia thẳng thành 10 câu Vòng sơ khảo
+(Khởi động + Tăng tốc) và 10 câu Vòng chung khảo (Gói riêng + Gói chung)
+theo đúng Điều 13.2.a, không đề nào thiếu câu. Không sửa, xoá hay viết lại
+bất kỳ câu hỏi/đáp án nào trong 2 file dữ liệu 4 đề.
+
+**Đối chiếu lại Điều 12–14** (ảnh quét `public/ref/dt-01..05.jpg`, đã dùng
+làm căn cứ từ trước cho tab "Đội tuyển", nay áp dụng lại đúng nguyên bản cho
+từng đề): thời gian 90s/60s/20s tính **theo từng câu**, không phải cho cả
+phần thi (Điều 13.2.b); Khởi động/Tăng tốc chấm nhị phân 10đ/câu, tổng vòng
+sơ khảo 100đ = Điểm ĐT1 (Điều 14.2.a); Gói riêng 20s là **thời gian chuẩn bị
+trước khi trả lời** (hết giờ tự mở ô trả lời, không bị tính sai), Gói chung
+20s là **cửa sổ giành quyền trả lời/bấm chuông** (hết giờ mới coi là không
+giành được quyền, tính 0đ) — quy chế không nêu thời lượng trình bày câu trả
+lời sau khi đã giành quyền/qua pha chuẩn bị nên không tự đặt thêm giới hạn.
+Đây là đúng cách hiểu đã áp dụng cho tab "Đội tuyển" từ trước (xem các mục
+"Nhật ký khôi phục" và "tiếp 3/4" phía trên) — áp dụng lại y hệt cho từng đề,
+không diễn giải khác.
+
+**Tái sử dụng tối đa, không viết lại logic chấm**: hàm mới `d4StartRound(setNo,
+round)` chỉ lấy đúng 10 câu gốc của đề đó (`d4Pool`, giữ nguyên thứ tự gốc,
+không xáo trộn vị trí câu — chỉ xáo trộn thứ tự đáp án trắc nghiệm như mọi
+nơi khác), bật đồng hồ bắt buộc (`timed:true`, không có lựa chọn tắt — khác
+khu vực "Tuỳ chỉnh phạm vi ôn" vẫn giữ đồng hồ tuỳ chọn như trước), rồi dùng
+lại nguyên vẹn `d4RenderRecall`/`d4RenderMC`/`rcPhaseUI`/`gradeRecall`/
+`canonicalAnswers`/`teamAutoGradeBox`/`rcMissedBox`/`startTeamTimer` đã có
+sẵn — chỉ thêm `it.points = it.ok ? 10 : 0` vào đúng 4 điểm chấm (đã thiếu so
+với `teamMCView`/`teamRecallView` vì vùng "Ôn 4 đề" trước đây chỉ đếm đúng/sai,
+không cộng điểm) để có thể tính tổng điểm/100 theo đúng công thức Điều 14.2.a,
+không đổi hành vi chấm đúng/sai hiện có. Nút 🔖 đánh dấu cần ôn, tiến độ hộp
+Leitner, và luồng chấm tự luận/trắc nghiệm giữ nguyên y hệt mọi nơi khác —
+không viết thêm bản sao nào.
+
+**Lưu điểm riêng theo đề và theo vòng**: thêm `store.d.best.d4[setNo] =
+{so, chung}` (điểm cao nhất) và `store.d.d4last[setNo]` (điểm Sơ khảo **gần
+nhất** của đề đó, dùng làm mốc xuất phát cho Chung khảo — tách biệt hoàn
+toàn khỏi `store.d.best.dt1/dt2`/`store.d.lastDT1` của tab "Đội tuyển", vì đó
+là 2 bài kiểm tra khác nhau: tab "Đội tuyển" lấy 5+5 câu ngẫu nhiên từ cả 244
+câu ngân hàng, còn mỗi đề ở đây dùng đúng 10 câu cố định của riêng đề đó).
+Công thức Điểm tương đương ĐT2 cho Chung khảo dùng lại đúng công thức đã có
+ở tab "Đội tuyển" (`min(100, mốc Sơ khảo + điểm Chung khảo)`), áp dụng riêng
+cho từng đề thay vì dùng `lastDT1` chung. Mỗi lượt hoàn thành ghi vào
+`store.d.history` với `mode: d4r-{so|chung}-{setNo}` (tab "Tiến độ" đã cập
+nhật để hiển thị đúng nhãn "4 đề #N · Sơ khảo/Chung khảo" cho các lượt này
+thay vì rơi vào nhãn "Luyện tập" mặc định). Tất cả lưu trong cùng
+`localStorage` key `hckt2026.v1` như trước — không có cơ chế tài khoản nên
+không có rủi ro mất dữ liệu khi "đăng nhập lại"; toàn bộ `stats`/`starred`/
+`history`/`best` cũ được giữ nguyên qua `Object.assign` khi tải trang.
+
+**Giao diện**: trang "Ôn 4 đề trọng tâm" giờ có 3 phần theo đúng thứ tự: (1)
+ô tuỳ chọn "Ôn có gợi ý"/"Giành quyền trả lời" dùng chung cho cả 2 luồng —
+gộp về một chỗ duy nhất (trước đây chỉ có ở khu vực tuỳ chỉnh), mặc định tắt
+cả hai, có ghi chú rõ đây là mô phỏng hỗ trợ học không phải hình thức thi
+chính thức; (2) lưới 4 thẻ "Đề 1..4", mỗi thẻ 2 dòng Vòng sơ khảo/Vòng chung
+khảo hiển thị điểm cao nhất ("Chưa luyện" nếu chưa làm) + nút "Bắt đầu" 1
+chạm; (3) khu vực "Tuỳ chỉnh phạm vi ôn" giữ nguyên các tuỳ chọn cũ (chọn
+vòng/đề linh hoạt, đảo thứ tự, chỉ ôn câu sai, đồng hồ tuỳ chọn), đổi tên và
+ghi rõ đây là ôn tự do không tính điểm chính thức, không ảnh hưởng điểm 2
+vòng ở trên. Tái dùng nguyên vẹn các class CSS đã có (`sec-grid`, `card.pad`,
+`sw`, `sec-title`); chỉ thêm 1 class CSS mới `.d4-round-row` (9 dòng, dựa
+theo đúng mẫu `.mastery-row` đã có) để xếp tên vòng + điểm + nút "Bắt đầu"
+trên 1 dòng, tự xuống dòng (`flex-wrap`) trên màn hình hẹp, nút giữ cỡ nhỏ
+gọn (padding 8×14px, không phình to).
+
+**Kiểm thử** bằng Playwright (Chromium, chạy qua `node server.js` thật, 92
+kịch bản tổng cộng — không phải logic viết lại để test):
+- Toàn bộ **8 tổ hợp** (4 đề × 2 vòng) đều vào được, làm hết 10 câu, ra đúng
+  màn kết quả, điểm tổng đúng công thức (test với toàn đúng → 100/100, điểm
+  từng phần Khởi động/Tăng tốc hoặc Gói riêng/Gói chung đúng 50/50), và danh
+  sách "Xem lại bài làm" của mỗi lượt **chỉ chứa câu của đúng đề đó** (không
+  lẫn câu đề khác).
+- Mốc xuất phát Chung khảo: làm Sơ khảo Đề 1 đạt 100 → `d4last[1]=100`; làm
+  tiếp Chung khảo Đề 1 đạt 100 → hiển thị đúng "Mốc xuất phát: 100 + 100" và
+  điểm tương đương ĐT2 = 100 (capped), lưu đúng vào `best.d4[1]`.
+- Cả 4 kiểu đồng hồ dùng **Playwright Clock API** (giả lập thời gian, không
+  phải chờ thật 90 giây) xác nhận đúng ngữ nghĩa đã đối chiếu ở trên: hết 90s
+  Khởi động không gõ gì → tự chấm Sai (0đ), hiện khung kết quả ngay, không
+  cần bấm Nộp; hết 60s Tăng tốc không chọn → tự chấm Sai; hết 20s Gói riêng
+  không bấm "Trả lời ngay" → **tự mở ô trả lời** (không bị tính sai); hết 20s
+  Gói chung không bấm chuông → tự tính "Không giành được quyền" (Sai).
+- "Làm lại [vòng]" khởi động lại đúng đề/vòng đó; "Sang Vòng chung khảo"/"Về
+  Vòng sơ khảo" chuyển đúng sang vòng còn lại của **cùng đề** (không nhảy đề).
+- Đánh dấu 🔖 một câu bên trong lượt luyện Vòng sơ khảo/Chung khảo đồng bộ
+  đúng sang tab "Cần ôn lại" (không trùng lặp, đúng 1 dòng), bỏ đánh dấu từ
+  "Cần ôn lại" đồng bộ ngược lại khi mở lại đúng câu đó.
+- Khu vực "Tuỳ chỉnh phạm vi ôn" (luồng cũ) vẫn khởi tạo phiên **không tính
+  điểm** (`scored` falsy), đồng hồ vẫn tắt theo mặc định cũ, màn kết quả vẫn
+  hiện đúng dạng % cũ (không phải điểm X/100 kiểu vòng thi) — xác nhận không
+  hồi quy.
+- Toàn bộ 32 kịch bản của tính năng "Cần ôn lại"/đánh dấu 🔖 (phiên trước) và
+  việc vào tab "Đội tuyển" (đồng hồ, nút 🔖 không ảnh hưởng luồng) chạy lại —
+  không hồi quy.
+- Viewport iPhone 12: 4 thẻ đề + ô tuỳ chọn không tràn ngang trang, nút "Bắt
+  đầu" trong mỗi dòng vòng thi nhỏ gọn (≤40×140px), vào màn hỏi/đáp cũng
+  không tràn ngang. **92/92 đạt**. Không kiểm thử được trên thiết bị di động
+  thật — chỉ giả lập viewport bằng Playwright.
+
+**Giới hạn còn lại**: Tăng tốc (trắc nghiệm) theo Điều 13.2.b vốn chấm theo
+tốc độ/thứ hạng **so với các đội khác** ("đúng và nhanh nhất được 10đ, đúng
+và nhanh tiếp theo được điểm giảm dần") — không thể mô phỏng khi luyện một
+mình, nên vẫn dùng đúng cách đơn giản hoá nhị phân (đúng=10đ, sai/không trả
+lời=0đ) **đã áp dụng sẵn ở tab "Đội tuyển"** từ trước, áp dụng lại y hệt cho
+từng đề, không phát sinh cách tính mới. Tương tự, việc đội khác giành chuông
+ở Gói riêng/chung (trừ ½ điểm) không được mô phỏng — đã ghi chú rõ trong màn
+kết quả Chung khảo ("ước tính cá nhân, không mô phỏng việc bị trừ điểm khi
+đội khác giành chuông"), kế thừa đúng giới hạn đã công bố ở tab "Đội tuyển".

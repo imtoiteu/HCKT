@@ -26,7 +26,7 @@ const ICON = {
 
 /* ---------------- store ---------------- */
 const store = {
-  d: { stats: {}, starred: {}, streak: { last: '', days: 0 }, history: [], theme: 'auto', best: {} },
+  d: { stats: {}, starred: {}, streak: { last: '', days: 0 }, history: [], theme: 'auto', best: {}, d4last: {} },
   load() {
     try { Object.assign(this.d, JSON.parse(localStorage.getItem(LS) || '{}')); } catch (e) { }
     if (!this.d.stats) this.d.stats = {};
@@ -34,6 +34,8 @@ const store = {
     if (!this.d.streak) this.d.streak = { last: '', days: 0 };
     if (!this.d.history) this.d.history = [];
     if (!this.d.best) this.d.best = {};
+    if (!this.d.best.d4) this.d.best.d4 = {};
+    if (!this.d.d4last) this.d.d4last = {};
   },
   save() { try { localStorage.setItem(LS, JSON.stringify(this.d)); } catch (e) { } },
   st(id) { return this.d.stats[id] || (this.d.stats[id] = { box: 1, due: 0, seen: 0, right: 0, wrong: 0 }); },
@@ -1359,7 +1361,9 @@ V.stats = () => {
     hc.appendChild(el('h3', '', 'Lượt gần đây'));
     store.d.history.slice(0, 12).forEach(h => {
       const p = Math.round(h.r / h.t * 100);
-      const hlbl = { exam: 'Luyện tốc độ', dtso: 'ĐT · Sơ khảo', dtck: 'ĐT · Chung khảo' }[h.mode] || 'Luyện tập';
+      const d4rMatch = /^d4r-(so|chung)-(\d+)$/.exec(h.mode || '');
+      const hlbl = { exam: 'Luyện tốc độ', dtso: 'ĐT · Sơ khảo', dtck: 'ĐT · Chung khảo' }[h.mode]
+        || (d4rMatch ? `4 đề #${d4rMatch[2]} · ${d4rMatch[1] === 'so' ? 'Sơ khảo' : 'Chung khảo'}` : 'Luyện tập');
       hc.appendChild(el('div', 'mastery-row', `
         <span class="tag">${hlbl}</span>
         <div class="nm"><b>${h.r}/${h.t} câu đúng</b><div class="bar"><i style="width:${p}%;background:${p >= 75 ? 'var(--ok)' : p >= 50 ? 'var(--warn)' : 'var(--bad)'}"></i></div></div>
@@ -1451,11 +1455,51 @@ V.dethi4 = () => {
   return d4QuizView();
 };
 
+function d4RoundRow(setNo, round) {
+  const label = D4_ROUND_LABEL[round];
+  const sub = round === 'so'
+    ? 'Khởi động 5 câu (90s/câu) · Tăng tốc 5 câu (60s/câu)'
+    : 'Gói riêng 5 câu (20s chuẩn bị/câu) · Gói chung 5 câu (20s giành quyền/câu)';
+  const best = store.d.best.d4[setNo]?.[round];
+  const row = el('div', 'd4-round-row');
+  row.innerHTML = `<div class="nm"><b>${esc(label)}</b><i>${esc(sub)}</i></div>
+    <div class="score">${best != null ? `<b>${best}</b>/100` : '<span class="muted">Chưa luyện</span>'}</div>`;
+  const btn = el('button', 'btn primary', `${ICON.play} Bắt đầu`);
+  btn.onclick = () => d4StartRound(setNo, round);
+  row.appendChild(btn);
+  return row;
+}
+
 function d4Home() {
   const v = el('div');
   v.appendChild(el('div', 'page-head', `<h1>Ôn 4 đề trọng tâm</h1><p>Ôn đúng nguyên văn <b>80 câu</b> trong <b>4 "Bộ đề"</b> mô phỏng thi Đội tuyển (CamScanner 5-11-26) — giữ nguyên thứ tự gốc, giữ cả câu trùng giữa các đề/ngân hàng cũ. Không trộn câu ngoài 4 đề vào đây.</p>`));
-  v.appendChild(el('div', 'note', `${ICON.warn}<span>Khu vực luyện tập riêng, <b>không tính vào Điểm ĐT1/ĐT2</b>. Đồng hồ đếm ngược ở đây là <b>tuỳ chọn</b> (tắt để ôn chậm không giới hạn giờ). Muốn mô phỏng đúng cấu trúc/thời gian/cách tính điểm chính thức bắt buộc theo quy chế, dùng tab "Đội tuyển".</span>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span><b>Vòng sơ khảo/Vòng chung khảo của từng đề</b> dưới đây mô phỏng đúng cấu trúc, đồng hồ và cách tính điểm nhị phân (10đ/câu) của Điều 13–14 — <b>giống cách tính ở tab "Đội tuyển"</b>, nhưng tính riêng cho đúng 10 câu gốc của đề đó (không lấy câu ngẫu nhiên từ cả ngân hàng như tab "Đội tuyển"), nên điểm hiển thị <b>không phải và không gộp vào</b> Điểm ĐT1/ĐT2 của tab "Đội tuyển" — là điểm luyện tập riêng theo từng đề. Khu vực "Tuỳ chỉnh phạm vi ôn" ở cuối trang vẫn giữ nguyên như trước: đồng hồ tuỳ chọn, không tính điểm, chỉ để ôn thuộc tự do.</span>`));
 
+  const opt = el('div', 'card pad'); opt.style.marginBottom = '16px';
+  opt.appendChild(el('h3', '', 'Tuỳ chọn cho Gói câu hỏi riêng/chung (áp dụng cho cả Vòng chung khảo từng đề và khu vực tuỳ chỉnh)'));
+  const wOptHint = el('label', 'sw', `<input type="checkbox"${d4Setup.hint ? ' checked' : ''}><span class="box"></span>
+    <span class="lbl">Ôn có gợi ý (hiện phương án để chọn)<i>Mô phỏng hỗ trợ học — Điều 13.2.b gọi đây là "trả lời trực tiếp", không mô tả trắc nghiệm; mặc định tắt, dùng ô nhập tự do — đây không phải hình thức thi chính thức</i></span>`);
+  wOptHint.querySelector('input').onchange = e => { d4Setup.hint = e.target.checked; };
+  opt.appendChild(wOptHint);
+  const wOptSteal = el('label', 'sw', `<input type="checkbox"${d4Setup.steal ? ' checked' : ''}><span class="box"></span>
+    <span class="lbl">Luyện thêm tình huống "Giành quyền trả lời" (10s)<i>Bài tập riêng, tuỳ chọn, sau khi trả lời sai — không cộng vào điểm/thời gian câu chính (Điều 13.2.b)</i></span>`);
+  wOptSteal.querySelector('input').onchange = e => { d4Setup.steal = e.target.checked; };
+  opt.appendChild(wOptSteal);
+  v.appendChild(opt);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Luyện theo cấu trúc chính thức — từng đề</h3><span class="muted" style="font-size:12.5px">1 chạm để bắt đầu · không cần hoàn thành Sơ khảo trước Chung khảo</span>`));
+  const grid = el('div', 'sec-grid');
+  for (let n = 1; n <= 4; n++) {
+    const dc = el('div', 'card pad');
+    dc.appendChild(el('h3', '', `Đề ${n}`));
+    dc.appendChild(el('p', 'muted', '20 câu nguyên văn — Khởi động, Tăng tốc, Gói riêng, Gói chung (5 câu mỗi phần)')).style.cssText = 'font-size:12.5px;margin:4px 0 10px';
+    dc.appendChild(d4RoundRow(n, 'so'));
+    dc.appendChild(d4RoundRow(n, 'chung'));
+    grid.appendChild(dc);
+  }
+  v.appendChild(grid);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Tuỳ chỉnh phạm vi ôn</h3><span class="muted" style="font-size:12.5px">Ôn thuộc tự do — đồng hồ tuỳ chọn, không tính điểm chính thức, không ảnh hưởng kết quả 2 vòng ở trên</span>`));
   const card = el('div', 'card pad');
 
   const f0 = el('div', 'field', `<label>Chọn vòng</label>`);
@@ -1505,16 +1549,7 @@ function d4Home() {
   w3.querySelector('input').onchange = e => { d4Setup.timed = e.target.checked; };
   f3.appendChild(w3); card.appendChild(f3);
 
-  const f4 = el('div', 'field', `<label>Gói câu hỏi riêng / chung</label>`);
-  const w4 = el('label', 'sw', `<input type="checkbox"${d4Setup.hint ? ' checked' : ''}><span class="box"></span>
-    <span class="lbl">Ôn có gợi ý (hiện phương án để chọn)<i>Mô phỏng hỗ trợ học — Điều 13.2.b gọi đây là "trả lời trực tiếp", không mô tả trắc nghiệm; mặc định tắt, dùng ô nhập tự do</i></span>`);
-  w4.querySelector('input').onchange = e => { d4Setup.hint = e.target.checked; };
-  f4.appendChild(w4);
-  const w5 = el('label', 'sw', `<input type="checkbox"${d4Setup.steal ? ' checked' : ''}><span class="box"></span>
-    <span class="lbl">Luyện thêm tình huống "Giành quyền trả lời" (10s)<i>Bài tập riêng, tuỳ chọn, sau khi trả lời sai — không cộng vào điểm/thời gian câu chính (Điều 13.2.b)</i></span>`);
-  w5.querySelector('input').onchange = e => { d4Setup.steal = e.target.checked; };
-  f4.appendChild(w5);
-  card.appendChild(f4);
+  card.appendChild(el('p', 'muted', 'Tuỳ chọn "Ôn có gợi ý" và "Giành quyền trả lời" cho Gói riêng/chung dùng chung với ô phía trên đầu trang.')).style.cssText = 'font-size:12px;margin-top:4px';
 
   const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
 
@@ -1555,8 +1590,33 @@ function d4Start(scope, round, mode, timed, hint, steal) {
     scope, round, mode, timed: !!timed, hint: !!hint, steal: !!steal,
     items: items.map(q => ({
       q, order: (q.stage === 'tangtoc' || (hint && (q.stage === 'rieng' || q.stage === 'chung'))) ? shuffle(q.opts) : q.opts,
-      pick: [], typed: '', done: false, ok: null, revealed: false, graded: null,
+      pick: [], typed: '', done: false, ok: null, points: 0, revealed: false, graded: null,
       ready: rcInitReady(q.stage, !!timed), missed: false, steal: null, citeArticle: null,
+    })),
+    i: 0, right: 0, wrong: 0, started: Date.now(),
+  };
+  app.view = 'dethi4'; render();
+}
+
+/** Luyện đúng cấu trúc chính thức của 1 vòng thi, riêng cho 1 đề (Điều 13.2.b):
+ * Vòng sơ khảo = 5 câu Khởi động + 5 câu Tăng tốc của ĐÚNG đề đó; Vòng chung
+ * khảo = 5 câu Gói riêng + 5 câu Gói chung của ĐÚNG đề đó — không trộn câu
+ * đề khác, không xáo trộn thứ tự câu trong vòng (giữ đúng thứ tự gốc của bộ
+ * đề). Đồng hồ LUÔN bật (không có lựa chọn tắt, khác khu vực luyện tự chọn
+ * ở dưới) và chấm điểm nhị phân 10đ/câu như tab "Đội tuyển", vì đây là nơi
+ * mô phỏng đúng hình thức thi — không phải nơi ôn thuộc tự do. */
+function d4StartRound(setNo, round) {
+  const pool = d4Pool(String(setNo), round);
+  const need = (D4_ROUND_STAGES[round] || []).length * 5;
+  if (pool.length < need) { toast(`Đề ${setNo} không đủ câu cho ${D4_ROUND_LABEL[round]} (cần ${need}, hiện có ${pool.length}).`); return; }
+  const hint = !!d4Setup.hint, steal = !!d4Setup.steal;
+  app.d4 = {
+    scope: String(setNo), round, mode: 'goc', timed: true, hint, steal,
+    scored: true, setNo: +setNo,
+    items: pool.map(q => ({
+      q, order: (q.stage === 'tangtoc' || (hint && (q.stage === 'rieng' || q.stage === 'chung'))) ? shuffle(q.opts) : q.opts,
+      pick: [], typed: '', done: false, ok: null, points: 0, revealed: false, graded: null,
+      ready: rcInitReady(q.stage, true), missed: false, steal: null, citeArticle: null,
     })),
     i: 0, right: 0, wrong: 0, started: Date.now(),
   };
@@ -1579,6 +1639,21 @@ function d4Finish() {
   T.wrong = T.items.filter(it => it.ok === false).length;
   T.finished = true;
   T.elapsed = Date.now() - T.started;
+  if (T.scored) {
+    T.total = T.items.reduce((a, it) => a + (it.points || 0), 0);
+    if (!store.d.best.d4[T.setNo]) store.d.best.d4[T.setNo] = {};
+    if (T.round === 'chung') {
+      T.baseline = store.d.d4last[T.setNo] ?? 0;
+      T.dt2 = Math.min(100, T.baseline + T.total);
+      if (T.dt2 > (store.d.best.d4[T.setNo].chung || 0)) store.d.best.d4[T.setNo].chung = T.dt2;
+    } else {
+      store.d.d4last[T.setNo] = T.total;
+      if (T.total > (store.d.best.d4[T.setNo].so || 0)) store.d.best.d4[T.setNo].so = T.total;
+    }
+    store.d.history.unshift({ d: Date.now(), mode: `d4r-${T.round}-${T.setNo}`, r: T.total, t: 100 });
+    store.d.history = store.d.history.slice(0, 60);
+    store.save();
+  }
   render();
 }
 
@@ -1625,14 +1700,14 @@ function d4RenderRecall(card, T, it, q) {
     if (it.revealed) return;
     clearTeamTimer();
     const g = gradeRecall(it.typed, canonicalAnswers(q));
-    if (g) { it.graded = g; it.ok = g.exact; it.citeArticle = cite; store.grade(q.id, g.exact); }
+    if (g) { it.graded = g; it.ok = g.exact; it.points = it.ok ? 10 : 0; it.citeArticle = cite; store.grade(q.id, g.exact); }
     it.revealed = true; render();
   });
 
   if (!isKhoidong && !it.ready) {
     rcPhaseUI(card, kind, teamSeconds(kind),
       () => { it.ready = true; render(); },
-      () => { it.ready = true; it.missed = true; it.revealed = true; it.done = true; it.ok = false; store.grade(q.id, false); render(); });
+      () => { it.ready = true; it.missed = true; it.revealed = true; it.done = true; it.ok = false; it.points = 0; store.grade(q.id, false); render(); });
     return;
   }
   if (!it.revealed) {
@@ -1671,9 +1746,9 @@ function d4RenderRecall(card, T, it, q) {
       self.appendChild(el('p', 'muted', 'Câu nhiều đáp án đúng — tự đối chiếu và đánh giá (không chấm tự động được).'));
       const row = el('div', 'rate');
       const ok = el('button', 'btn primary', `${ICON.check} Tôi trả lời đúng`);
-      ok.onclick = once(() => { it.done = true; it.ok = true; store.grade(q.id, true); render(); });
+      ok.onclick = once(() => { it.done = true; it.ok = true; it.points = 10; store.grade(q.id, true); render(); });
       const bad = el('button', 'btn danger', `${ICON.x} Sai / không kịp`);
-      bad.onclick = once(() => { it.done = true; it.ok = false; store.grade(q.id, false); render(); });
+      bad.onclick = once(() => { it.done = true; it.ok = false; it.points = 0; store.grade(q.id, false); render(); });
       row.appendChild(ok); row.appendChild(bad);
       self.appendChild(row);
       card.appendChild(self);
@@ -1736,6 +1811,7 @@ function d4RenderMC(card, T, it, q) {
     clearTeamTimer();
     it.done = true;
     it.ok = it.pick.length > 0 && setEq(it.pick, q.ans);
+    it.points = it.ok ? 10 : 0;
     store.grade(q.id, !!it.ok);
     paint();
     const corr = q.ans.map(k => `<b>${k.toUpperCase()}</b>. ${esc(q.opts.find(o => o.k === k).t)}`).join('<br>');
@@ -1753,6 +1829,47 @@ function d4RenderMC(card, T, it, q) {
 
 function d4Result() {
   const T = app.d4;
+  return T.scored ? d4RoundResult(T) : d4FreeResult(T);
+}
+
+function d4RoundResult(T) {
+  const total = T.items.length;
+  const pct = T.total;
+  const roundLbl = `${D4_ROUND_LABEL[T.round]} — Đề ${T.setNo}`;
+  const emo = pct >= 90 ? '🏆' : pct >= 70 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  const v = el('div');
+  const c = el('div', 'card result', `
+    <div class="emoji">${emo}</div>
+    <div class="big">${pct}<span style="font-size:22px;font-weight:700;opacity:.5">/100</span></div>
+    <div class="lbl"><b>${esc(roundLbl)}</b> — đúng ${T.right}/${total} câu, ${fmtTime(T.elapsed)} <span class="muted" style="font-weight:400">(điểm luyện tập theo đúng cấu trúc/thời gian/cách tính của Điều 13–14, riêng cho Đề ${T.setNo} — không phải Điểm ĐT1/ĐT2 chung ở tab "Đội tuyển", vì đề đó lấy câu ngẫu nhiên từ cả ngân hàng)</span></div>
+    ${T.round === 'chung' ? `<p class="muted" style="margin-top:8px;font-size:13px">Mốc xuất phát (điểm Vòng sơ khảo Đề ${T.setNo} gần nhất): ${T.baseline} + điểm Chung khảo ${pct} → <b>điểm tương đương ĐT2 riêng cho Đề ${T.setNo}: ${T.dt2}/100</b> (ước tính cá nhân, không mô phỏng việc bị trừ điểm khi đội khác giành chuông).</p>` : ''}`);
+
+  const rstats = el('div', 'rstats');
+  (D4_ROUND_STAGES[T.round] || []).forEach(stg => {
+    const pts = T.items.filter(it => it.q.stage === stg).reduce((a, it) => a + (it.points || 0), 0);
+    rstats.appendChild(el('div', 'rstat', `<b>${pts}/50</b><span>${esc(D4_STAGE_LABEL[stg])}</span>`));
+  });
+  c.appendChild(rstats);
+
+  const cta = el('div', 'hero-cta'); cta.style.cssText = 'justify-content:center;margin-top:20px;flex-wrap:wrap';
+  const again = el('button', 'btn primary', `${ICON.refresh} Làm lại ${esc(roundLbl)}`);
+  again.onclick = () => { app.d4 = null; d4StartRound(T.setNo, T.round); };
+  cta.appendChild(again);
+  const other = el('button', 'btn', T.round === 'so' ? 'Sang Vòng chung khảo' : 'Về Vòng sơ khảo');
+  other.onclick = () => { app.d4 = null; d4StartRound(T.setNo, T.round === 'so' ? 'chung' : 'so'); };
+  cta.appendChild(other);
+  const back = el('button', 'btn ghost', 'Về "Ôn 4 đề trọng tâm"');
+  back.onclick = () => { app.d4 = null; nav('dethi4'); };
+  cta.appendChild(back);
+  c.appendChild(cta);
+  v.appendChild(c);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Xem lại bài làm</h3><span class="muted" style="font-size:12.5px">${total} câu — mỗi câu ghi rõ thuộc đề nào, phần nào, số câu gốc</span>`));
+  v.appendChild(d4ReviewList(T));
+  return v;
+}
+
+function d4FreeResult(T) {
   const total = T.items.length;
   const pct = total ? Math.round(T.right / total * 100) : 0;
   const emo = pct >= 90 ? '🏆' : pct >= 75 ? '🎉' : pct >= 50 ? '💪' : '📚';
@@ -1777,6 +1894,11 @@ function d4Result() {
   v.appendChild(c);
 
   v.appendChild(el('div', 'sec-title', `<h3>Xem lại bài làm</h3><span class="muted" style="font-size:12.5px">${total} câu — mỗi câu ghi rõ thuộc đề nào, phần nào, số câu gốc</span>`));
+  v.appendChild(d4ReviewList(T));
+  return v;
+}
+
+function d4ReviewList(T) {
   const list = el('div', 'review-list');
   T.items.forEach(it => {
     const q = it.q;
@@ -1816,8 +1938,7 @@ function d4Result() {
     r.innerHTML = body;
     list.appendChild(r);
   });
-  v.appendChild(list);
-  return v;
+  return list;
 }
 
 /* ---------- CẦN ÔN LẠI (đánh dấu 🔖 gom từ mọi nơi: ngân hàng chính + 4 đề) ----------
