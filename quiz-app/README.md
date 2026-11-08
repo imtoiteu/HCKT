@@ -1219,3 +1219,199 @@ cộng chạy lại được **165/165 kịch bản đạt** trên toàn bộ c�
   diễn đạt khác, không khớp bất kỳ mẫu đã dò, có thể bị sót (không có mẫu
   nào trong yêu cầu gợi ý cách diễn đạt này nên không mở rộng dò thêm để
   tránh suy đoán ngoài yêu cầu).
+
+### 08/11/2026 (tiếp 2) — sửa tận gốc cơ chế giải đáp án tham chiếu, phát hiện 1 lỗi thật trong lần vá trước
+
+Người dùng báo lỗi thực tế: màn "Luyện tự luận" hiển thị đáp án chuẩn là
+**"Cả 2 nội dung trên"** cho một câu — đúng là lỗi, vì lần vá trước (mục
+"08/11/2026 (tiếp)" phía trên) chỉ thêm `ansFull` **thủ công** cho đúng 24
+ID đã tìm được bằng 1 quy tắc dò hẹp, không phải một **hàm giải tham chiếu
+chung** — đúng như yêu cầu hiện tại đã chỉ ra. Đã bỏ cách vá thủ công, xây
+lại từ gốc bằng 1 hàm dùng chung cho toàn bộ hệ thống.
+
+**Hàm mới `resolveReferentialAnswer(q)` + `detectReferential(text, optKeys)`**
+(`public/app.js`) — thay cho việc liệt kê ID cố định:
+1. Phát hiện tham chiếu bằng **cấu trúc câu**, không dò chuỗi cố định: nhóm
+   "tất cả/toàn bộ/cả (các) &lt;danh từ bất kỳ&gt; trên/khác (đều đúng/chính
+   xác)?" (danh từ dùng ký tự đại diện không giới hạn, bắt được "nội dung",
+   "phương án", "đáp án", "ý", "bước", "trường hợp", "yếu tố"… mà không cần
+   liệt kê từng từ) và nhóm "Cả a, b, c" / "A và B đúng" (liệt kê đúng các
+   ký tự phương án được nêu tên). Cả 2 nhóm đều neo `^...$` vào TOÀN BỘ văn
+   bản phương án đã chuẩn hoá (bỏ dấu câu cuối, hạ chữ thường), không thể
+   khớp nhầm vào giữa 1 câu dài chỉ vì câu đó chứa chữ "trên"/"khác".
+2. Với nhóm "liệt kê ký tự", **chỉ ghép đúng các phương án được nêu tên**,
+   không tự suy ra "mọi phương án khác" — khác nhóm "tất cả/toàn bộ".
+3. Đệ quy tối đa 4 cấp nếu phương án được tham chiếu lại tiếp tục tham
+   chiếu phương án khác (câu hỏi yêu cầu #3.4).
+4. Xử lý được câu nhiều đáp án đúng đồng thời (`q.ans` nhiều khoá, có khoá
+   là tham chiếu, có khoá là nội dung thật) và câu 1 đáp án duy nhất nhưng
+   nội dung là "Tất cả các đáp án trên" (yêu cầu #3, đoạn cuối).
+5. Gặp tham chiếu **phủ định** ("Không có phương án nào đúng.") hoặc thiếu
+   dữ liệu: trả về "không giải được", **không bịa đáp án** — nơi gọi sẽ coi
+   câu đó là cần rà soát (xem `answerUnresolved`/`essayReviewList` dưới).
+
+**`canonicalAnswers(q)` dùng hàm trên làm cơ chế chính** (thứ tự: `q.ansFull`
+thủ công đã xác minh → tự giải bằng `resolveReferentialAnswer` → nếu không
+giải được, dùng nguyên văn `q.ans` như trước, không suy đoán thêm) — áp
+dụng cho **mọi nơi gọi `canonicalAnswers`**, không chỉ "Luyện tự luận": Đội
+tuyển (Khởi động), "Ôn 4 đề trọng tâm", "Cần ôn lại" đều tự động được sửa
+theo, đúng yêu cầu "xây dựng một hàm xử lý đáp án chuẩn dùng chung để tránh
+lỗi tương tự ở các chức năng khác".
+
+**Kiểm toán lại TOÀN BỘ 244 câu** (không chỉ 24 câu đã vá trước đó) bằng
+chính hàm mới, chạy độc lập ngoài ứng dụng để xác minh trước khi tích hợp:
+- **243 câu có đáp án hợp lệ** đã kiểm tra (244 câu − 1 câu `VII-12` chưa
+  xác định đáp án, có từ trước, không liên quan lỗi này).
+- **29 câu phát hiện đáp án tham chiếu** (tăng từ 24 đã biết trước đó, tìm
+  thêm đúng **5 câu bị bỏ sót** vì quy tắc dò hẹp trước đây chỉ liệt kê
+  "phương án/đáp án/ý/nội dung/phát biểu" — không khớp các cách diễn đạt
+  khác đang dùng thật trong dữ liệu: `IV-3`, `IV-14`, `IV-16` ("Cả **hai**
+  phương án trên" — dùng chữ "hai", không phải số "2", quy tắc cũ chỉ nhận
+  `\d*`), `VI-7` ("Cả hai **trường hợp** trên" — danh từ "trường hợp" chưa
+  có trong danh sách liệt kê cũ), `VII-30` ("Tất cả các **bước** trên" —
+  danh từ "bước" cũng chưa có). **Toàn bộ 29/29 câu đều tự giải được** —
+  không câu nào phải đưa vào "Cần rà soát" vì đáp án (khác với rà soát vì
+  CÂU HỎI mơ hồ, vẫn giữ nguyên 4 câu `I-6/I-13/I-14/VII-34` từ lần trước).
+- **Phát hiện 1 lỗi thật trong lần vá thủ công trước** (minh chứng rõ nhất
+  cho việc cần hàm giải chung thay vì vá tay): câu `VII-5` có 5 phương án
+  a,b,c,d,đ, đáp án đúng đ = "**Cả a, b, c**" — chỉ nêu tên a, b, c, KHÔNG
+  nhắc tới d (d là phương án gây nhiễu riêng, nội dung "Nối chung bộ phận
+  tiếp đất chống sét cảm ứng…", hoàn toàn không liên quan). Bản vá tay lần
+  trước đã **gộp nhầm cả d** vào đáp án chuẩn (coi "Cả a,b,c" như kiểu "tất
+  cả phương án khác"), khiến người học phải gõ thêm 1 ý KHÔNG có trong đáp
+  án thật mới được tính đúng. Hàm mới đọc đúng danh sách ký tự được nêu tên
+  (a, b, c) nên tự sửa đúng, không cần biết trước đây có lỗi.
+- **Lỗi kỹ thuật phát hiện trong lúc xây hàm** (không phải lỗi dữ liệu):
+  quy tắc tách ký tự a/b/c/d/đ ban đầu quét `\b[a-eđ]\b` trên TOÀN BỘ chuỗi
+  đã khớp — vô tình bắt được chữ "c" ngay trong từ "**C**ả" (do `\b` của
+  JavaScript chỉ coi ký tự ASCII là "ký tự từ", dấu thanh tiếng Việt như
+  "ả" bị coi là ký tự khác loại, tạo ranh giới từ giả ngay sau "C"), khiến
+  câu `VII-18` ("Cả a, b.") tự tham chiếu vào chính nó qua chữ "c" giả →
+  lặp vô hạn. Sửa bằng cách chỉ tách ký tự từ ĐÚNG phần bắt được trong
+  nhóm regex (không quét lại toàn chuỗi), tách theo dấu phẩy/"và" thay vì
+  quét ranh giới từ.
+- **Không có câu nào trong 244 câu dùng tham chiếu phủ định** ("Không có
+  phương án nào đúng") — quy tắc phát hiện nhóm này vẫn giữ trong hàm để
+  phòng xa, nhưng hiện chưa có câu nào kích hoạt nhánh "không giải được".
+- **Kiểm tra cả `dethi4.json`** (80 câu "Ôn 4 đề trọng tâm") dù yêu cầu chỉ
+  nêu 244 câu, vì hàm `canonicalAnswers` dùng chung cho cả 2 ngân hàng:
+  phát hiện thêm `DT1-TT-3` ("Cả a, b, c" — chưa có `ansFull` thủ công từ
+  trước) nay tự giải đúng; 3 câu đã có `ansFull` thủ công từ phiên làm
+  việc trước (`DT2-GC-1`, `DT3-KD-3`, `DT3-GC-3`) vẫn đúng nội dung khi đối
+  chiếu với kết quả hàm mới (chỉ khác cách nối câu — dùng ";" thay vì "."
+  — không phải lỗi, **giữ nguyên không đổi**, không có rủi ro hồi quy vì
+  `canonicalAnswers` luôn ưu tiên `ansFull` thủ công trước).
+
+**Thay đổi dữ liệu** (`data/questions.json` và `public/data/questions.json`
+— giữ đồng bộ 2 bản như quy ước của dự án):
+- **Xoá `ansFull` thủ công đã thêm trước đó ở 24 câu** (không còn cần thiết
+  vì hàm tự giải đúng, và giữ lại bản cũ có rủi ro lệch khi dữ liệu
+  `q.opts` thay đổi sau này — ví dụ chính lỗi `VII-5` nêu trên) — để hàm
+  `resolveReferentialAnswer` tính lại động từ `q.ans`/`q.opts` mỗi lần, một
+  nguồn sự thật duy nhất.
+- Thêm `qEssay` (chỉ đổi cách hiển thị câu hỏi ở "Luyện tự luận", không đổi
+  `q`/`opts`/`ans` gốc) cho 2 câu phát hiện thêm khi rà soát đồng thời phần
+  câu hỏi của 5 câu referential mới tìm được (yêu cầu #5 "Kiểm tra đồng
+  thời phần câu hỏi tự luận"): `IV-3` (bỏ cụm "...nào là đúng theo quy
+  định...", giữ nguyên số hiệu văn bản/điều khoản) và `IV-16` (câu hỏi gốc
+  bỏ lửng bằng dấu ":", viết lại thành câu hỏi hoàn chỉnh "...được hỗ trợ
+  như thế nào?", giữ nguyên toàn bộ nội dung quy định đã nêu). 3 câu còn
+  lại (`IV-14`, `VI-7`, `VII-30`) rà soát xong xác nhận câu hỏi ĐÃ rõ nghĩa
+  sẵn, không cần đổi — đúng yêu cầu "chỉ tự động chuyển khi có đủ căn cứ
+  giữ nguyên ý nghĩa", không đổi những câu không cần đổi.
+- **Không xoá, không viết lại nội dung bất kỳ câu hỏi/phương án gốc nào** —
+  chỉ thêm/xoá đúng 2 trường hỗ trợ hiển thị (`qEssay`) và tính toán
+  (`ansFull`), đúng yêu cầu bảo toàn dữ liệu gốc.
+
+**Cập nhật phân loại theo độ dài đáp án** (đúng yêu cầu #4 "Cập nhật phân
+loại câu ngắn, câu dài và nhóm Ưu tiên luyện 90 giây" — vì 3 trong 5 câu
+tìm thêm có đáp án thật DÀI HƠN NHIỀU so với cụm tham chiếu ngắn trước đây
+tưởng là đáp án):
+| Câu | Số từ đáp án thật | Nhóm trước (tính nhầm trên cụm tham chiếu) | Nhóm đúng sau khi sửa |
+|---|---|---|---|
+| `IV-3` | 77 từ | Ưu tiên (≤30, sai) | Rất dài |
+| `VI-7` | 85 từ | Ưu tiên (≤30, sai) | Rất dài |
+| `VII-30` | 48 từ | Ưu tiên (≤30, sai) | Câu dài |
+| `IV-14` | 6 từ | Ưu tiên | Ưu tiên (đúng, không đổi) |
+| `IV-16` | 26 từ | Ưu tiên | Ưu tiên (đúng, không đổi) |
+
+Số liệu từng nhóm (238 câu đủ điều kiện luyện tự luận, không đổi — chỉ đổi
+PHÂN BỔ giữa các nhóm): **Ưu tiên luyện 90 giây 178** (giảm từ 181 — đúng
+3 câu nêu trên rời khỏi nhóm), **Nâng cao 16** (không đổi), **Câu dài 24**
+(tăng từ 23, nhận `VII-30`), **Rất dài 20** (tăng từ 18, nhận `IV-3`/`VI-7`).
+Trước khi sửa, 3 câu `IV-3`/`VI-7`/`VII-30` lẽ ra đã bị đưa NHẦM vào nhóm
+"Ưu tiên luyện 90 giây" — người học sẽ phải gõ 48–85 từ trong 90 giây,
+hoàn toàn không khả thi — đúng đúng loại lỗi mà yêu cầu #4 cảnh báo
+("không tự động coi câu ngắn là dễ") dù ở đây nguyên nhân là đếm từ SAI
+trên cụm tham chiếu, không phải coi thường độ khó.
+
+**Chấm điểm**: không đổi cơ chế — `gradeRecall` vẫn so khớp CHÍNH XÁC toàn
+bộ từ với `canonicalAnswers(q)` (nay đã đúng, đầy đủ nội dung bắt buộc,
+không thiếu/không thừa phương án gây nhiễu). Vẫn giữ đúng 2 yêu cầu đã có
+từ trước: chỉ công nhận đúng khi gõ ĐỦ toàn bộ nội dung bắt buộc (không có
+điểm một phần), và câu nhiều ý không được tính đúng chỉ vì gõ 1 ý (đã kiểm
+thử lại, xem dưới). **Không đổi đáp án/cơ chế chấm trắc nghiệm gốc** —
+`q.ans`/`q.opts` dùng cho trắc nghiệm hoàn toàn không bị đụng tới, chỉ
+`canonicalAnswers` (chỉ dùng cho trả lời tự do) thay đổi.
+
+**Kiểm thử**:
+- **40 unit test thuần (Node, không qua trình duyệt)** cho riêng 2 hàm
+  `detectReferential`/`resolveReferentialAnswer`, bao trùm đúng toàn bộ ví
+  dụ nêu trong yêu cầu ("Cả 2/3 nội dung trên", "Tất cả các đáp án trên",
+  "Tất cả các phương án đều đúng", "Các nội dung trên đều đúng", "A và B
+  đúng", "B và C đúng", "Cả A, B và C", "Các phương án khác có cùng ý
+  nghĩa") + biến thể hoa/thường, khoảng trắng thừa, dấu câu cuối (`.`/`!`/
+  `?`/không có) + tham chiếu lồng nhau (phương án được tham chiếu lại tham
+  chiếu tiếp) + câu nhiều đáp án đúng đồng thời kết hợp 1 đáp án tham chiếu
+  + tham chiếu phủ định (phải KHÔNG giải được, không bịa) + không có false
+  positive trên câu thật chứa "trên"/"khác"/"phương án" ở giữa câu dài +
+  hồi quy đúng lỗi "Cả a, b." tự tham chiếu đã phát hiện ở `VII-18`.
+  **40/40 đạt.**
+- Playwright (Chromium, `node server.js` thật): xác nhận `VII-5` không còn
+  gộp nhầm phương án d; gõ đúng 3 ý thật (a,b,c) của `VII-5` → chấm Đúng;
+  gõ chỉ 1 trong 2 ý bắt buộc của `III-4` → chấm Sai, tỷ lệ khớp nằm giữa
+  0% và 100% (không phải tất-cả-hoặc-không-gì ở mức hiển thị, nhưng vẫn
+  Sai ở quyết định đúng/sai cuối); câu `VII-5` ở chế độ trắc nghiệm (Luyện
+  tập) vẫn hiện đủ nguyên 5 phương án a,b,c,d,đ không đổi, xác nhận không
+  đụng tới cơ chế trắc nghiệm gốc.
+- Chạy lại toàn bộ bộ kiểm thử trước đó (6 file tính năng Cần ôn lại/Ôn 4
+  đề/Đội tuyển + 5 file "Luyện tự luận"/phân nhóm độ dài, cộng 2 chỗ đếm
+  cứng số liệu nhóm "Ưu tiên" trong kịch bản kiểm thử cũ đã cập nhật từ 181
+  sang 178 cho khớp số liệu đúng mới) — không hồi quy.
+- **Tổng cộng 172 kịch bản Playwright + 40 unit test = 212 lượt kiểm thử,
+  tất cả đạt.**
+
+**Báo cáo theo đúng yêu cầu mục 7**:
+- Tổng số câu đã kiểm tra: **244** (243 có đáp án hợp lệ).
+- Số câu phát hiện đáp án tham chiếu: **29** (ngân hàng chính) + **4** đã
+  biết từ trước ở `dethi4.json` + **1** mới phát hiện thêm ở `dethi4.json`
+  (`DT1-TT-3`, tự giải, không cần sửa dữ liệu).
+- Danh sách ID đã sửa (xoá `ansFull` tay, để hàm tự giải): `III-4, IV-18,
+  IV-22, IV-34, VI-10, VII-4, VII-5, VII-7, VII-11, VII-15, VII-16, VII-18,
+  VII-20, VII-21, VII-24, VII-25, VII-37, VII-38, VII-40, VII-44, VII-45,
+  VII-51, VII-57, VII-59` (24 câu, trong đó `VII-5` sửa đúng 1 lỗi thật).
+  5 câu mới tự giải, không cần sửa dữ liệu: `IV-3, IV-14, IV-16, VI-7,
+  VII-30`. 2 câu thêm `qEssay`: `IV-3, IV-16`.
+- Nội dung trước/sau của trường hợp lỗi thật (`VII-5`): xem bảng/đoạn mô
+  tả phía trên (trước: gộp nhầm cả phương án d gây nhiễu; sau: đúng 3
+  phương án a, b, c được nêu tên).
+- Câu không thể xử lý tự động: **0/244** — không câu nào trong dữ liệu
+  hiện có kích hoạt nhánh "tham chiếu phủ định"/"thiếu dữ liệu" của hàm.
+  Cơ chế đánh dấu "Cần rà soát" vẫn giữ nguyên trong code (`answerUnresolved`
+  + `essayReviewList`) để tự động bắt các câu này nếu phát sinh sau này khi
+  thêm câu hỏi mới, không cần sửa code thêm.
+- Kết quả kiểm thử xác nhận mọi đáp án tự luận được tạo đúng từ dữ liệu
+  gốc: xem mục Kiểm thử phía trên, 212/212 đạt.
+
+**Giới hạn còn lại**:
+- Quy tắc dò "danh từ bất kỳ" (`.{0,24}?`) vẫn có thể bỏ sót một cách diễn
+  đạt tham chiếu hoàn toàn khác cấu trúc (không chứa "trên"/"khác"/"đều
+  đúng"/liệt kê ký tự) — nếu phát sinh câu như vậy trong dữ liệu thêm sau
+  này, `canonicalAnswers` sẽ âm thầm rơi về nguyên văn tham chiếu (hành vi
+  cũ, giống lỗi ban đầu) chứ không tự phát hiện được; nên rà lại bằng cùng
+  bộ unit test này mỗi khi nhập thêm câu hỏi mới vào ngân hàng.
+- Không đọc lại độc lập toàn bộ 244 câu bằng mắt để tìm tham chiếu — dùng
+  quy tắc regex tổng quát rồi xác minh TỪNG câu khớp mẫu bằng cách đọc trực
+  tiếp dữ liệu (đã làm cho toàn bộ 29 câu), không phải đọc toàn bộ 244 câu
+  không theo mẫu nào; vẫn có khả năng (dù thấp hơn nhiều so với cách liệt
+  kê chuỗi cố định trước đây) sót 1 cách diễn đạt chưa từng gặp.

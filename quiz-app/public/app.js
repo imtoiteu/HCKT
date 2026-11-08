@@ -671,23 +671,145 @@ function gradeRecall(typed, canonicalVariants) {
   best.points = best.exact ? 10 : 0;
   return best;
 }
-/** Mảng đáp án chuẩn dùng để chấm chế độ TRẢ LỜI TỰ DO (gradeRecall). Ưu
- * tiên `q.ansFull` nếu có — đáp án đã mở rộng đầy đủ nội dung các phương án
- * được tham chiếu, dùng khi khoá đáp án gốc chỉ là một tham chiếu kiểu "Cả
- * hai phương án trên" / "Cả a, b, c" mà người học không nhìn thấy các
- * phương án (xem data/raw/dethi-doituyen-2026-11-05.json, mục "Rà soát đáp
- * án tham chiếu"). Nếu không có `ansFull`, GHÉP ĐẦY ĐỦ nội dung TẤT CẢ
- * phương án đúng trong `q.ans` (không chỉ lấy phương án đầu tiên) — bắt buộc
- * cho câu nhiều đáp án đúng (q.multi) để đếm đúng tổng số từ cần nhớ và chấm
- * đúng toàn bộ nội dung, không chỉ 1 phương án. Với câu 1 đáp án, kết quả
- * giống hệt trước (mảng 1 phần tử, không đổi hành vi hiện có ở Đội tuyển/4
- * đề/Cần ôn lại — các nơi đó chỉ gọi hàm này khi !q.multi). KHÔNG dùng cho
- * chế độ trắc nghiệm — chế độ đó luôn giữ nguyên khoá đáp án gốc q.ans/q.opts
- * không đổi. */
+/* ---------------- Giải đáp án tham chiếu (dùng CHUNG cho mọi nơi chấm tự luận) ----------------
+ * Nhiều câu trắc nghiệm có đáp án đúng không chứa nội dung thật mà chỉ THAM
+ * CHIẾU tới các phương án khác — ví dụ "Cả 2 nội dung trên.", "Tất cả các
+ * đáp án trên.", "A và B đúng.", "Các phương án khác có cùng ý nghĩa." Dùng
+ * nguyên văn kiểu này làm đáp án chuẩn cho chế độ TRẢ LỜI TỰ DO là vô nghĩa
+ * — người học không nhìn thấy A/B/C/D nên không thể gõ ra "cả 2 nội dung
+ * trên". `resolveReferentialAnswer` phát hiện VÀ GIẢI các tham chiếu này
+ * một cách TỔNG QUÁT (không dò theo danh sách chuỗi cố định), lấy đúng nội
+ * dung của các phương án được tham chiếu từ dữ liệu đã có — không suy đoán,
+ * không bịa thêm kiến thức. Nếu không xác định được chính xác, trả về
+ * không giải được (ok:false) để nơi gọi tự quyết định (đánh dấu rà soát),
+ * KHÔNG tự đoán một đáp án gần đúng. */
+function normLowerAns(s) { return String(s || '').trim().replace(/[.!?\s]+$/, '').toLowerCase(); }
+/** "Không có phương án nào đúng" / "Tất cả các phương án trên đều sai" —
+ * phủ định, không có nội dung thật để trả lời tự do (không thể suy ra đáp
+ * án đúng chỉ từ việc biết các phương án khác đều sai). */
+const REF_NEGATIVE_RE = [
+  /^không\s*(có)?\s*.{0,20}?\s*nào\s*(là\s*)?(đúng|chính xác)/i,
+  /^tất cả\s*(các)?\s*.{0,20}?\s*(trên\s*)?(đều\s*)?sai/i,
+];
+/** Tham chiếu "TẤT CẢ các phương án/đáp án/ý/nội dung/bước/... KHÁC" (trỏ
+ * tới mọi phương án còn lại trừ chính nó). Danh từ đứng giữa ("phương án",
+ * "đáp án", "bước", "yếu tố", "nguyên tắc"…) dùng ký tự đại diện không tham
+ * lam `.{0,24}?` thay vì liệt kê cố định — ngân hàng câu hỏi dùng rất nhiều
+ * danh từ khác nhau ở vị trí này ("Tất cả các bước trên.", "Cả hai trường
+ * hợp trên."…), liệt kê cố định sẽ luôn thiếu biến thể. Mỗi mẫu đều neo cả
+ * 2 đầu (^...$) vào ĐÚNG TOÀN BỘ văn bản phương án đã chuẩn hoá, nên không
+ * thể khớp nhầm vào giữa một câu dài có chứa "trên"/"khác" một cách tình
+ * cờ — và luôn có ít nhất 1 từ khoá bắt buộc ("trên", "khác", hoặc "đều
+ * đúng/chính xác") ở cuối, không để tất cả thành phần đều tuỳ chọn. */
+const REF_ALL_RE = [
+  /^(?:tất cả|toàn bộ)\s*(?:các|những)?\s*.{0,24}?\s*(?:trên|nêu trên)\s*(?:đều\s*(?:đúng|chính xác))?$/i,
+  /^(?:tất cả|toàn bộ)\s*(?:các|những)?\s*.{0,24}?\s*đều\s*(?:đúng|chính xác)$/i,
+  /^(?:các|những)\s*.{0,24}?\s*(?:trên|nêu trên)\s*(?:đều\s*)?(?:đúng|chính xác)$/i,
+  /^cả\s*\d*\s*.{0,24}?\s*(?:trên|nêu trên)$/i,
+  /^(?:các|những)\s*.{0,24}?\s*(?:khác|còn lại)(?:\s+(?:đều\s*)?(?:đúng|chính xác|có cùng ý nghĩa|như nhau))?$/i,
+];
+/** Tham chiếu tới ĐÚNG MỘT SỐ phương án cụ thể theo ký tự: "Cả a, b, c.",
+ * "A và B đúng.", "Cả A, B và C." — chỉ ghép đúng các ký tự được nêu tên,
+ * KHÔNG tự suy ra "mọi phương án khác" (khác REF_ALL_RE ở trên) — quan
+ * trọng để không vô tình gộp nhầm một phương án gây nhiễu không được nêu
+ * tên (xem lỗi thật đã phát hiện ở câu VII-5 trong README: "Cả a, b, c"
+ * CHỈ nhắc tới a, b, c — phương án d là phương án gây nhiễu riêng biệt,
+ * không được tính vào đáp án, dù trước đó bị gộp nhầm). */
+const REF_LETTER_RE = [
+  /^cả\s+((?:[a-eđ]\s*(?:,|và)\s*)+[a-eđ])\.?$/i,
+  /^((?:[a-eđ]\s*(?:,|và)\s*)+[a-eđ])\s+(?:đều\s+)?(?:đúng|chính xác)\.?$/i,
+];
+/** Chỉ tách ký tự a/b/c/d/đ từ ĐÚNG phần bắt được trong nhóm regex (không
+ * quét lại toàn bộ chuỗi gốc) — quét cả chuỗi sẽ vô tình bắt được chữ "c"
+ * ngay trong từ "Cả" (do \b của JS coi dấu thanh tiếng Việt như "ả" là ký
+ * tự KHÔNG phải \w, tạo ranh giới từ giả ngay sau "c"), từng gây đảo thứ tự
+ * kết quả và khiến câu chỉ tham chiếu 1 cấp tự trỏ vào chính nó (lặp vô
+ * hạn) khi phát hiện lỗi này trong lúc xây dựng hàm. */
+function extractRefLetters(groupText) {
+  return [...new Set(groupText.split(/,|và/i).map(s => s.trim()).filter(s => /^[a-eđ]$/i.test(s)).map(s => s.toLowerCase()))];
+}
+function detectReferential(text, optKeys) {
+  const t = normLowerAns(text);
+  if (!t) return { refType: 'empty' };
+  for (const re of REF_NEGATIVE_RE) if (re.test(t)) return { refType: 'negative' };
+  for (const re of REF_ALL_RE) if (re.test(t)) return { refType: 'all' };
+  for (const re of REF_LETTER_RE) {
+    const m = t.match(re);
+    if (m) {
+      const letters = extractRefLetters(m[1]);
+      if (letters.length >= 2 && letters.every(l => optKeys.includes(l))) return { refType: 'letters', letters };
+    }
+  }
+  return null;
+}
+/** Giải 1 câu hỏi thành nội dung đáp án thật, đệ quy nếu phương án được
+ * tham chiếu LẠI tham chiếu tiếp (tối đa 4 cấp, chặn lặp vô hạn). Xử lý
+ * được câu nhiều đáp án đúng đồng thời (q.ans nhiều khoá, có thể có cả
+ * phương án tham chiếu lẫn phương án nội dung thật trong cùng 1 câu). Loại
+ * trùng lặp theo nội dung (không phân biệt hoa/thường) — ví dụ nếu 2 khoá
+ * tham chiếu tới cùng 1 phương án gốc. KHÔNG tự đoán: nếu gặp tham chiếu
+ * phủ định, phương án trống, hoặc thiếu phương án được trỏ tới, trả về
+ * `{ok:false}` ngay — nơi gọi (canonicalAnswers) sẽ không dùng được chuỗi
+ * tham chiếu gốc làm đáp án tự luận nữa. */
+function resolveReferentialAnswer(q, depth) {
+  depth = depth || 0;
+  if (depth > 4) return { ok: false, reason: 'depth-exceeded' };
+  const allKeys = q.opts.map(o => o.k);
+  const pieces = [];
+  for (const k of q.ans) {
+    const o = q.opts.find(x => x.k === k);
+    if (!o) return { ok: false, reason: 'missing-opt' };
+    const ref = detectReferential(o.t, allKeys);
+    if (!ref) { pieces.push(o.t.trim()); continue; }
+    if (ref.refType === 'negative' || ref.refType === 'empty') return { ok: false, reason: ref.refType };
+    const refKeys = ref.refType === 'all' ? allKeys.filter(x => x !== k) : ref.letters;
+    if (!refKeys.length) return { ok: false, reason: 'no-sibling' };
+    for (const rk of refKeys) {
+      const ro = q.opts.find(x => x.k === rk);
+      if (!ro) return { ok: false, reason: 'missing-ref' };
+      const subRef = detectReferential(ro.t, allKeys);
+      if (!subRef) { pieces.push(ro.t.trim()); continue; }
+      if (subRef.refType === 'negative' || subRef.refType === 'empty') return { ok: false, reason: 'nested-' + subRef.refType };
+      const sub = resolveReferentialAnswer({ ans: [rk], opts: q.opts }, depth + 1);
+      if (!sub.ok) return sub;
+      pieces.push(sub.text);
+    }
+  }
+  const seen = new Set();
+  const uniq = pieces.filter(p => { const key = normLowerAns(p); if (seen.has(key)) return false; seen.add(key); return true; });
+  if (!uniq.length) return { ok: false, reason: 'empty-result' };
+  return { ok: true, text: uniq.map(p => (/[.!?]$/.test(p.trim()) ? p.trim() : p.trim() + '.')).join(' ') };
+}
+/** Mảng đáp án chuẩn dùng để chấm chế độ TRẢ LỜI TỰ DO (gradeRecall). Thứ
+ * tự ưu tiên: (1) `q.ansFull` — ghi đè thủ công đã xác minh, dùng cho
+ * trường hợp thuật toán không tự giải được; (2) tự giải tham chiếu bằng
+ * `resolveReferentialAnswer` — áp dụng cho MỌI câu, không chỉ câu đã biết
+ * trước, nên tự động đúng cho cả câu nhiều đáp án đúng (q.multi) lẫn câu 1
+ * đáp án duy nhất nhưng nội dung là tham chiếu kiểu "Tất cả các đáp án
+ * trên"; (3) nếu không giải được (tham chiếu phủ định, thiếu dữ liệu…),
+ * dùng đúng nội dung các phương án trong q.ans như cũ — KHÔNG suy đoán
+ * thêm; nơi gọi cho "Luyện tự luận" (essayEligible) sẽ coi các câu không
+ * giải được là cần rà soát thay vì âm thầm luyện với đáp án vô nghĩa.
+ * KHÔNG dùng cho chế độ trắc nghiệm — chế độ đó luôn giữ nguyên khoá đáp
+ * án gốc q.ans/q.opts không đổi. */
 function canonicalAnswers(q) {
   if (q.ansFull && q.ansFull.length) return q.ansFull;
+  const resolved = resolveReferentialAnswer(q);
+  if (resolved.ok) return [resolved.text];
   const texts = q.ans.map(k => { const o = q.opts.find(o => o.k === k); return o ? o.t : ''; }).filter(Boolean);
   return texts.length ? [texts.join('. ')] : [];
+}
+/** true nếu đáp án chuẩn của câu KHÔNG giải được bằng `resolveReferentialAnswer`
+ * (ví dụ tham chiếu phủ định "Không có phương án nào đúng") VÀ bản thân nó
+ * có vẻ là tham chiếu (không phải nội dung thật) — dùng để loại câu này
+ * khỏi "Luyện tự luận" (coi như essayReview) mà không cần gắn cờ thủ công
+ * từng câu một. */
+function answerUnresolved(q) {
+  if (q.ansFull && q.ansFull.length) return false;
+  const allKeys = q.opts.map(o => o.k);
+  const anyRef = q.ans.some(k => { const o = q.opts.find(x => x.k === k); return o && detectReferential(o.t, allKeys); });
+  if (!anyRef) return false;
+  return !resolveReferentialAnswer(q).ok;
 }
 function wordDiffHtml(words, matched, missClass) {
   if (!words.length) return `<span class="muted" style="font-style:normal">(không có câu trả lời)</span>`;
@@ -1366,9 +1488,19 @@ function essayTierOf(q) {
   return tier.id;
 }
 function essayQuestionText(q) { return q.qEssay || q.q; }
-function essayEligible(q) { return answerable(q) && !q.essayReview && !ESSAY_DUP_SKIP[q.id]; }
+/** Loại khỏi "Luyện tự luận" nếu: không có đáp án hợp lệ, câu hỏi tự thân
+ * phụ thuộc phương án (`essayReview` gắn thủ công sau khi rà soát — xem
+ * README), câu trùng nội dung đã loại (`ESSAY_DUP_SKIP`), HOẶC đáp án
+ * chuẩn là tham chiếu KHÔNG giải được tự động (`answerUnresolved` — ví dụ
+ * "Không có phương án nào đúng.") — không cần gắn cờ thủ công từng câu một
+ * cho trường hợp này, tự động phát hiện qua `canonicalAnswers`/
+ * `resolveReferentialAnswer` dùng chung với lúc chấm. */
+function essayEligible(q) { return answerable(q) && !q.essayReview && !ESSAY_DUP_SKIP[q.id] && !answerUnresolved(q); }
 function essayReviewList() {
-  return DATA.questions.filter(q => q.essayReview).map(q => ({ id: q.id, sec: q.sec, secShort: q.secShort, q: q.q, note: q.essayReviewNote || '' }));
+  const manual = DATA.questions.filter(q => q.essayReview).map(q => ({ id: q.id, sec: q.sec, secShort: q.secShort, q: q.q, note: q.essayReviewNote || '' }));
+  const autoUnresolved = DATA.questions.filter(q => !q.essayReview && answerable(q) && answerUnresolved(q))
+    .map(q => ({ id: q.id, sec: q.sec, secShort: q.secShort, q: q.q, note: 'Đáp án chuẩn là tham chiếu không thể tự giải thành nội dung thật (ví dụ dạng phủ định "Không có phương án nào đúng") — không dùng được cho trả lời trực tiếp.' }));
+  return [...manual, ...autoUnresolved].sort((a, b) => a.id.localeCompare(b.id));
 }
 
 const essaySetup = { secs: [], weakOnly: false, starOnly: false, tier: 'priority', order: 'weak', count: 10, untimed: false };
