@@ -883,3 +883,188 @@ từng đề, không phát sinh cách tính mới. Tương tự, việc đội k
 ở Gói riêng/chung (trừ ½ điểm) không được mô phỏng — đã ghi chú rõ trong màn
 kết quả Chung khảo ("ước tính cá nhân, không mô phỏng việc bị trừ điểm khi
 đội khác giành chuông"), kế thừa đúng giới hạn đã công bố ở tab "Đội tuyển".
+
+### 08/11/2026 — tab mới "Luyện tự luận": đo tốc độ gõ, độ chính xác, tự đề xuất độ dài câu theo năng lực
+
+Thêm tab mới **"Luyện tự luận"** cho ngân hàng chính (244 câu): gõ trực tiếp
+đáp án (không trắc nghiệm), hệ thống đo **tốc độ gõ thô**, **tốc độ gõ chính
+xác**, **độ chính xác**, và chế độ **"Luyện theo năng lực"** tự chọn câu có
+độ dài đáp án phù hợp, tăng/giảm dần theo kết quả thực tế.
+
+**Trước khi áp dụng 90 giây/câu**: đối chiếu lại đúng đoạn trích Điều 13.2.b
+đã dùng cho tab "Đội tuyển" (`TEAM_RULES.so_khoidong`, ảnh quét
+`public/ref/dt-01..05.jpg`) — quy chế ghi rõ *"tổng thời gian đọc câu hỏi và
+trả lời **mỗi câu**: 90 giây"* — **per câu**, không phải cho cả phần Khởi
+động. "Luyện tự luận" dùng lại đúng hạn này cho mỗi câu
+(`teamSeconds('khoidong')`, không đổi), ở **mọi chế độ** (Tự do/Luyện theo
+năng lực) — chế độ thích ứng chỉ chọn CÂU HỎI khác nhau, không bao giờ đổi
+đồng hồ thi hay cách chấm.
+
+**2 đồng hồ độc lập**: đồng hồ thi (90s/câu, bắt buộc, không tắt được) chạy
+ngay khi câu hỏi hiện ra, dùng lại nguyên `startTeamTimer`/`clearTeamTimer`
+đã có (chỉ đổi `elId` thành `'essayTimer'` để không đụng `teamBar`). Đồng hồ
+**đo tốc độ gõ** là biến riêng `it.typeStart`, chỉ được gán ở lần `oninput`
+đầu tiên mà nội dung gõ không còn trống — thời gian đọc đề/suy nghĩ trước đó
+không tính vào tốc độ gõ, dù vẫn bị tính vào đồng hồ thi.
+
+**Sửa lỗi ẩn, nay mới phát sinh ảnh hưởng — `canonicalAnswers(q)`**: hàm này
+trước đây chỉ lấy đúng **phương án đầu tiên** trong `q.ans` (`q.ans[0]`) làm
+đáp án chuẩn cho chế độ trả lời tự do — không sai ở các nơi gọi hiện có (Đội
+tuyển/4 đề/Cần ôn lại) vì cả 3 nơi đó đều **loại câu `multi:true`** trước khi
+gọi hàm này. Nhưng yêu cầu #5 của tính năng này bắt buộc "Luyện tự luận" phải
+chấm được cả câu nhiều đáp án đúng, nên đã sửa hàm để **ghép đầy đủ nội dung
+tất cả phương án đúng** (`q.ans.map(k => ...).join('. ')`) khi không có
+`ansFull`. Đã kiểm tra cả 9 câu `multi:true` thật của ngân hàng (`I-10`,
+`VII-1`, `VII-34`, `VII-43`, `VII-49`, `VIII-26`, `VIII-29`, `VIII-30`,
+`VII-53`) — không câu nào dùng cách tham chiếu kiểu "Cả a, b, c" (khác với 3
+câu đã gặp ở `dethi4.json` trước đây), toàn bộ đều là nội dung phương án đầy
+đủ nên **không cần sửa dữ liệu**, chỉ sửa hàm ghép. Với câu 1 đáp án, kết quả
+giống hệt trước (`['x'].join('. ')` = `'x'`) — xác nhận không hồi quy ở Đội
+tuyển/4 đề/Cần ôn lại bằng cách chạy lại đầy đủ bộ kiểm thử cũ của 3 tính
+năng đó (92 kịch bản, không đổi).
+
+**Công thức đo tốc độ gõ** (mỗi lần nộp bài, `recordTypingSample`):
+- `typedWords` = số từ trong câu trả lời đã gõ (chuẩn hoá bằng `normWords`
+  — bỏ dấu câu, gộp khoảng trắng, hạ chữ thường, giữ nguyên dấu tiếng Việt).
+- `matchedWords` = số từ khớp đúng vị trí với đáp án chuẩn, tính bằng thuật
+  toán so khớp dãy con chung dài nhất (LCS) đã có sẵn (`gradeRecall`/
+  `lcsAlign`) — **không** phải cứ gõ trúng từ nào đó là tính, phải khớp theo
+  đúng thuật toán đối chiếu hiện có để không thể "gõ bừa nhiều từ" làm tăng
+  ảo kết quả.
+- `typeMs` = mốc thời gian nộp bài − `it.typeStart` (ký tự gõ đầu tiên).
+- **Tốc độ gõ thô** = `typedWords ÷ (typeMs/60000)` (từ/phút) — tính trên
+  TỔNG số từ gõ ra, kể cả từ sai.
+- **Tốc độ gõ chính xác** = `matchedWords ÷ (typeMs/60000)` (từ/phút) —
+  CHỈ tính trên số từ khớp đúng; đây là chỉ số dùng để đánh giá năng lực và
+  tính độ dài đề xuất, **không dùng tốc độ gõ thô** cho mục đích này, đúng
+  yêu cầu "không để nhập bừa làm tăng kết quả đánh giá năng lực".
+- **Tỷ lệ khớp đáp án (%)** = `matchedWords ÷ refWords × 100` — dùng lại
+  đúng trường `pct` đã có trong `gradeRecall` (nhất quán với cách hiển thị
+  "tỷ lệ khớp" ở mọi nơi khác trong ứng dụng).
+
+**Phiên nào bị loại khỏi việc tính tốc độ gõ** (`speedValid=false` — vẫn
+được chấm đúng/sai và tính vào Leitner bình thường, chỉ riêng chỉ số tốc độ
+gõ không đáng tin):
+- **Bỏ trống**: không gõ gì hoặc không xác định được thời gian gõ (`blank`).
+- **Dán văn bản**: bắt bằng sự kiện `paste` trên ô nhập (`pasted`).
+- **Tốc độ bất thường**: bắt bằng cách theo dõi độ tăng độ dài văn bản mỗi
+  lần `oninput` — nếu một lần gõ làm độ dài tăng **hơn 12 ký tự trong chưa
+  đầy 60ms** (kể cả lần `oninput` đầu tiên — người gõ tay luôn bắt đầu bằng
+  đúng 1 ký tự), coi là dán/điền tự động lọt qua sự kiện `paste` (ví dụ gán
+  `.value` bằng script, kéo-thả, tự điền của trình duyệt) (`abnormal`).
+- **Thoát giữa chừng**: không nộp bài thì không có phiên nào được ghi nhận
+  (không phải loại sau khi ghi — đơn giản là chưa từng tạo ra sample).
+- *Xoá rồi gõ lại* KHÔNG bị loại — vẫn tính trong cùng khung thời gian từ ký
+  tự gõ đầu tiên tới lúc nộp, đúng với tinh thần "đo thời gian thực tế để ra
+  được câu trả lời cuối cùng".
+
+**Đánh giá năng lực** (`typingCompetency`): trung bình tốc độ gõ
+thô/chính xác/độ chính xác của **20 phiên hợp lệ gần nhất** (loại các phiên
+ở trên) — trả về `null` cho từng chỉ số nếu chưa có phiên hợp lệ nào, **không
+bịa số** khi hiển thị (đúng yêu cầu "không sử dụng giá trị giả định").
+
+**Công thức đề xuất độ dài đáp án** (`typingSuggestedWords`, số từ):
+1. Quỹ thời gian câu hỏi = 90s (Khởi động, không đổi).
+2. Trừ phần dự trữ đọc đề + suy nghĩ = `8 + 0.3 × (độ dài trung bình câu hỏi
+   trong ngân hàng, theo từ)` giây — hệ số 0.3s/từ ứng với tốc độ đọc thầm
+   trung bình ~200 từ/phút; sàn tối thiểu còn lại cho việc gõ là 30 giây.
+3. Số từ gõ được trong quỹ còn lại = `(quỹ gõ/60) × tốc độ gõ CHÍNH XÁC
+   trung bình × 0.8` (hệ số an toàn 20%, không ép dùng hết 100% tốc độ đo
+   được) `× hệ số phạt độ chính xác` (nếu độ chính xác trung bình < 85%,
+   nhân thêm `max(0.5, độ_chính_xác/85)` — hay sai thì gợi ý ngắn hơn).
+4. Nhân với **"mức" hiện tại** (1 trong 7 mức từ ×0.55 đến ×1.5, mức giữa
+   ×1.0 đúng bằng kết quả bước 3) — mức này tăng/giảm 1 bậc mỗi khi có
+   **3 lần liên tiếp** hoàn thành đúng & đúng giờ (tăng) hoặc sai/không kịp
+   giờ (giảm), để tạo hiệu ứng "từng bước", không nhảy vọt sau 1 lần.
+5. Chưa có ≥ 3 phiên hợp lệ: dùng độ dài **trung vị thật** của toàn bộ đáp
+   án trong ngân hàng (~7 từ, tính trực tiếp từ dữ liệu, không phải số bịa)
+   làm điểm khởi đầu, có ghi chú rõ "chưa đủ dữ liệu" trên giao diện.
+
+Thử với ví dụ trong yêu cầu (32 từ/phút, 94% chính xác, câu hỏi ~15 từ): quỹ
+gõ = 90 − (8+0.3×15) = 77,5s; đề xuất ≈ (77,5/60)×32×0,8×1,0 (94%>85% nên
+không phạt) ≈ **33 từ/câu** — khớp với ví dụ "tối đa 30 từ/câu" trong yêu
+cầu, xác nhận công thức cho kết quả hợp lý ở đúng mức năng lực nêu trong ví
+dụ (ví dụ chỉ mang tính minh hoạ, không phải hằng số bắt buộc phải khớp).
+
+**Chọn câu cho "Luyện theo năng lực"** (`essayStart`): lấy toàn bộ câu phù
+hợp bộ lọc (ngành/câu yếu Leitner/câu đã đánh dấu 🔖 — cả 2 bộ lọc này đều
+**tuỳ chọn, mặc định tắt**, đúng yêu cầu "nếu người học chọn luyện những
+nhóm này"), loại các câu vừa luyện gần đây (`store.d.typing.recentIds`, tối
+đa 24 câu gần nhất) để tránh lặp trong thời gian ngắn, sắp theo độ lệch giữa
+độ dài đáp án thật của câu và độ dài đề xuất (gần nhất trước), rồi xáo trong
+nhóm gần nhất để không luôn ra đúng cùng thứ tự. Việc loại câu gần đây **chỉ
+áp dụng ở chế độ thích ứng** — chế độ "Tự do" giữ đúng phạm vi người học
+chọn, không tự loại bớt.
+
+**Tái sử dụng** (không viết lại logic chấm): `gradeRecall`, `canonicalAnswers`
+(đã sửa), `wordDiffHtml`, `teamAutoGradeBox` (dùng y nguyên để hiển thị kết
+quả chấm — không cần nhánh "tự chấm" riêng cho câu `multi` nữa, vì
+`canonicalAnswers` giờ luôn trả về 1 đáp án chuẩn đầy đủ), `startTeamTimer`/
+`clearTeamTimer`, `d4IsWeak` (lọc "câu yếu"), `store.grade`/`store.star`/
+`starBtn` (Leitner + đánh dấu 🔖, đồng bộ nguyên vẹn với tab "Cần ôn lại").
+Thêm đúng 1 hàm vẽ biểu đồ mới dùng chung, `sparkline()` — SVG polyline nội
+tuyến, không thêm thư viện ngoài (dự án vốn "Zero dependencies").
+
+**Thống kê cá nhân** (tab "Tiến độ", thẻ mới "Tốc độ gõ & độ chính xác"):
+tốc độ gõ thô/chính xác trung bình, độ chính xác trung bình, độ dài đáp án
+dài nhất từng hoàn thành đúng & đúng giờ (toàn thời gian, không chỉ 20 phiên
+gần nhất), số câu đúng & đúng giờ, mức đề xuất hiện tại, và 2 biểu đồ đường
+nhỏ (tốc độ gõ chính xác / độ chính xác qua tối đa 15 phiên gần nhất hợp
+lệ). Hiện "Chưa có dữ liệu" thay vì số 0/số bịa khi chưa luyện lần nào.
+
+**Lưu trữ**: `store.d.typing = { samples:[], level:3, streak:0, recentIds:[]
+}` trong cùng `localStorage` key `hckt2026.v1` — tối đa 200 phiên gần nhất
+(phiên cũ nhất tự bị loại khi vượt). Không đổi/xoá `stats`/`starred`/
+`history`/`best` hiện có.
+
+**Kiểm thử** bằng Playwright (Chromium, 41 kịch bản mới chạy qua
+`node server.js` thật — không phải logic viết lại để test), cộng với chạy
+lại đầy đủ 92 kịch bản của 2 tính năng trước (Cần ôn lại, Ôn 4 đề) để xác
+nhận không hồi quy:
+- Gõ tay thật (ký tự từng cái, qua `page.type`) → `speedValid=true`, WPM/độ
+  chính xác dương, hiển thị đúng ô "từ/phút" sau khi chấm.
+- Câu nhiều đáp án đúng (lọc đúng cả 9 câu `multi:true` của ngân hàng) → gõ
+  đủ nội dung ghép của mọi phương án → chấm đúng tự động, không cần tự chấm.
+- Bỏ trống → `blank=true`, `speedValid=false`, vẫn chấm Sai.
+- Dán văn bản (giả `ClipboardEvent('paste')` thật) → `pasted=true`,
+  `speedValid=false`, vẫn chấm đúng/sai chính xác theo nội dung dán.
+- Gán `.value` trực tiếp không qua sự kiện `paste` (`page.fill()`, mô phỏng
+  kéo-thả/tự điền) → bắt được bởi heuristic bước nhảy ký tự → `abnormal=true`,
+  `speedValid=false`.
+- Xoá hết rồi gõ lại nội dung khác → vẫn `speedValid=true`, không bị loại.
+- Thoát giữa chừng (điều hướng sang tab khác khi đang gõ, chưa nộp) → không
+  sinh ra sample nào trong `store.d.typing.samples`.
+- Đồng hồ thi (90s) tiếp tục chạy dù chưa gõ gì; `it.typeStart` giữ `null`
+  tới đúng ký tự gõ đầu tiên; hết 90 giây tự nộp bài hiện tại (kể cả khi
+  chưa gõ xong), đánh dấu `completedInTime=false` nhưng phiên vẫn
+  `speedValid=true` nếu có gõ tay thật trong lúc đó.
+- 3 lần liên tiếp đúng & đúng giờ → tăng đúng 1 mức; 3 lần liên tiếp sai →
+  giảm đúng 1 mức.
+- Lọc "chỉ câu yếu"/"chỉ câu đã đánh dấu 🔖" lọc đúng số câu phù hợp.
+- Đánh dấu 🔖 trong "Luyện tự luận" đồng bộ đúng sang "Cần ôn lại", không
+  trùng lặp.
+- Tab "Tiến độ": hiện "Chưa có dữ liệu" trước khi luyện, hiện đúng số liệu
+  thật + biểu đồ sau khi có ≥ 2–3 phiên hợp lệ.
+- Dữ liệu tốc độ gõ sống sót qua `page.reload()`.
+- Viewport iPhone 12: màn thiết lập và màn hỏi/đáp không tràn ngang; thanh
+  điều hướng dưới (giờ 11 tab) vẫn vừa khít viewport 390px (11×35px), có tab
+  "Tự luận".
+- Chạy lại nguyên 92 kịch bản cũ (đánh dấu/Cần ôn lại, 4 đề × 2 vòng, đồng
+  hồ Đội tuyển) — không hồi quy. **133/133 đạt.**
+
+**Giới hạn còn lại**:
+- Heuristic phát hiện "tốc độ gõ bất thường" (ngưỡng 12 ký tự/60ms) là một
+  lựa chọn hợp lý nhưng không chứng minh được bằng tài liệu quy chế — có thể
+  một số trường hợp gõ rất nhanh thật (hiếm) bị loại nhầm khỏi thống kê tốc
+  độ (vẫn được chấm đúng/sai bình thường, chỉ không tính WPM của phiên đó).
+- Không phát hiện được "nhập không có ý nghĩa" theo nghĩa ngữ dụng (gõ linh
+  tinh nhưng vẫn ở tốc độ bình thường, không dán, không bỏ trống) — nằm
+  ngoài khả năng phân tích ngôn ngữ của ứng dụng; nội dung đó vẫn được chấm
+  Sai (không khớp đáp án chuẩn) nên không làm sai điểm đúng/sai, nhưng VẪN
+  được tính vào tốc độ gõ nếu không bị dán/bất thường/bỏ trống — chấp nhận
+  đây là giới hạn đã biết, ghi rõ ở đây theo đúng yêu cầu báo cáo minh bạch.
+- Dự trữ thời gian đọc đề/suy nghĩ trong công thức đề xuất độ dài dùng độ
+  dài câu hỏi TRUNG BÌNH của cả ngân hàng (một hằng số), không tính riêng
+  theo độ dài của từng câu hỏi cụ thể đang xét — đơn giản hoá có chủ đích để
+  công thức dễ hiểu/kiểm chứng; có thể tinh chỉnh thành công thức theo từng
+  câu nếu cần chính xác hơn.

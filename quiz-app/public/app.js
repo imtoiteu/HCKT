@@ -26,7 +26,7 @@ const ICON = {
 
 /* ---------------- store ---------------- */
 const store = {
-  d: { stats: {}, starred: {}, streak: { last: '', days: 0 }, history: [], theme: 'auto', best: {}, d4last: {} },
+  d: { stats: {}, starred: {}, streak: { last: '', days: 0 }, history: [], theme: 'auto', best: {}, d4last: {}, typing: { samples: [], level: 3, streak: 0, recentIds: [] } },
   load() {
     try { Object.assign(this.d, JSON.parse(localStorage.getItem(LS) || '{}')); } catch (e) { }
     if (!this.d.stats) this.d.stats = {};
@@ -36,6 +36,11 @@ const store = {
     if (!this.d.best) this.d.best = {};
     if (!this.d.best.d4) this.d.best.d4 = {};
     if (!this.d.d4last) this.d.d4last = {};
+    if (!this.d.typing) this.d.typing = { samples: [], level: 3, streak: 0, recentIds: [] };
+    if (!this.d.typing.samples) this.d.typing.samples = [];
+    if (this.d.typing.level == null) this.d.typing.level = 3;
+    if (this.d.typing.streak == null) this.d.typing.streak = 0;
+    if (!this.d.typing.recentIds) this.d.typing.recentIds = [];
   },
   save() { try { localStorage.setItem(LS, JSON.stringify(this.d)); } catch (e) { } },
   st(id) { return this.d.stats[id] || (this.d.stats[id] = { box: 1, due: 0, seen: 0, right: 0, wrong: 0 }); },
@@ -122,6 +127,25 @@ function toast(msg) {
 }
 function fmtTime(ms) { const s = Math.max(0, Math.round(ms / 1000)); return pad2(s / 60 | 0) + ':' + pad2(s % 60); }
 function setEq(a, b) { return a.length === b.length && a.every(x => b.includes(x)); }
+/** Biểu đồ đường nhỏ (inline SVG, không phụ thuộc thư viện ngoài — dự án
+ * không có dependency nào) để vẽ "tiến bộ qua các phiên luyện" trong thống
+ * kê tốc độ gõ. `values` theo thứ tự thời gian (cũ→mới, trái→phải). */
+function sparkline(values, { width = 280, height = 52, color = 'var(--brand)' } = {}) {
+  if (!values.length) return '';
+  const lo = Math.min(...values), hi = Math.max(...values);
+  const span = (hi - lo) || 1;
+  const pad = 4;
+  const pts = values.map((v, i) => {
+    const x = values.length === 1 ? width / 2 : (i / (values.length - 1)) * width;
+    const y = pad + (1 - (v - lo) / span) * (height - pad * 2);
+    return `${x.toFixed(1)},${y.toFixed(1)}`;
+  });
+  const last = pts[pts.length - 1].split(',');
+  return `<svg viewBox="0 0 ${width} ${height}" preserveAspectRatio="none" style="width:100%;height:${height}px;display:block">
+    <polyline points="${pts.join(' ')}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="${last[0]}" cy="${last[1]}" r="3" fill="${color}"/>
+  </svg>`;
+}
 /** Bọc 1 trình xử lý sự kiện để chỉ chạy đúng 1 lần — chặn nộp bài/chuyển bước
  * hai lần nếu cùng một nút (hoặc tham chiếu cũ của nó) nhận sự kiện click lần
  * nữa trước khi màn hình kịp vẽ lại (ví dụ bấm liên tiếp rất nhanh). */
@@ -652,13 +676,18 @@ function gradeRecall(typed, canonicalVariants) {
  * được tham chiếu, dùng khi khoá đáp án gốc chỉ là một tham chiếu kiểu "Cả
  * hai phương án trên" / "Cả a, b, c" mà người học không nhìn thấy các
  * phương án (xem data/raw/dethi-doituyen-2026-11-05.json, mục "Rà soát đáp
- * án tham chiếu"). Nếu không có `ansFull`, dùng đúng nội dung phương án khoá
- * đáp án gốc như trước. KHÔNG dùng cho chế độ trắc nghiệm — chế độ đó luôn
- * giữ nguyên khoá đáp án gốc q.ans/q.opts không đổi. */
+ * án tham chiếu"). Nếu không có `ansFull`, GHÉP ĐẦY ĐỦ nội dung TẤT CẢ
+ * phương án đúng trong `q.ans` (không chỉ lấy phương án đầu tiên) — bắt buộc
+ * cho câu nhiều đáp án đúng (q.multi) để đếm đúng tổng số từ cần nhớ và chấm
+ * đúng toàn bộ nội dung, không chỉ 1 phương án. Với câu 1 đáp án, kết quả
+ * giống hệt trước (mảng 1 phần tử, không đổi hành vi hiện có ở Đội tuyển/4
+ * đề/Cần ôn lại — các nơi đó chỉ gọi hàm này khi !q.multi). KHÔNG dùng cho
+ * chế độ trắc nghiệm — chế độ đó luôn giữ nguyên khoá đáp án gốc q.ans/q.opts
+ * không đổi. */
 function canonicalAnswers(q) {
   if (q.ansFull && q.ansFull.length) return q.ansFull;
-  const canonical = q.opts.find(o => o.k === q.ans[0]);
-  return canonical ? [canonical.t] : [];
+  const texts = q.ans.map(k => { const o = q.opts.find(o => o.k === k); return o ? o.t : ''; }).filter(Boolean);
+  return texts.length ? [texts.join('. ')] : [];
 }
 function wordDiffHtml(words, matched, missClass) {
   if (!words.length) return `<span class="muted" style="font-style:normal">(không có câu trả lời)</span>`;
@@ -669,6 +698,131 @@ function pickTeamQuestions(n, exclude, excludeMulti) {
   let pool = basePool([]).filter(q => !exclude.includes(q.id) && (!excludeMulti || !q.multi));
   pool = shuffle(pool).sort((a, b) => (store.d.stats[a.id]?.box || 1) - (store.d.stats[b.id]?.box || 1));
   return pool.slice(0, n);
+}
+
+/* ---------------- Luyện tự luận: đo tốc độ gõ & đề xuất độ dài câu hỏi theo năng lực ----------------
+ * Áp dụng cho ngân hàng chính (244 câu, kể cả câu nhiều đáp án đúng — xem
+ * `canonicalAnswers` đã sửa để ghép đầy đủ nội dung mọi phương án đúng).
+ * Đồng hồ thi (90s/câu Khởi động, Điều 13.2.b — KHÔNG đổi, dùng lại đúng
+ * `teamSeconds('khoidong')`) hoạt động ĐỘC LẬP với "đồng hồ bấm giờ gõ" ở
+ * đây: đồng hồ thi bắt đầu ngay khi câu hỏi hiện ra, còn thời gian gõ chỉ
+ * tính từ KÝ TỰ ĐẦU TIÊN người học thực sự nhập (xem essayQuizView — set
+ * it.typeStart ở ký tự gõ đầu tiên, không phải lúc câu hỏi hiện ra). */
+const TYPE_LEVELS = [0.55, 0.7, 0.85, 1, 1.15, 1.3, 1.5]; // mức độ dài; index 3 = ×1.0 theo công thức đo được
+const TYPE_SAMPLE_CAP = 200;       // tối đa số phiên lưu trong localStorage — phiên cũ nhất bị loại khi vượt
+const TYPE_ROLLING_N = 20;         // số phiên GẦN NHẤT, HỢP LỆ dùng để tính tốc độ gõ/độ chính xác trung bình
+const TYPE_STREAK_STEP = 3;        // số lần liên tiếp thành công/thất bại để tăng/giảm 1 mức độ dài (không đổi ngay sau 1 lần)
+const TYPE_MIN_SAMPLES = 3;        // số phiên hợp lệ tối thiểu để dùng công thức đo thực tế; trước đó dùng độ dài trung vị thật của ngân hàng (không bịa số)
+const TYPE_READ_BASE_S = 8;        // giây dự trữ cố định để đọc đề + định hình ý trả lời, KHÔNG tính là thời gian gõ
+const TYPE_READ_PER_WORD_S = 0.3;  // giây dự trữ thêm mỗi từ của CÂU HỎI (không phải đáp án) — ~200 từ/phút đọc thầm trung bình
+const TYPE_SAFETY = 0.8;           // hệ số an toàn — chừa ~20% thời gian gõ cho việc dừng nghĩ/soát lại, không ép dùng hết 100% tốc độ đo được
+const TYPE_MIN_TYPE_S = 30;        // sàn thời gian gõ tối thiểu được dự trữ trong 90s/câu (đề phòng phần đọc/nghĩ chiếm quá nhiều)
+
+let _wcCache = new Map();
+function answerWordCount(q) {
+  if (_wcCache.has(q.id)) return _wcCache.get(q.id);
+  const n = normWords(canonicalAnswers(q)[0] || '').length;
+  _wcCache.set(q.id, n);
+  return n;
+}
+function bankMedianAnswerWords() {
+  const lens = DATA.questions.filter(answerable).map(answerWordCount).sort((a, b) => a - b);
+  return lens.length ? lens[Math.floor(lens.length / 2)] : 10;
+}
+/** Chỉ tính từ các phiên "hợp lệ để đo tốc độ" (speedValid — xem
+ * recordTypingSample: loại phiên bỏ trống, dán văn bản, hoặc tốc độ bất
+ * thường). Trả về null cho từng chỉ số nếu chưa có phiên hợp lệ nào — KHÔNG
+ * dùng giá trị giả định khi hiển thị, đúng yêu cầu "chỉ tính từ dữ liệu
+ * thực tế". */
+function typingCompetency() {
+  const valid = store.d.typing.samples.filter(s => s.speedValid).slice(-TYPE_ROLLING_N);
+  const n = valid.length;
+  if (!n) return { n: 0, avgRawWpm: null, avgAccWpm: null, avgAccuracy: null };
+  const avg = arr => Math.round((arr.reduce((a, b) => a + b, 0) / arr.length) * 10) / 10;
+  return { n, avgRawWpm: avg(valid.map(s => s.rawWpm)), avgAccWpm: avg(valid.map(s => s.accWpm)), avgAccuracy: avg(valid.map(s => s.pct)) };
+}
+/** Độ dài đáp án (số từ) tối đa đã TỪNG hoàn thành ĐÚNG và ĐÚNG GIỜ (toàn bộ
+ * lịch sử, không chỉ phiên gần đây) — "kỷ lục cá nhân", khác với mức đề xuất
+ * hiện tại (có thể thấp hơn kỷ lục nếu gần đây làm kém hơn). */
+function typingMaxExactWords() {
+  const hits = store.d.typing.samples.filter(s => s.exact && s.completedInTime);
+  return hits.length ? Math.max(...hits.map(s => s.refWords)) : 0;
+}
+/** Công thức đề xuất độ dài đáp án (số từ) cho câu tiếp theo trong "Luyện
+ * theo năng lực": lấy quỹ thời gian 90s/câu Khởi động (Điều 13.2.b — KHÔNG
+ * đổi thời lượng chính thức), trừ phần dự trữ đọc đề + suy nghĩ
+ * (TYPE_READ_BASE_S + độ dài câu hỏi trung bình×TYPE_READ_PER_WORD_S, sàn
+ * tối thiểu TYPE_MIN_TYPE_S giây gõ), nhân với tốc độ gõ CHÍNH XÁC trung
+ * bình (accWpm — không dùng tốc độ gõ thô, để "gõ bừa" không làm tăng ảo độ
+ * dài đề xuất), nhân hệ số an toàn, nhân hệ số phạt nếu độ chính xác trung
+ * bình dưới 85% (càng hay sai, gợi ý càng ngắn). Cuối cùng áp "mức" hiện tại
+ * (TYPE_LEVELS[level], tăng/giảm dần theo adjustTypeLevel) để tạo hiệu ứng
+ * "từng bước tăng/giảm" quanh mức đo được, không nhảy thẳng lên mức tối đa
+ * chỉ sau 1 lần làm tốt. Chưa đủ TYPE_MIN_SAMPLES phiên hợp lệ: dùng độ dài
+ * trung vị THẬT của ngân hàng (bankMedianAnswerWords) làm điểm khởi đầu —
+ * không bịa một con số tốc độ gõ nào khi chưa có dữ liệu. */
+function typingSuggestedWords() {
+  const comp = typingCompetency();
+  const haveData = comp.n >= TYPE_MIN_SAMPLES;
+  const qs = DATA.questions.filter(answerable);
+  const avgQWords = qs.length ? qs.reduce((a, q) => a + normWords(q.q).length, 0) / qs.length : 15;
+  const reserve = TYPE_READ_BASE_S + TYPE_READ_PER_WORD_S * avgQWords;
+  const typeS = Math.max(TYPE_MIN_TYPE_S, teamSeconds('khoidong') - reserve);
+  let baseWords;
+  if (haveData) {
+    const accFactor = comp.avgAccuracy < 85 ? Math.max(0.5, comp.avgAccuracy / 85) : 1;
+    baseWords = (typeS / 60) * comp.avgAccWpm * TYPE_SAFETY * accFactor;
+  } else {
+    baseWords = bankMedianAnswerWords();
+  }
+  const mult = TYPE_LEVELS[store.d.typing.level] ?? 1;
+  return { words: Math.max(3, Math.round(baseWords * mult)), haveData, comp, reserveS: Math.round(reserve), typeS: Math.round(typeS) };
+}
+/** Tăng/giảm "mức" độ dài theo CHUỖI liên tiếp thành công/thất bại (không
+ * đổi ngay sau 1 lần) — thành công = trả lời đúng VÀ nộp trong giờ; thất bại
+ * = sai HOẶC hết giờ. Luôn xét cả phiên hết giờ/bỏ trống dù phiên đó có thể
+ * bị loại khỏi `typingCompetency()` — "không hoàn thành kịp" vẫn là tín
+ * hiệu hợp lệ để giảm độ dài, khác với việc dùng phiên đó để TÍNH tốc độ gõ
+ * trung bình (2 mục đích khác nhau, 2 điều kiện hợp lệ khác nhau). */
+function adjustTypeLevel(sample) {
+  const T = store.d.typing;
+  const success = sample.exact && sample.completedInTime;
+  T.streak = success ? (T.streak > 0 ? T.streak + 1 : 1) : (T.streak < 0 ? T.streak - 1 : -1);
+  if (T.streak >= TYPE_STREAK_STEP) { T.level = Math.min(TYPE_LEVELS.length - 1, T.level + 1); T.streak = 0; }
+  else if (T.streak <= -TYPE_STREAK_STEP) { T.level = Math.max(0, T.level - 1); T.streak = 0; }
+}
+/** Ghi nhận 1 phiên trả lời tự luận (gọi sau khi nộp bài hoặc hết giờ).
+ * speedValid=false (loại khỏi tính tốc độ gõ trung bình, KHÔNG loại khỏi
+ * chấm đúng/sai Leitner hay khỏi adjustTypeLevel) khi: bỏ trống hoàn toàn
+ * (`blank`), có dán văn bản (`pasted`), hoặc tốc độ gõ bất thường không thể
+ * là người gõ tay (`abnormal` — phát hiện qua bước nhảy ký tự quá lớn trong
+ * thời gian quá ngắn, xem essayQuizView). */
+function recordTypingSample(q, { typed, typeMs, completedInTime, timedOut, pasted, abnormal }) {
+  const g = gradeRecall(typed, canonicalAnswers(q));
+  const typedWords = normWords(typed).length;
+  const refWords = g ? g.refWords.length : answerWordCount(q);
+  const matchedWords = g ? g.mRef.filter(Boolean).length : 0;
+  const pct = g ? g.pct : 0;
+  const exact = g ? g.exact : false;
+  const blank = typedWords === 0 || !typeMs;
+  const minutes = typeMs ? typeMs / 60000 : 0;
+  const tainted = !!pasted || !!abnormal;
+  const speedValid = !blank && !tainted && minutes > 0;
+  const rawWpm = speedValid ? Math.round((typedWords / minutes) * 10) / 10 : null;
+  const accWpm = speedValid ? Math.round((matchedWords / minutes) * 10) / 10 : null;
+  const sample = {
+    id: q.id, at: Date.now(), typedWords, refWords, matchedWords, pct, exact,
+    typeMs: typeMs || 0, rawWpm, accWpm, completedInTime: !!completedInTime, timedOut: !!timedOut,
+    pasted: !!pasted, abnormal: !!abnormal, blank, speedValid,
+  };
+  const T = store.d.typing;
+  T.samples.push(sample);
+  if (T.samples.length > TYPE_SAMPLE_CAP) T.samples = T.samples.slice(-TYPE_SAMPLE_CAP);
+  adjustTypeLevel(sample);
+  T.recentIds.push(q.id);
+  if (T.recentIds.length > 24) T.recentIds = T.recentIds.slice(-24);
+  store.grade(q.id, exact); // Leitner — store.grade() đã tự gọi save(), không cần save() thêm
+  return { g, sample };
 }
 /* Thời gian mỗi câu theo Điều 13.2.b Quy chế Hội thi (trang 5–6 bản quét):
  * Khởi động 90s/câu, Tăng tốc 60s/câu, Gói câu hỏi riêng/chung 20s/câu — tính
@@ -1169,6 +1323,295 @@ function teamResult() {
   return v;
 }
 
+/* ---------- LUYỆN TỰ LUẬN (ngân hàng chính, đo tốc độ gõ + "Luyện theo năng lực") ----------
+ * Trả lời trực tiếp (gõ tay) các câu trong ngân hàng 244 câu — dùng lại
+ * đúng cơ chế chấm tự luận (`gradeRecall`/`canonicalAnswers`), Leitner
+ * (`store.grade`) và đánh dấu 🔖 (`starBtn`) đã có, KHÔNG viết lại logic
+ * chấm. Mỗi câu dùng đúng quỹ 90s/câu của Khởi động (Điều 13.2.b — không
+ * đổi thời lượng chính thức dù ở chế độ nào), nhưng đồng hồ GÕ (để đo tốc
+ * độ) là một đồng hồ khác, riêng, chỉ bắt đầu từ ký tự đầu tiên người học
+ * thực sự nhập — xem các biến it.typeStart/_lastLen/_lastT trong
+ * essayQuizView. Nhờ `canonicalAnswers` đã sửa (ghép đủ mọi phương án
+ * đúng), câu nhiều đáp án đúng (q.multi) giờ cũng chấm tự động như câu 1
+ * đáp án — không cần nhánh "tự chấm" riêng như teamRecallView. */
+const essaySetup = { secs: [], mode: 'adaptive', weakOnly: false, starOnly: false, count: 10 };
+
+function essayPool(secs, weakOnly, starOnly) {
+  let pool = basePool(secs);
+  if (weakOnly) pool = pool.filter(q => d4IsWeak(q.id));
+  if (starOnly) pool = pool.filter(q => !!store.d.starred[q.id]);
+  return pool;
+}
+
+V.essay = () => {
+  if (!app.essay) return essayHome();
+  if (app.essay.finished) return essayResult();
+  return essayQuizView();
+};
+
+function essayHome() {
+  const v = el('div');
+  v.appendChild(el('div', 'page-head', `<h1>Luyện tự luận</h1><p>Gõ trực tiếp đáp án cho câu hỏi trong ngân hàng ${DATA.questions.length} câu — hệ thống so khớp từng từ với đáp án chuẩn, đo tốc độ gõ thực tế và tự đề xuất độ dài câu phù hợp với năng lực của bạn.</p>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span>Mỗi câu dùng đúng quỹ <b>90 giây/câu</b> như phần Khởi động của tab "Đội tuyển" (Điều 13.2.b) — đồng hồ thi này <b>không đổi</b> ở bất kỳ chế độ nào. Riêng "đồng hồ gõ" (để đo tốc độ) là một đồng hồ khác, <b>chỉ chạy từ lúc bạn gõ ký tự đầu tiên</b> — thời gian đọc đề/suy nghĩ trước đó không bị tính vào tốc độ gõ.</span>`));
+
+  const sugBox = el('div', 'card pad'); sugBox.style.cssText = 'margin-bottom:16px;border:1.5px solid var(--brand);background:linear-gradient(135deg,var(--brand-soft),var(--card))';
+  v.appendChild(sugBox);
+
+  const card = el('div', 'card pad');
+  const f1 = el('div', 'field', `<label>Chọn ngành</label>`);
+  const chips = el('div', 'chips');
+  const mkChip = (id, label) => {
+    const c = el('button', 'chip', esc(label)); c.dataset.id = id;
+    c.onclick = () => { if (id === '*') essaySetup.secs = []; else { const i = essaySetup.secs.indexOf(id); i < 0 ? essaySetup.secs.push(id) : essaySetup.secs.splice(i, 1); } sync(); };
+    return c;
+  };
+  chips.appendChild(mkChip('*', 'Tất cả'));
+  DATA.sections.forEach(s => chips.appendChild(mkChip(s.id, `${s.id}. ${s.short}`)));
+  f1.appendChild(chips); card.appendChild(f1);
+
+  const f2 = el('div', 'field', `<label>Chế độ chọn câu</label>`);
+  const sw = el('div', 'switches');
+  const modes = [
+    ['adaptive', 'Luyện theo năng lực', 'Tự chọn câu có độ dài đáp án phù hợp tốc độ gõ/độ chính xác hiện tại của bạn, tăng/giảm dần theo kết quả'],
+    ['free', 'Tự do', 'Chọn ngẫu nhiên trong phạm vi ngành đã chọn, không điều chỉnh theo độ dài'],
+  ];
+  modes.forEach(([id, lbl, sub]) => {
+    const w = el('label', 'sw', `<input type="radio" name="essaymode" value="${id}"${essaySetup.mode === id ? ' checked' : ''}><span class="box"></span><span class="lbl">${esc(lbl)}<i>${esc(sub)}</i></span>`);
+    w.querySelector('input').onchange = () => { essaySetup.mode = id; sync(); };
+    sw.appendChild(w);
+  });
+  f2.appendChild(sw); card.appendChild(f2);
+
+  const f3 = el('div', 'field', `<label>Ưu tiên câu (tuỳ chọn)</label>`);
+  const w1 = el('label', 'sw', `<input type="checkbox"${essaySetup.weakOnly ? ' checked' : ''}><span class="box"></span><span class="lbl">Chỉ câu yếu theo Leitner<i>Câu đã từng trả lời sai hoặc còn ở hộp thấp</i></span>`);
+  w1.querySelector('input').onchange = e => { essaySetup.weakOnly = e.target.checked; sync(); };
+  f3.appendChild(w1);
+  const w2 = el('label', 'sw', `<input type="checkbox"${essaySetup.starOnly ? ' checked' : ''}><span class="box"></span><span class="lbl">Chỉ câu đã đánh dấu 🔖<i>Câu trong tab "Cần ôn lại"</i></span>`);
+  w2.querySelector('input').onchange = e => { essaySetup.starOnly = e.target.checked; sync(); };
+  f3.appendChild(w2);
+  card.appendChild(f3);
+
+  const f4 = el('div', 'field', `<label>Số câu mỗi lượt</label>`);
+  const cchips = el('div', 'chips');
+  [5, 10, 15, 0].forEach(n => {
+    const c = el('button', 'chip', n === 0 ? 'Toàn bộ' : `${n} câu`); c.dataset.n = n;
+    c.onclick = () => { essaySetup.count = n; sync(); };
+    cchips.appendChild(c);
+  });
+  f4.appendChild(cchips); card.appendChild(f4);
+
+  const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
+  const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`);
+  go.onclick = () => essayStart();
+  card.appendChild(go);
+  v.appendChild(card);
+
+  function sync() {
+    $$('.chip', chips).forEach(c => c.classList.toggle('on', c.dataset.id === '*' ? essaySetup.secs.length === 0 : essaySetup.secs.includes(c.dataset.id)));
+    $$('.chip', cchips).forEach(c => c.classList.toggle('on', +c.dataset.n === essaySetup.count));
+    const pool = essayPool(essaySetup.secs, essaySetup.weakOnly, essaySetup.starOnly);
+    const n = essaySetup.count === 0 ? pool.length : Math.min(essaySetup.count, pool.length);
+    avail.textContent = `Có ${pool.length} câu phù hợp lựa chọn hiện tại. Lượt này sẽ lấy ${n} câu.`;
+    go.disabled = pool.length === 0;
+    const sug = typingSuggestedWords();
+    sugBox.innerHTML = sug.haveData
+      ? `<h3 style="margin-bottom:6px">Gợi ý theo năng lực hiện tại</h3>
+         <p style="font-size:13.5px;line-height:1.6">Tốc độ gõ chính xác trung bình (${sug.comp.n} phiên gần nhất): <b>${sug.comp.avgAccWpm} từ/phút</b> · Độ chính xác trung bình: <b>${sug.comp.avgAccuracy}%</b>.<br>Độ dài đáp án đề xuất: <b>tối đa ${sug.words} từ/câu</b> (đã trừ ~${sug.reserveS}s đọc đề/suy nghĩ, còn ~${sug.typeS}s để gõ trong quỹ 90s).</p>`
+      : `<h3 style="margin-bottom:6px">Gợi ý theo năng lực hiện tại</h3>
+         <p style="font-size:13.5px;line-height:1.6">Chưa đủ dữ liệu đo tốc độ gõ thực tế (cần ≥ ${TYPE_MIN_SAMPLES} phiên hợp lệ) — bắt đầu ở độ dài trung vị thật của ngân hàng câu hỏi: <b>khoảng ${sug.words} từ/câu</b>. Luyện vài câu để hệ thống đo và điều chỉnh dần.</p>`;
+  }
+  sync();
+  return v;
+}
+
+function essayStart() {
+  const { secs, mode, weakOnly, starOnly, count } = essaySetup;
+  const pool = essayPool(secs, weakOnly, starOnly);
+  if (!pool.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
+  const n = count === 0 ? pool.length : Math.min(count, pool.length);
+  let items;
+  if (mode === 'adaptive') {
+    const target = typingSuggestedWords().words;
+    const recent = store.d.typing.recentIds;
+    let candidates = pool.filter(q => !recent.includes(q.id));
+    if (candidates.length < Math.min(n, 5)) candidates = pool.slice(); // nới nếu lọc "mới học" làm hết câu
+    candidates.sort((a, b) => Math.abs(answerWordCount(a) - target) - Math.abs(answerWordCount(b) - target));
+    items = shuffle(candidates.slice(0, Math.max(n * 3, 15))).slice(0, n);
+  } else {
+    items = shuffle(pool).slice(0, n);
+  }
+  if (!items.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
+  app.essay = {
+    mode, params: { secs: secs.slice(), mode, weakOnly, starOnly, count },
+    items: items.map(q => ({
+      q, typed: '', done: false, ok: null, revealed: false, graded: null, sample: null,
+      typeStart: null, pasted: false, abnormal: false, timedOut: false, _lastLen: 0, _lastT: 0,
+    })),
+    i: 0, right: 0, wrong: 0, started: Date.now(),
+  };
+  app.view = 'essay'; render();
+}
+
+function essayAdvance() {
+  clearTeamTimer();
+  const T = app.essay;
+  if (T.i < T.items.length - 1) { T.i++; render(); } else essayFinish();
+}
+function essayFinish() {
+  clearTeamTimer();
+  const T = app.essay;
+  T.right = T.items.filter(it => it.ok === true).length;
+  T.wrong = T.items.filter(it => it.ok === false).length;
+  T.finished = true;
+  T.elapsed = Date.now() - T.started;
+  render();
+}
+
+function essaySubmit(it, q, timedOut) {
+  if (it.revealed) return;
+  clearTeamTimer();
+  const typeMs = it.typeStart ? Date.now() - it.typeStart : 0;
+  const { g, sample } = recordTypingSample(q, {
+    typed: it.typed, typeMs, completedInTime: !timedOut, timedOut,
+    pasted: it.pasted, abnormal: it.abnormal,
+  });
+  it.graded = g; it.ok = sample.exact; it.sample = sample; it.timedOut = timedOut;
+  it.citeArticle = 'Điều 14.2.a';
+  it.revealed = true;
+  render();
+}
+
+function essayQuizView() {
+  const T = app.essay, it = T.items[T.i], q = it.q;
+  const v = el('div');
+
+  const bar = el('div', 'quiz-bar');
+  const back = el('button', 'btn ghost', `${ICON.back} Thoát`);
+  back.onclick = () => { clearTeamTimer(); if (T.i === 0 || confirm('Thoát và huỷ lượt luyện này?')) { app.essay = null; nav('essay'); } };
+  bar.appendChild(back);
+  bar.appendChild(el('div', 'progress', `<i style="width:${T.i / T.items.length * 100}%"></i>`));
+  bar.appendChild(el('span', 'counter', `${T.i + 1}/${T.items.length}`));
+  const t = el('span', 'timer', ''); t.id = 'essayTimer'; t.title = TIME_CITE.khoidong; bar.appendChild(t);
+  bar.appendChild(el('span', 'score-live', `<span class="g">✓ ${T.items.filter(x => x.ok === true).length}</span> · <span class="r">✕ ${T.items.filter(x => x.ok === false).length}</span>`));
+  v.appendChild(bar);
+
+  const card = el('div', 'card qcard');
+  const topEl = el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag ok">Chấm tự động</span>` + (q.multi ? `<span class="tag multi">Ghép đủ các phương án đúng</span>` : ''));
+  topEl.appendChild(starBtn(q.id));
+  card.appendChild(topEl);
+  card.appendChild(el('div', 'qtext', esc(q.q)));
+
+  if (!it.revealed) {
+    const ta = el('textarea', 'recall-in');
+    ta.placeholder = 'Gõ câu trả lời đầy đủ của bạn — hệ thống sẽ tự so khớp từng từ với đáp án chuẩn…';
+    ta.value = it.typed;
+    ta.addEventListener('paste', () => { it.pasted = true; });
+    ta.oninput = () => {
+      const now = Date.now(), val = ta.value;
+      if (it.typeStart == null && val.trim().length) it.typeStart = now;
+      // Bước nhảy ký tự quá lớn trong quá ít thời gian ⇒ khả năng dán/điền tự động lọt qua sự kiện
+      // "paste" (ví dụ gán .value bằng script, kéo-thả, tự điền của trình duyệt). KHÔNG bỏ qua sự
+      // kiện đầu tiên: nếu cả CÂU TRẢ LỜI xuất hiện ngay ở ký tự gõ đầu tiên (dLen = độ dài hiện tại,
+      // vì _lastLen vẫn là 0) thì đó CHÍNH LÀ dấu hiệu rõ nhất của dán/điền tự động, không phải gõ tay
+      // thật (người gõ tay luôn bắt đầu bằng 1 ký tự).
+      const dLen = val.length - it._lastLen, dT = now - (it._lastT || now);
+      if (dLen > 12 && dT < 60) it.abnormal = true;
+      it._lastLen = val.length; it._lastT = now;
+      it.typed = val;
+    };
+    card.appendChild(ta);
+    const foot = el('div', 'qfoot');
+    const submit = el('button', 'btn primary', `Nộp & xem đáp án ${ICON.arrow}`);
+    submit.onclick = once(() => essaySubmit(it, q, false));
+    foot.appendChild(submit);
+    card.appendChild(foot);
+    setTimeout(() => startTeamTimer(teamSeconds('khoidong'), once(() => essaySubmit(it, q, true)), 'essayTimer'));
+  } else {
+    card.appendChild(teamAutoGradeBox(it));
+    if (it.timedOut) card.appendChild(el('div', 'note', `${ICON.warn}<span>Hết 90 giây trước khi nộp — tính là <b>chưa hoàn thành kịp giờ</b> (không ảnh hưởng tới việc chấm đúng/sai ở trên).</span>`));
+    card.appendChild(essayTypingReadout(it.sample));
+    const foot = el('div', 'qfoot');
+    const retry = el('button', 'btn', `${ICON.refresh} Thử lại câu này`);
+    retry.onclick = () => { it.typed = ''; it.revealed = false; it.timedOut = false; it.pasted = false; it.abnormal = false; it.typeStart = null; it._lastLen = 0; it._lastT = 0; render(); };
+    foot.appendChild(retry);
+    const last = T.i === T.items.length - 1;
+    const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+    next.onclick = once(() => { it.done = true; essayAdvance(); });
+    foot.appendChild(next);
+    card.appendChild(foot);
+  }
+  v.appendChild(card);
+  return v;
+}
+
+function essayTypingReadout(s) {
+  if (!s) return el('div');
+  const box = el('div', 'card pad'); box.style.cssText = 'margin-top:12px;background:var(--card2)';
+  if (!s.speedValid) {
+    const why = s.blank ? 'bỏ trống/chưa gõ gì' : s.pasted ? 'có dán văn bản' : s.abnormal ? 'tốc độ gõ bất thường, không giống người gõ tay' : 'không hợp lệ';
+    box.innerHTML = `<p class="muted" style="font-size:12.5px">⏱ Phiên này <b>không</b> được dùng để tính tốc độ gõ (${esc(why)}) — vẫn được chấm đúng/sai và tính vào tiến độ Leitner bình thường.</p>`;
+    return box;
+  }
+  box.innerHTML = `<div class="stat-grid" style="gap:8px">
+    <div class="kpi"><b>${s.rawWpm}</b><span>Tốc độ gõ thô (từ/phút)</span></div>
+    <div class="kpi ok"><b>${s.accWpm}</b><span>Tốc độ gõ chính xác (từ/phút)</span></div>
+    <div class="kpi"><b>${s.pct}%</b><span>Tỷ lệ khớp đáp án</span></div>
+    <div class="kpi"><b>${fmtTime(s.typeMs)}</b><span>Thời gian gõ</span></div>
+  </div>`;
+  return box;
+}
+
+function essayResult() {
+  const T = app.essay;
+  const total = T.items.length;
+  const pct = total ? Math.round(T.right / total * 100) : 0;
+  const emo = pct >= 90 ? '🏆' : pct >= 75 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  const valid = T.items.map(it => it.sample).filter(s => s && s.speedValid);
+  const avgAccWpm = valid.length ? Math.round((valid.reduce((a, s) => a + s.accWpm, 0) / valid.length) * 10) / 10 : null;
+  const sug = typingSuggestedWords();
+  const v = el('div');
+  const c = el('div', 'card result', `
+    <div class="emoji">${emo}</div>
+    <div class="big" style="color:${pct >= 75 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)'}">${pct}%</div>
+    <div class="lbl"><b>Luyện tự luận</b> — đúng ${T.right}/${total} câu, ${fmtTime(T.elapsed)}</div>
+    <div class="rstats">
+      <div class="rstat"><b style="color:var(--ok)">${T.right}</b><span>Câu đúng</span></div>
+      <div class="rstat"><b style="color:var(--bad)">${T.wrong}</b><span>Câu sai</span></div>
+      <div class="rstat"><b>${avgAccWpm ?? '–'}</b><span>Tốc độ gõ chính xác TB phiên này</span></div>
+    </div>
+    <p class="muted" style="margin-top:10px;font-size:13px">Mức độ dài đề xuất cho lượt tới: <b>${sug.words} từ/câu</b> ${sug.haveData ? '' : '(chưa đủ dữ liệu, dùng độ dài trung vị của ngân hàng)'}.</p>`);
+  const cta = el('div', 'hero-cta'); cta.style.cssText = 'justify-content:center;margin-top:20px;flex-wrap:wrap';
+  const again = el('button', 'btn primary', `${ICON.refresh} Luyện lượt khác`);
+  again.onclick = () => { app.essay = null; essaySetup.secs = T.params.secs; essaySetup.mode = T.params.mode; essaySetup.weakOnly = T.params.weakOnly; essaySetup.starOnly = T.params.starOnly; essaySetup.count = T.params.count; essayStart(); };
+  cta.appendChild(again);
+  const home = el('button', 'btn ghost', 'Về trang Luyện tự luận');
+  home.onclick = () => { app.essay = null; nav('essay'); };
+  cta.appendChild(home);
+  c.appendChild(cta);
+  v.appendChild(c);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Xem lại bài làm</h3><span class="muted" style="font-size:12.5px">${total} câu — bấm 🔖 để đánh dấu câu cần ôn thêm</span>`));
+  const list = el('div', 'review-list');
+  T.items.forEach(it => {
+    const q = it.q, g = it.graded;
+    const r = el('div', 'rev ' + (it.ok ? 'hit' : 'miss'));
+    const topRow = el('div', 'qtop'); topRow.style.marginBottom = '0';
+    topRow.innerHTML = `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.ok ? '✓ Đúng' : '✕ Sai'}${it.timedOut ? ' · Hết giờ' : ''}</span>`;
+    topRow.appendChild(starBtn(q.id));
+    r.appendChild(topRow);
+    r.appendChild(el('div', 'q', esc(q.q)));
+    if (g) {
+      r.appendChild(el('div', '', `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án chuẩn</div><div class="words">${wordDiffHtml(g.refWords, g.mRef, 'miss')}</div><div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(g.hypWords, g.mHyp, 'bad')}</div>`));
+    }
+    if (it.sample && it.sample.speedValid) {
+      r.appendChild(el('p', 'muted', `Tốc độ gõ: ${it.sample.rawWpm} từ/phút (thô) · ${it.sample.accWpm} từ/phút (chính xác) · ${it.sample.pct}% khớp`)).style.cssText = 'font-size:12px;margin-top:8px';
+    }
+    list.appendChild(r);
+  });
+  v.appendChild(list);
+  return v;
+}
+
 /* ---------- FLASHCARD ---------- */
 const flash = { list: null, i: 0, shown: false, secs: [] };
 
@@ -1307,6 +1750,40 @@ V.browse = () => {
   return v;
 };
 
+/** Thẻ thống kê "Tốc độ gõ & độ chính xác" trong tab Tiến độ (yêu cầu #4 của
+ * tính năng "Luyện tự luận"). Chỉ hiển thị số liệu khi có ít nhất 1 phiên
+ * HỢP LỆ (speedValid) — không bịa số khi chưa có dữ liệu thật. */
+function typingStatsCard() {
+  const comp = typingCompetency();
+  const card = el('div', 'card pad'); card.style.marginTop = '16px';
+  card.appendChild(el('h3', '', 'Tốc độ gõ & độ chính xác (Luyện tự luận)'));
+  if (!comp.n) {
+    card.appendChild(el('p', 'muted', 'Chưa có dữ liệu — hãy luyện ở tab "Luyện tự luận" để bắt đầu đo tốc độ gõ và độ chính xác thực tế của bạn.')).style.cssText = 'font-size:13px;margin-top:6px';
+    return card;
+  }
+  const maxWords = typingMaxExactWords();
+  const inTimeCount = store.d.typing.samples.filter(s => s.exact && s.completedInTime).length;
+  const suggestion = typingSuggestedWords();
+  card.appendChild(el('p', 'muted', `Tính từ ${comp.n} phiên gõ hợp lệ gần nhất (loại phiên bỏ trống, dán văn bản, hoặc tốc độ bất thường).`)).style.cssText = 'font-size:12.5px;margin:4px 0 12px';
+  const grid = el('div', 'stat-grid');
+  grid.innerHTML = `
+    <div class="kpi"><b>${comp.avgRawWpm}</b><span>Tốc độ gõ thô TB (từ/phút)</span></div>
+    <div class="kpi ok"><b>${comp.avgAccWpm}</b><span>Tốc độ gõ chính xác TB (từ/phút)</span></div>
+    <div class="kpi"><b>${comp.avgAccuracy}%</b><span>Độ chính xác trung bình</span></div>
+    <div class="kpi"><b>${maxWords}</b><span>Đáp án dài nhất hoàn thành đúng giờ (từ)</span></div>
+    <div class="kpi ok"><b>${inTimeCount}</b><span>Số câu đúng & đúng giờ</span></div>
+    <div class="kpi"><b>${suggestion.words}</b><span>Mức đề xuất hiện tại (từ/câu)</span></div>`;
+  card.appendChild(grid);
+
+  const recent = store.d.typing.samples.filter(s => s.speedValid).slice(-15);
+  if (recent.length >= 2) {
+    card.appendChild(el('div', '', `
+      <div style="margin-top:14px"><b style="font-size:12.5px;color:var(--ink2)">Tốc độ gõ chính xác qua các phiên gần đây</b>${sparkline(recent.map(s => s.accWpm), { color: 'var(--ok)' })}</div>
+      <div style="margin-top:10px"><b style="font-size:12.5px;color:var(--ink2)">Độ chính xác qua các phiên gần đây</b>${sparkline(recent.map(s => s.pct), { color: 'var(--brand)' })}</div>`));
+  }
+  return card;
+}
+
 /* ---------- STATS ---------- */
 V.stats = () => {
   const qs = DATA.questions;
@@ -1341,6 +1818,8 @@ V.stats = () => {
   boxes.forEach((n, i) => bx.appendChild(el('div', 'boxc', `<b style="color:${col[i]}">${n}</b><span>Hộp ${i + 1}<br>${lbl[i]}</span>`)));
   bc.appendChild(bx);
   v.appendChild(bc);
+
+  v.appendChild(typingStatsCard());
 
   // per section
   const mc = el('div', 'card pad'); mc.style.marginTop = '16px';
@@ -2314,6 +2793,8 @@ function nav(v) {
   if (v !== 'dethi4') { clearTeamTimer(); app.d4 = null; }
   if (v === 'review' && app.review?.finished) app.review = null;
   if (v !== 'review') app.review = null;
+  if (v === 'essay' && app.essay?.finished) app.essay = null;
+  if (v !== 'essay') { clearTeamTimer(); app.essay = null; }
   location.hash = v; render(); scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -2327,7 +2808,7 @@ function render() {
 
 function buildBottomBar() {
   const bb = $('#botbar');
-  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', team: 'Đội tuyển', dethi4: '4 Đề', exam: 'Tốc độ', flash: 'Thẻ nhớ', browse: 'Tra cứu', review: 'Cần ôn', stats: 'Tiến độ', ref: 'Quy chế' };
+  const SHORT = { home: 'Trang chủ', practice: 'Luyện tập', essay: 'Tự luận', team: 'Đội tuyển', dethi4: '4 Đề', exam: 'Tốc độ', flash: 'Thẻ nhớ', browse: 'Tra cứu', review: 'Cần ôn', stats: 'Tiến độ', ref: 'Quy chế' };
   [...$('#tabs').children].forEach(b => {
     const c = b.cloneNode(true);
     c.querySelector('span').textContent = SHORT[c.dataset.nav] || c.dataset.nav;
