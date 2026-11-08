@@ -1068,3 +1068,154 @@ nhận không hồi quy:
   theo độ dài của từng câu hỏi cụ thể đang xét — đơn giản hoá có chủ đích để
   công thức dễ hiểu/kiểm chứng; có thể tinh chỉnh thành công thức theo từng
   câu nếu cần chính xác hơn.
+
+### 08/11/2026 (tiếp) — phân loại "Luyện tự luận" theo độ dài đáp án, khu vực "Ưu tiên luyện 90 giây"
+
+Thêm khu vực **"Ưu tiên luyện 90 giây"** làm màn hình mặc định của tab
+"Luyện tự luận": chỉ gồm câu có đáp án **≤30 từ** và có thể trả lời trực
+tiếp rõ nghĩa (không cần nhìn thấy A/B/C/D), cùng 3 nhóm phụ theo độ dài
+("Nâng cao" 31–40 từ, "Câu dài" 41–60 từ, "Rất dài" >60 từ) và "Tất cả câu
+hỏi" — tất cả tính sẵn, hiển thị ngay số câu đủ điều kiện, 1 chạm để bắt đầu.
+
+**Đếm từ bằng ĐÚNG hàm dùng khi chấm** (không đếm riêng): dùng lại
+`answerWordCount`/`normWords`/`canonicalAnswers` đã có — không viết hàm đếm
+từ riêng cho thống kê, tránh lệch số giữa lúc phân loại và lúc chấm. Với câu
+nhiều đáp án đúng, bắt buộc dùng nội dung đã ghép đầy đủ (qua `canonicalAnswers`/
+`ansFull`), không đếm theo 1 phương án hay theo độ dài câu hỏi — đúng yêu cầu.
+
+**Rà soát toàn bộ 244 câu trước khi phân loại** (không chỉ lọc theo số từ —
+dùng một fork kiểm tra độc lập, bản thân tôi đối chiếu lại từng câu trước
+khi áp dụng, không tự suy đoán):
+
+1. **24 câu đáp án tham chiếu kiểu "Cả a, b, c"/"Tất cả các phương án trên"**
+   (đáp án đúng chỉ trỏ vào các phương án khác, không có nội dung riêng) —
+   thêm `ansFull` (ghép nội dung các phương án còn lại, lấy đúng từ dữ liệu
+   đã có, không suy đoán thêm) cho: `III-4, IV-18, IV-22, IV-34, VI-10,
+   VII-4, VII-5, VII-7, VII-11, VII-15, VII-16, VII-18, VII-20, VII-21,
+   VII-24, VII-25, VII-37, VII-38, VII-40, VII-44, VII-45, VII-51, VII-57,
+   VII-59`. **Việc này phải làm TRƯỚC khi phân loại theo độ dài** — nếu phân
+   loại trên văn bản gốc chưa sửa, tới 18/24 câu này sẽ bị tính sai là rất
+   ngắn (3–6 từ, do chỉ đếm cụm "Cả a, b, c") trong khi đáp án thật dài
+   27–114 từ, làm lệch hẳn nhóm "Ưu tiên luyện 90 giây".
+2. **24 câu có cách hỏi phụ thuộc phương án** (dò theo các mẫu nêu trong yêu
+   cầu: "...nào sau đây...", "phát biểu nào", "chọn đáp án", v.v. — xem đủ
+   24 câu khớp mẫu trong lịch sử phiên làm việc), rà từng câu theo đúng
+   nguyên tắc "không suy đoán kiến thức ngoài dữ liệu":
+   - **4 câu đưa vào "Cần rà soát", loại khỏi MỌI nhóm luyện tự luận**:
+     `I-6`, `I-13`, `I-14` (dạng "nội dung nào KHÔNG thuộc/KHÔNG phải..." —
+     đúng/sai chỉ xác định được khi đối chiếu với các phương án còn lại,
+     không có câu trả lời độc lập rõ nghĩa khi ẩn phương án) và `VII-34`
+     ("Phát biểu nào sau đây là đúng?" — không có một chữ nội dung chủ đề
+     nào ngoài các phương án, không thể hỏi trực tiếp mà không suy đoán).
+   - **10 câu diễn đạt lại phần hỏi** (thêm trường `qEssay`, CHỈ đổi cách
+     hỏi khi hiển thị ở "Luyện tự luận", không đổi `q`/`opts`/`ans` gốc dùng
+     ở mọi nơi khác — có badge "Đã diễn đạt lại" công khai trên màn hình):
+     `IV-18, IV-20, IV-25, IV-31, VII-1, VII-36, VII-39, VII-46, VII-47,
+     VII-51` — mỗi câu chỉ bỏ đúng cụm tham chiếu phương án ("...nào sau
+     đây là đúng" → "...là gì"/"...gồm những gì"), giữ nguyên toàn bộ nội
+     dung chủ đề đã có trong câu hỏi gốc (ví dụ `VII-46`: cả 3 phương án
+     dùng chung tiền tố "Quản lý trang bị kỹ thuật gồm quản lý..." nên lấy
+     đúng tiền tố đó làm câu hỏi, không bịa thêm).
+   - **10 câu còn lại khớp mẫu dò nhưng vốn đã rõ nghĩa** (dùng "nào" như
+     từ hỏi mở bình thường, ví dụ "...gồm những nội dung nào?" — không phụ
+     thuộc phương án): giữ nguyên, không đổi gì.
+
+**Phát hiện thêm, ngoài phạm vi yêu cầu nhưng liên quan trực tiếp đến "tránh
+trùng câu"**: khi rà soát độc lập, phát hiện `VIII-33` (1 trong 16 câu được
+thêm khi nhập bộ đề CamScanner 5-11-26, xem mục "Nhật ký khôi phục
+05/11/2026" phía trên) **trùng NGUYÊN VĂN 100%** câu hỏi/phương án/đáp án với
+`VIII-10` (đã có từ trước, thuộc 228 câu gốc) — một lỗi dữ liệu có từ lần
+nhập trước, **không phải do tính năng này gây ra**, nhưng README trước đó
+ghi "không có câu nào bị bỏ ngỏ" cho 16 câu mới cần được đính chính: kiểm tra
+trùng lúc đó chỉ đối chiếu 16 câu mới với NHAU và với 228 câu cũ theo nội
+dung rút gọn, không phát hiện được cặp này vì bị rút gọn khác nhau ở bước
+nhập liệu. **Không xoá `VIII-33` khỏi dữ liệu gốc** (đúng yêu cầu "không xoá
+bất kỳ câu hỏi gốc nào") — chỉ loại `VIII-33` khỏi việc CHỌN câu cho "Luyện
+tự luận" (hằng số `ESSAY_DUP_SKIP` trong `app.js`) để không luyện trùng nội
+dung 2 lần trong 1 lượt; câu vẫn còn nguyên, vẫn hoạt động bình thường ở
+Luyện tập/Tra cứu/mọi nơi khác.
+
+**Vì sao ngân hàng có 244 câu, không phải 228** (xác nhận lại claim cũ, có
+đính chính 1 điểm ở trên): 228 câu gốc từ `Bo_cau_hoi_Hoi_thi_0001.pdf` +
+16 câu thực sự mới từ bộ đề mô phỏng Đội tuyển (`CamScanner 5-11-26`, ID:
+`VIII-33, VII-53..VII-63, II-31, II-32, IV-36, IV-37`) = 244, đúng số lượng
+ID đếm được trong `questions.json` hiện tại, không ID nào trùng/bỏ sót giữa
+2 nguồn — chỉ riêng `VIII-33` hoá ra lại trùng nguyên văn với `VIII-10` sẵn
+có trong 228 câu gốc (xem trên), một trường hợp đơn lẻ không ảnh hưởng tới
+tổng số 244.
+
+**Giữ nguyên "Luyện theo năng lực"**: tách hẳn khỏi luồng theo nhóm độ dài —
+vẫn dùng đúng `typingSuggestedWords()`/`essayStartAdaptive()` như phiên bản
+trước, không bị nhóm hoá can thiệp. Việc thêm lọc `essayEligible` (loại câu
+"Cần rà soát" + câu trùng) vào `essayPool()` áp dụng luôn cho chế độ này —
+đây là một SIẾT CHẶT nhất quán (không bao giờ nên gợi ý câu hỏng/trùng ở bất
+kỳ chế độ nào), không phải thay đổi thuật toán thích ứng.
+
+**Không coi câu ngắn là dễ một cách tĩnh**: thứ tự "Ưu tiên câu yếu (Leitner)"
+— mặc định khi vào bất kỳ nhóm nào — sắp câu theo hộp Leitner thấp/sai nhiều
+trước, dựa trên dữ liệu luyện tập THẬT của người học, không dựa vào việc câu
+đó thuộc nhóm ngắn hay dài. Có thêm lựa chọn "Ngẫu nhiên" nếu không muốn ưu
+tiên theo Leitner.
+
+**Thời gian**: nhóm "Ưu tiên luyện 90 giây" luôn giữ đúng đồng hồ 90s/câu
+(không có nút tắt). Các nhóm còn lại có thêm 1 ô "Không giới hạn thời gian"
+(mặc định tắt) — khi bật, `app.essay.timed=false`, không khởi động
+`startTeamTimer`, màn hình hiện nhãn "Không giới hạn thời gian" thay đồng
+hồ; mọi lần nộp bài trong chế độ này đều tính `completedInTime=true` (không
+có hạn để trễ). Đồng hồ đo tốc độ gõ (`it.typeStart`) không đổi, vẫn luôn
+độc lập với đồng hồ thi ở mọi chế độ.
+
+**Giao diện**: tái dùng toàn bộ CSS đã có — class `.d4-round-row` (từ tính
+năng "Ôn 4 đề") cho các dòng nhóm phụ, `.rule-row` (từ tab "Quy chế") cho
+danh sách "Cần rà soát", `.sw`/`.chips`/`.card.pad`/`.sec-title` như mọi nơi
+khác. **Không thêm dòng CSS mới nào.** Không thêm tab cấp cao mới — toàn bộ
+nằm trong tab "Luyện tự luận" đã có.
+
+**Kiểm thử** bằng Playwright (Chromium, 30 kịch bản mới ở 2 file riêng cho
+đúng tính năng này — gồm cả trường hợp nhóm rất hẹp/0 câu — chạy qua
+`node server.js` thật), cộng chạy lại toàn bộ bộ kiểm thử trước đó (bookmark/
+Cần ôn lại, Ôn 4 đề, bản gốc "Luyện tự luận") sau khi sửa lại 2 kịch bản của
+bản gốc bị **ngẫu nhiên/không ổn định** do giao diện đổi cấu trúc (nút
+"Bắt đầu" cũ không còn là nút duy nhất trên trang nên chọn nhầm nút, và 1
+kịch bản tình cờ chọn đúng câu có đáp án quá ngắn khiến heuristic phát hiện
+dán/điền tự động không có cơ hội kích hoạt — cả 2 đều là lỗi chọn phần tử
+trong kịch bản kiểm thử, không phải lỗi của ứng dụng, đã sửa để kiểm thử
+luôn nhắm đúng phần tử/độ dài cần thiết, chạy lại ổn định nhiều lần). Tổng
+cộng chạy lại được **165/165 kịch bản đạt** trên toàn bộ các tính năng:
+- Đúng số liệu từng nhóm tính trực tiếp từ dữ liệu thật: Ưu tiên 181 câu,
+  Nâng cao 16, Câu dài 23, Rất dài 18 (tổng 238 = 243 câu có đáp án hợp lệ −
+  4 câu "Cần rà soát" − 1 câu trùng `VIII-33`).
+- Mặc định vào tab là nhóm "Ưu tiên luyện 90 giây", phiên bắt đầu từ nhóm
+  này luôn `timed=true`.
+- `essayReview`/câu trùng không bao giờ xuất hiện trong bất kỳ nhóm nào kể
+  cả "Tất cả câu hỏi" — xác nhận trực tiếp trên tập 238 câu của phiên thật.
+- Câu có `qEssay` (ví dụ `VII-51`) hiển thị đúng câu hỏi đã diễn đạt lại kèm
+  badge công khai, khác với câu hỏi gốc; chấm điểm vẫn dựa trên `q.ans`/
+  `q.opts`/`ansFull` gốc, không bị ảnh hưởng bởi `qEssay`.
+- Bật "Không giới hạn thời gian" cho nhóm "Nâng cao": không có `#essayTimer`,
+  hiện nhãn thay thế, chờ 300 giây (giả lập bằng Playwright Clock) không tự
+  nộp bài; nộp tay vẫn luôn `completedInTime=true`.
+- Thứ tự "Ưu tiên câu yếu": gieo 5 câu có hộp Leitner=1 (sai nhiều) giữa một
+  nhóm toàn câu hộp 5 (đã thuộc) — lấy đúng 5 câu đó khi chọn 5 câu đầu.
+  "Luyện lại" sau 1 phiên nhóm nào khởi động lại đúng nhóm đó.
+  Giao diện di động (iPhone 12): toàn bộ màn hình mới (bộ lọc + thẻ ưu tiên
+  + 4 dòng nhóm phụ + thẻ thích ứng + danh sách rà soát) không tràn ngang
+  trang, cả màn thiết lập và màn hỏi/đáp. **165/165 kịch bản đạt** (30 mới
+  cho riêng tính năng này + toàn bộ kịch bản các tính năng trước).
+
+**Giới hạn còn lại**:
+- 10 câu dùng `qEssay` là diễn đạt lại CÓ CHỦ Ý, mang tính bảo toàn (chỉ bỏ
+  cụm tham chiếu phương án, giữ nguyên câu chữ còn lại) — không phải diễn
+  đạt tự nhiên nhất có thể; có thể còn đọc hơi cứng ở một số câu (ví dụ
+  `VII-46` dùng nguyên tiền tố chung của 3 phương án làm câu hỏi).
+- 4 câu "Cần rà soát" bị loại HOÀN TOÀN khỏi "Luyện tự luận" (không chỉ khỏi
+  nhóm ưu tiên) vì không có cách diễn đạt lại nào bảo toàn đúng kiến thức
+  gốc mà không suy đoán thêm — nếu sau này có thêm ngữ cảnh/tài liệu gốc để
+  xác nhận cách hỏi trực tiếp đúng, có thể bỏ cờ `essayReview` và thêm
+  `qEssay` cho từng câu.
+- Việc rà soát 244 câu theo các mẫu câu hỏi nêu trong yêu cầu dùng quy tắc
+  dò (regex) + xét từng câu khớp mẫu thủ công, không phải đọc lại tự do cả
+  244 câu không theo mẫu nào — một câu hỏi phụ thuộc phương án theo cách
+  diễn đạt khác, không khớp bất kỳ mẫu đã dò, có thể bị sót (không có mẫu
+  nào trong yêu cầu gợi ý cách diễn đạt này nên không mở rộng dò thêm để
+  tránh suy đoán ngoài yêu cầu).

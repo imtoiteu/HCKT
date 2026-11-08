@@ -1328,19 +1328,68 @@ function teamResult() {
  * đúng cơ chế chấm tự luận (`gradeRecall`/`canonicalAnswers`), Leitner
  * (`store.grade`) và đánh dấu 🔖 (`starBtn`) đã có, KHÔNG viết lại logic
  * chấm. Mỗi câu dùng đúng quỹ 90s/câu của Khởi động (Điều 13.2.b — không
- * đổi thời lượng chính thức dù ở chế độ nào), nhưng đồng hồ GÕ (để đo tốc
- * độ) là một đồng hồ khác, riêng, chỉ bắt đầu từ ký tự đầu tiên người học
- * thực sự nhập — xem các biến it.typeStart/_lastLen/_lastT trong
+ * đổi thời lượng chính thức ở nhóm "Ưu tiên luyện 90 giây"; các nhóm câu dài
+ * hơn có thể tắt đồng hồ, xem `essaySetup.untimed`), nhưng đồng hồ GÕ (để đo
+ * tốc độ) là một đồng hồ khác, riêng, chỉ bắt đầu từ ký tự đầu tiên người
+ * học thực sự nhập — xem các biến it.typeStart/_lastLen/_lastT trong
  * essayQuizView. Nhờ `canonicalAnswers` đã sửa (ghép đủ mọi phương án
  * đúng), câu nhiều đáp án đúng (q.multi) giờ cũng chấm tự động như câu 1
- * đáp án — không cần nhánh "tự chấm" riêng như teamRecallView. */
-const essaySetup = { secs: [], mode: 'adaptive', weakOnly: false, starOnly: false, count: 10 };
+ * đáp án — không cần nhánh "tự chấm" riêng như teamRecallView.
+ *
+ * Phân loại theo độ dài đáp án (đếm từ bằng ĐÚNG hàm `answerWordCount`/
+ * `normWords` dùng chung với lúc chấm — không đếm riêng theo câu hỏi, không
+ * đếm theo 1 phương án nếu câu có nhiều đáp án đúng): "Ưu tiên luyện 90
+ * giây" ≤30 từ (mặc định khi vào tab), "Nâng cao" 31–40, "Câu dài" 41–60,
+ * "Rất dài" >60. Câu mà việc ẩn A/B/C/D khiến câu hỏi mất nghĩa (`q.
+ * essayReview === true`, gắn sẵn trong data sau khi rà soát thủ công toàn
+ * bộ 244 câu — xem README) bị loại khỏi MỌI nhóm luyện tự luận, hiển thị
+ * riêng ở danh sách "Cần rà soát", không âm thầm đưa vào luyện. */
+const ESSAY_TIERS = [
+  { id: 'priority', label: 'Ưu tiên luyện 90 giây', sub: 'Đáp án ngắn (≤30 từ) — phù hợp hoàn thành trong 90 giây', min: 1, max: 30 },
+  { id: 'advanced', label: 'Nâng cao', sub: 'Đáp án 31–40 từ', min: 31, max: 40 },
+  { id: 'long', label: 'Câu dài', sub: 'Đáp án 41–60 từ', min: 41, max: 60 },
+  { id: 'verylong', label: 'Rất dài', sub: 'Đáp án trên 60 từ', min: 61, max: Infinity },
+];
+/* Phát hiện thủ công khi rà soát: VIII-33 trùng NGUYÊN VĂN câu hỏi/phương
+ * án/đáp án với VIII-10 (lỗi dữ liệu có sẵn từ trước, không phải do tính
+ * năng này gây ra). KHÔNG xoá câu hỏi gốc khỏi dữ liệu — chỉ loại 1 trong 2
+ * khỏi việc CHỌN câu cho "Luyện tự luận" để không luyện trùng nội dung 2
+ * lần trong cùng 1 lượt; câu vẫn còn nguyên trong ngân hàng cho mọi tính
+ * năng khác (Luyện tập, Đội tuyển, Tra cứu…). */
+const ESSAY_DUP_SKIP = { 'VIII-33': 'VIII-10' };
+let _tierCache = new Map();
+function essayTierOf(q) {
+  if (_tierCache.has(q.id)) return _tierCache.get(q.id);
+  const n = answerWordCount(q);
+  const tier = ESSAY_TIERS.find(t => n >= t.min && n <= t.max) || ESSAY_TIERS[ESSAY_TIERS.length - 1];
+  _tierCache.set(q.id, tier.id);
+  return tier.id;
+}
+function essayQuestionText(q) { return q.qEssay || q.q; }
+function essayEligible(q) { return answerable(q) && !q.essayReview && !ESSAY_DUP_SKIP[q.id]; }
+function essayReviewList() {
+  return DATA.questions.filter(q => q.essayReview).map(q => ({ id: q.id, sec: q.sec, secShort: q.secShort, q: q.q, note: q.essayReviewNote || '' }));
+}
 
-function essayPool(secs, weakOnly, starOnly) {
-  let pool = basePool(secs);
+const essaySetup = { secs: [], weakOnly: false, starOnly: false, tier: 'priority', order: 'weak', count: 10, untimed: false };
+
+function essayPool(secs, weakOnly, starOnly, tier) {
+  let pool = basePool(secs).filter(essayEligible);
+  if (tier && tier !== 'all') pool = pool.filter(q => essayTierOf(q) === tier);
   if (weakOnly) pool = pool.filter(q => d4IsWeak(q.id));
   if (starOnly) pool = pool.filter(q => !!store.d.starred[q.id]);
   return pool;
+}
+function essayOrdered(pool, order) {
+  return order === 'weak'
+    ? shuffle(pool).sort((a, b) => (store.d.stats[a.id]?.box || 1) - (store.d.stats[b.id]?.box || 1))
+    : shuffle(pool);
+}
+function essayItemInit(q) {
+  return {
+    q, typed: '', done: false, ok: null, revealed: false, graded: null, sample: null,
+    typeStart: null, pasted: false, abnormal: false, timedOut: false, _lastLen: 0, _lastT: 0,
+  };
 }
 
 V.essay = () => {
@@ -1352,13 +1401,11 @@ V.essay = () => {
 function essayHome() {
   const v = el('div');
   v.appendChild(el('div', 'page-head', `<h1>Luyện tự luận</h1><p>Gõ trực tiếp đáp án cho câu hỏi trong ngân hàng ${DATA.questions.length} câu — hệ thống so khớp từng từ với đáp án chuẩn, đo tốc độ gõ thực tế và tự đề xuất độ dài câu phù hợp với năng lực của bạn.</p>`));
-  v.appendChild(el('div', 'note', `${ICON.warn}<span>Mỗi câu dùng đúng quỹ <b>90 giây/câu</b> như phần Khởi động của tab "Đội tuyển" (Điều 13.2.b) — đồng hồ thi này <b>không đổi</b> ở bất kỳ chế độ nào. Riêng "đồng hồ gõ" (để đo tốc độ) là một đồng hồ khác, <b>chỉ chạy từ lúc bạn gõ ký tự đầu tiên</b> — thời gian đọc đề/suy nghĩ trước đó không bị tính vào tốc độ gõ.</span>`));
+  v.appendChild(el('div', 'note', `${ICON.warn}<span>Nhóm <b>"Ưu tiên luyện 90 giây"</b> luôn dùng đúng quỹ <b>90 giây/câu</b> như phần Khởi động của tab "Đội tuyển" (Điều 13.2.b), không đổi. Các nhóm câu dài hơn có thể tắt đồng hồ thi (tuỳ chọn dưới). Riêng "đồng hồ gõ" (để đo tốc độ) luôn là một đồng hồ khác, <b>chỉ chạy từ lúc bạn gõ ký tự đầu tiên</b>, độc lập với đồng hồ thi.</span>`));
 
-  const sugBox = el('div', 'card pad'); sugBox.style.cssText = 'margin-bottom:16px;border:1.5px solid var(--brand);background:linear-gradient(135deg,var(--brand-soft),var(--card))';
-  v.appendChild(sugBox);
-
-  const card = el('div', 'card pad');
-  const f1 = el('div', 'field', `<label>Chọn ngành</label>`);
+  const filterCard = el('div', 'card pad'); filterCard.style.marginBottom = '16px';
+  filterCard.appendChild(el('h3', '', 'Phạm vi lọc (áp dụng cho mọi nhóm dưới đây)'));
+  const f1 = el('div', 'field'); f1.style.marginTop = '10px'; f1.innerHTML = '<label>Chọn ngành</label>';
   const chips = el('div', 'chips');
   const mkChip = (id, label) => {
     const c = el('button', 'chip', esc(label)); c.dataset.id = id;
@@ -1367,86 +1414,138 @@ function essayHome() {
   };
   chips.appendChild(mkChip('*', 'Tất cả'));
   DATA.sections.forEach(s => chips.appendChild(mkChip(s.id, `${s.id}. ${s.short}`)));
-  f1.appendChild(chips); card.appendChild(f1);
-
-  const f2 = el('div', 'field', `<label>Chế độ chọn câu</label>`);
-  const sw = el('div', 'switches');
-  const modes = [
-    ['adaptive', 'Luyện theo năng lực', 'Tự chọn câu có độ dài đáp án phù hợp tốc độ gõ/độ chính xác hiện tại của bạn, tăng/giảm dần theo kết quả'],
-    ['free', 'Tự do', 'Chọn ngẫu nhiên trong phạm vi ngành đã chọn, không điều chỉnh theo độ dài'],
-  ];
-  modes.forEach(([id, lbl, sub]) => {
-    const w = el('label', 'sw', `<input type="radio" name="essaymode" value="${id}"${essaySetup.mode === id ? ' checked' : ''}><span class="box"></span><span class="lbl">${esc(lbl)}<i>${esc(sub)}</i></span>`);
-    w.querySelector('input').onchange = () => { essaySetup.mode = id; sync(); };
-    sw.appendChild(w);
-  });
-  f2.appendChild(sw); card.appendChild(f2);
-
-  const f3 = el('div', 'field', `<label>Ưu tiên câu (tuỳ chọn)</label>`);
+  f1.appendChild(chips); filterCard.appendChild(f1);
+  const f2 = el('div', 'field'); f2.style.marginTop = '14px'; f2.innerHTML = '<label>Ưu tiên câu (tuỳ chọn)</label>';
   const w1 = el('label', 'sw', `<input type="checkbox"${essaySetup.weakOnly ? ' checked' : ''}><span class="box"></span><span class="lbl">Chỉ câu yếu theo Leitner<i>Câu đã từng trả lời sai hoặc còn ở hộp thấp</i></span>`);
   w1.querySelector('input').onchange = e => { essaySetup.weakOnly = e.target.checked; sync(); };
-  f3.appendChild(w1);
+  f2.appendChild(w1);
   const w2 = el('label', 'sw', `<input type="checkbox"${essaySetup.starOnly ? ' checked' : ''}><span class="box"></span><span class="lbl">Chỉ câu đã đánh dấu 🔖<i>Câu trong tab "Cần ôn lại"</i></span>`);
   w2.querySelector('input').onchange = e => { essaySetup.starOnly = e.target.checked; sync(); };
-  f3.appendChild(w2);
-  card.appendChild(f3);
+  f2.appendChild(w2);
+  filterCard.appendChild(f2);
+  v.appendChild(filterCard);
 
-  const f4 = el('div', 'field', `<label>Số câu mỗi lượt</label>`);
-  const cchips = el('div', 'chips');
-  [5, 10, 15, 0].forEach(n => {
-    const c = el('button', 'chip', n === 0 ? 'Toàn bộ' : `${n} câu`); c.dataset.n = n;
-    c.onclick = () => { essaySetup.count = n; sync(); };
-    cchips.appendChild(c);
-  });
-  f4.appendChild(cchips); card.appendChild(f4);
+  const priCard = el('div', 'card pad'); priCard.style.cssText = 'margin-bottom:16px;border:1.5px solid var(--brand);background:linear-gradient(135deg,var(--brand-soft),var(--card))';
+  v.appendChild(priCard);
 
-  const avail = el('p', 'muted', ''); avail.style.cssText = 'font-size:12.5px;margin-top:4px'; card.appendChild(avail);
-  const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`);
-  go.onclick = () => essayStart();
-  card.appendChild(go);
-  v.appendChild(card);
+  v.appendChild(el('div', 'sec-title', `<h3>Các nhóm khác theo độ dài đáp án</h3><span class="muted" style="font-size:12.5px">1 chạm để bắt đầu</span>`));
+  const secCard = el('div', 'card pad');
+  const wUntimed = el('label', 'sw', `<input type="checkbox"${essaySetup.untimed ? ' checked' : ''}><span class="box"></span><span class="lbl">Không giới hạn thời gian cho các nhóm này<i>Nhóm "Ưu tiên luyện 90 giây" luôn giữ đồng hồ 90s/câu, không áp dụng tuỳ chọn này</i></span>`);
+  wUntimed.querySelector('input').onchange = e => { essaySetup.untimed = e.target.checked; };
+  secCard.appendChild(wUntimed);
+  const tierRows = el('div'); tierRows.style.marginTop = '8px'; secCard.appendChild(tierRows);
+  v.appendChild(secCard);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Hoặc: Luyện theo năng lực</h3><span class="muted" style="font-size:12.5px">Tự động chọn độ dài phù hợp, không theo nhóm cố định ở trên</span>`));
+  const sugBox = el('div', 'card pad');
+  v.appendChild(sugBox);
+
+  const reviewQs = essayReviewList();
+  if (reviewQs.length) {
+    v.appendChild(el('div', 'sec-title', `<h3>Cần rà soát</h3><span class="muted" style="font-size:12.5px">${reviewQs.length} câu — KHÔNG đưa vào luyện tự luận vì ẩn phương án làm mất nghĩa câu hỏi</span>`));
+    const rc = el('div', 'card pad');
+    reviewQs.forEach(r => {
+      rc.appendChild(el('div', 'rule-row', `<b>${esc(r.id)} · ${esc(r.secShort)}</b><p>${esc(r.q)}</p><span class="muted">${esc(r.note)}</span>`));
+    });
+    v.appendChild(rc);
+  }
+
+  function renderPriority() {
+    const pool = essayPool(essaySetup.secs, essaySetup.weakOnly, essaySetup.starOnly, 'priority');
+    const seenN = pool.filter(q => store.d.stats[q.id]).length;
+    priCard.innerHTML = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <span class="tag" style="background:var(--brand);color:#fff">Mặc định</span>
+        <h3 style="margin:0">🎯 Ưu tiên luyện 90 giây</h3>
+      </div>
+      <p class="muted" style="font-size:13.5px;line-height:1.6;margin:4px 0 12px">Chỉ gồm câu có đáp án <b>≤30 từ</b> và có thể trả lời trực tiếp rõ nghĩa, không cần nhìn thấy phương án A/B/C/D. <b>${pool.length} câu</b> đủ điều kiện · đã luyện ${seenN}/${pool.length} câu.</p>`;
+    const orderRow = el('div', 'chips');
+    [['weak', 'Ưu tiên câu yếu (Leitner)'], ['random', 'Ngẫu nhiên']].forEach(([id, lbl]) => {
+      const c = el('button', 'chip' + (essaySetup.order === id ? ' on' : ''), esc(lbl));
+      c.onclick = () => { essaySetup.order = id; renderPriority(); };
+      orderRow.appendChild(c);
+    });
+    priCard.appendChild(orderRow);
+    const cchips = el('div', 'chips'); cchips.style.marginTop = '8px';
+    [5, 10, 15, 0].forEach(n => {
+      const c = el('button', 'chip' + (essaySetup.count === n ? ' on' : ''), n === 0 ? 'Toàn bộ' : `${n} câu`);
+      c.onclick = () => { essaySetup.count = n; renderPriority(); };
+      cchips.appendChild(c);
+    });
+    priCard.appendChild(cchips);
+    const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu luyện ngay`);
+    go.style.marginTop = '12px';
+    go.disabled = pool.length === 0;
+    go.onclick = () => essayStartTier('priority');
+    priCard.appendChild(go);
+  }
+
+  function renderTierRows() {
+    tierRows.innerHTML = '';
+    const secondary = [...ESSAY_TIERS.slice(1), { id: 'all', label: 'Tất cả câu hỏi', sub: 'Không lọc theo độ dài' }];
+    secondary.forEach(t => {
+      const pool = essayPool(essaySetup.secs, essaySetup.weakOnly, essaySetup.starOnly, t.id);
+      const row = el('div', 'd4-round-row');
+      row.innerHTML = `<div class="nm"><b>${esc(t.label)}</b><i>${esc(t.sub)}</i></div><div class="score"><b>${pool.length}</b> câu</div>`;
+      const btn = el('button', 'btn primary', `${ICON.play} Bắt đầu`);
+      btn.disabled = pool.length === 0;
+      btn.onclick = () => essayStartTier(t.id);
+      row.appendChild(btn);
+      tierRows.appendChild(row);
+    });
+  }
 
   function sync() {
     $$('.chip', chips).forEach(c => c.classList.toggle('on', c.dataset.id === '*' ? essaySetup.secs.length === 0 : essaySetup.secs.includes(c.dataset.id)));
-    $$('.chip', cchips).forEach(c => c.classList.toggle('on', +c.dataset.n === essaySetup.count));
-    const pool = essayPool(essaySetup.secs, essaySetup.weakOnly, essaySetup.starOnly);
-    const n = essaySetup.count === 0 ? pool.length : Math.min(essaySetup.count, pool.length);
-    avail.textContent = `Có ${pool.length} câu phù hợp lựa chọn hiện tại. Lượt này sẽ lấy ${n} câu.`;
-    go.disabled = pool.length === 0;
+    renderPriority();
+    renderTierRows();
     const sug = typingSuggestedWords();
-    sugBox.innerHTML = sug.haveData
-      ? `<h3 style="margin-bottom:6px">Gợi ý theo năng lực hiện tại</h3>
-         <p style="font-size:13.5px;line-height:1.6">Tốc độ gõ chính xác trung bình (${sug.comp.n} phiên gần nhất): <b>${sug.comp.avgAccWpm} từ/phút</b> · Độ chính xác trung bình: <b>${sug.comp.avgAccuracy}%</b>.<br>Độ dài đáp án đề xuất: <b>tối đa ${sug.words} từ/câu</b> (đã trừ ~${sug.reserveS}s đọc đề/suy nghĩ, còn ~${sug.typeS}s để gõ trong quỹ 90s).</p>`
-      : `<h3 style="margin-bottom:6px">Gợi ý theo năng lực hiện tại</h3>
-         <p style="font-size:13.5px;line-height:1.6">Chưa đủ dữ liệu đo tốc độ gõ thực tế (cần ≥ ${TYPE_MIN_SAMPLES} phiên hợp lệ) — bắt đầu ở độ dài trung vị thật của ngân hàng câu hỏi: <b>khoảng ${sug.words} từ/câu</b>. Luyện vài câu để hệ thống đo và điều chỉnh dần.</p>`;
+    const adaptPool = essayPool(essaySetup.secs, essaySetup.weakOnly, essaySetup.starOnly);
+    sugBox.innerHTML = (sug.haveData
+      ? `<p style="font-size:13.5px;line-height:1.6">Tốc độ gõ chính xác trung bình (${sug.comp.n} phiên gần nhất): <b>${sug.comp.avgAccWpm} từ/phút</b> · Độ chính xác trung bình: <b>${sug.comp.avgAccuracy}%</b>.<br>Độ dài đáp án đề xuất: <b>tối đa ${sug.words} từ/câu</b> (đã trừ ~${sug.reserveS}s đọc đề/suy nghĩ, còn ~${sug.typeS}s để gõ trong quỹ 90s).</p>`
+      : `<p style="font-size:13.5px;line-height:1.6">Chưa đủ dữ liệu đo tốc độ gõ thực tế (cần ≥ ${TYPE_MIN_SAMPLES} phiên hợp lệ) — bắt đầu ở độ dài trung vị thật của ngân hàng câu hỏi: <b>khoảng ${sug.words} từ/câu</b>. Luyện vài câu để hệ thống đo và điều chỉnh dần.</p>`)
+      + `<p class="muted" style="font-size:12.5px;margin-top:6px">${adaptPool.length} câu phù hợp phạm vi lọc hiện tại.</p>`;
+    const goA = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`);
+    goA.disabled = adaptPool.length === 0;
+    goA.onclick = () => essayStartAdaptive();
+    sugBox.appendChild(goA);
   }
   sync();
   return v;
 }
 
-function essayStart() {
-  const { secs, mode, weakOnly, starOnly, count } = essaySetup;
-  const pool = essayPool(secs, weakOnly, starOnly);
+function essayStartTier(tier, overrides) {
+  const order = overrides?.order ?? essaySetup.order;
+  const count = overrides?.count ?? essaySetup.count;
+  const untimed = overrides?.untimed ?? essaySetup.untimed;
+  const pool = essayPool(essaySetup.secs, essaySetup.weakOnly, essaySetup.starOnly, tier);
   if (!pool.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
   const n = count === 0 ? pool.length : Math.min(count, pool.length);
-  let items;
-  if (mode === 'adaptive') {
-    const target = typingSuggestedWords().words;
-    const recent = store.d.typing.recentIds;
-    let candidates = pool.filter(q => !recent.includes(q.id));
-    if (candidates.length < Math.min(n, 5)) candidates = pool.slice(); // nới nếu lọc "mới học" làm hết câu
-    candidates.sort((a, b) => Math.abs(answerWordCount(a) - target) - Math.abs(answerWordCount(b) - target));
-    items = shuffle(candidates.slice(0, Math.max(n * 3, 15))).slice(0, n);
-  } else {
-    items = shuffle(pool).slice(0, n);
-  }
+  const items = essayOrdered(pool, order).slice(0, n);
   if (!items.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
   app.essay = {
-    mode, params: { secs: secs.slice(), mode, weakOnly, starOnly, count },
-    items: items.map(q => ({
-      q, typed: '', done: false, ok: null, revealed: false, graded: null, sample: null,
-      typeStart: null, pasted: false, abnormal: false, timedOut: false, _lastLen: 0, _lastT: 0,
-    })),
+    tier, timed: tier === 'priority' ? true : !untimed,
+    params: { tier, order, count, untimed },
+    items: items.map(essayItemInit),
+    i: 0, right: 0, wrong: 0, started: Date.now(),
+  };
+  app.view = 'essay'; render();
+}
+
+function essayStartAdaptive() {
+  const pool = essayPool(essaySetup.secs, essaySetup.weakOnly, essaySetup.starOnly);
+  if (!pool.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
+  const n = essaySetup.count === 0 ? pool.length : Math.min(essaySetup.count, pool.length);
+  const target = typingSuggestedWords().words;
+  const recent = store.d.typing.recentIds;
+  let candidates = pool.filter(q => !recent.includes(q.id));
+  if (candidates.length < Math.min(n, 5)) candidates = pool.slice(); // nới nếu lọc "mới học" làm hết câu
+  candidates.sort((a, b) => Math.abs(answerWordCount(a) - target) - Math.abs(answerWordCount(b) - target));
+  const items = shuffle(candidates.slice(0, Math.max(n * 3, 15))).slice(0, n);
+  if (!items.length) { toast('Không có câu nào phù hợp lựa chọn.'); return; }
+  app.essay = {
+    tier: 'adaptive', timed: true,
+    params: { adaptive: true },
+    items: items.map(essayItemInit),
     i: 0, right: 0, wrong: 0, started: Date.now(),
   };
   app.view = 'essay'; render();
@@ -1491,15 +1590,16 @@ function essayQuizView() {
   bar.appendChild(back);
   bar.appendChild(el('div', 'progress', `<i style="width:${T.i / T.items.length * 100}%"></i>`));
   bar.appendChild(el('span', 'counter', `${T.i + 1}/${T.items.length}`));
-  const t = el('span', 'timer', ''); t.id = 'essayTimer'; t.title = TIME_CITE.khoidong; bar.appendChild(t);
+  if (T.timed) { const t = el('span', 'timer', ''); t.id = 'essayTimer'; t.title = TIME_CITE.khoidong; bar.appendChild(t); }
+  else bar.appendChild(el('span', 'tag', 'Không giới hạn thời gian'));
   bar.appendChild(el('span', 'score-live', `<span class="g">✓ ${T.items.filter(x => x.ok === true).length}</span> · <span class="r">✕ ${T.items.filter(x => x.ok === false).length}</span>`));
   v.appendChild(bar);
 
   const card = el('div', 'card qcard');
-  const topEl = el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag ok">Chấm tự động</span>` + (q.multi ? `<span class="tag multi">Ghép đủ các phương án đúng</span>` : ''));
+  const topEl = el('div', 'qtop', `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag ok">Chấm tự động</span>` + (q.multi ? `<span class="tag multi">Ghép đủ các phương án đúng</span>` : '') + (q.qEssay ? `<span class="tag" title="Câu hỏi được diễn đạt lại để trả lời trực tiếp, giữ nguyên nội dung gốc">Đã diễn đạt lại</span>` : ''));
   topEl.appendChild(starBtn(q.id));
   card.appendChild(topEl);
-  card.appendChild(el('div', 'qtext', esc(q.q)));
+  card.appendChild(el('div', 'qtext', esc(essayQuestionText(q))));
 
   if (!it.revealed) {
     const ta = el('textarea', 'recall-in');
@@ -1525,7 +1625,8 @@ function essayQuizView() {
     submit.onclick = once(() => essaySubmit(it, q, false));
     foot.appendChild(submit);
     card.appendChild(foot);
-    setTimeout(() => startTeamTimer(teamSeconds('khoidong'), once(() => essaySubmit(it, q, true)), 'essayTimer'));
+    if (T.timed) setTimeout(() => startTeamTimer(teamSeconds('khoidong'), once(() => essaySubmit(it, q, true)), 'essayTimer'));
+    else clearTeamTimer();
   } else {
     card.appendChild(teamAutoGradeBox(it));
     if (it.timedOut) card.appendChild(el('div', 'note', `${ICON.warn}<span>Hết 90 giây trước khi nộp — tính là <b>chưa hoàn thành kịp giờ</b> (không ảnh hưởng tới việc chấm đúng/sai ở trên).</span>`));
@@ -1569,20 +1670,21 @@ function essayResult() {
   const valid = T.items.map(it => it.sample).filter(s => s && s.speedValid);
   const avgAccWpm = valid.length ? Math.round((valid.reduce((a, s) => a + s.accWpm, 0) / valid.length) * 10) / 10 : null;
   const sug = typingSuggestedWords();
+  const tierLabel = T.params.adaptive ? 'Luyện theo năng lực' : (ESSAY_TIERS.find(t => t.id === T.tier)?.label || 'Tất cả câu hỏi');
   const v = el('div');
   const c = el('div', 'card result', `
     <div class="emoji">${emo}</div>
     <div class="big" style="color:${pct >= 75 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)'}">${pct}%</div>
-    <div class="lbl"><b>Luyện tự luận</b> — đúng ${T.right}/${total} câu, ${fmtTime(T.elapsed)}</div>
+    <div class="lbl"><b>${esc(tierLabel)}</b> — đúng ${T.right}/${total} câu, ${fmtTime(T.elapsed)}</div>
     <div class="rstats">
       <div class="rstat"><b style="color:var(--ok)">${T.right}</b><span>Câu đúng</span></div>
       <div class="rstat"><b style="color:var(--bad)">${T.wrong}</b><span>Câu sai</span></div>
       <div class="rstat"><b>${avgAccWpm ?? '–'}</b><span>Tốc độ gõ chính xác TB phiên này</span></div>
     </div>
-    <p class="muted" style="margin-top:10px;font-size:13px">Mức độ dài đề xuất cho lượt tới: <b>${sug.words} từ/câu</b> ${sug.haveData ? '' : '(chưa đủ dữ liệu, dùng độ dài trung vị của ngân hàng)'}.</p>`);
+    <p class="muted" style="margin-top:10px;font-size:13px">Mức độ dài đề xuất cho lượt tới (Luyện theo năng lực): <b>${sug.words} từ/câu</b> ${sug.haveData ? '' : '(chưa đủ dữ liệu, dùng độ dài trung vị của ngân hàng)'}.</p>`);
   const cta = el('div', 'hero-cta'); cta.style.cssText = 'justify-content:center;margin-top:20px;flex-wrap:wrap';
   const again = el('button', 'btn primary', `${ICON.refresh} Luyện lượt khác`);
-  again.onclick = () => { app.essay = null; essaySetup.secs = T.params.secs; essaySetup.mode = T.params.mode; essaySetup.weakOnly = T.params.weakOnly; essaySetup.starOnly = T.params.starOnly; essaySetup.count = T.params.count; essayStart(); };
+  again.onclick = () => { const P = T.params; app.essay = null; P.adaptive ? essayStartAdaptive() : essayStartTier(T.tier, P); };
   cta.appendChild(again);
   const home = el('button', 'btn ghost', 'Về trang Luyện tự luận');
   home.onclick = () => { app.essay = null; nav('essay'); };
@@ -1599,7 +1701,7 @@ function essayResult() {
     topRow.innerHTML = `<span class="tag sec" style="background:${secColor(q.sec)}">${q.sec}. ${esc(q.secShort)}</span><span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.ok ? '✓ Đúng' : '✕ Sai'}${it.timedOut ? ' · Hết giờ' : ''}</span>`;
     topRow.appendChild(starBtn(q.id));
     r.appendChild(topRow);
-    r.appendChild(el('div', 'q', esc(q.q)));
+    r.appendChild(el('div', 'q', esc(essayQuestionText(q))));
     if (g) {
       r.appendChild(el('div', '', `<div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Đáp án chuẩn</div><div class="words">${wordDiffHtml(g.refWords, g.mRef, 'miss')}</div><div style="font-size:11.5px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-top:8px">Câu trả lời của bạn</div><div class="words">${wordDiffHtml(g.hypWords, g.mHyp, 'bad')}</div>`));
     }
