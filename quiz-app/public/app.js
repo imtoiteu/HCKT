@@ -1525,6 +1525,7 @@ function essayItemInit(q) {
 }
 
 V.essay = () => {
+  if (app.docdate) return app.docdate.finished ? docdateResult() : docdateQuizView();
   if (!app.essay) return essayHome();
   if (app.essay.finished) return essayResult();
   return essayQuizView();
@@ -1571,6 +1572,10 @@ function essayHome() {
   v.appendChild(el('div', 'sec-title', `<h3>Hoặc: Luyện theo năng lực</h3><span class="muted" style="font-size:12.5px">Tự động chọn độ dài phù hợp, không theo nhóm cố định ở trên</span>`));
   const sugBox = el('div', 'card pad');
   v.appendChild(sugBox);
+
+  v.appendChild(el('div', 'sec-title', `<h3>📅 Số hiệu & Mốc thời gian</h3><span class="muted" style="font-size:12.5px">Ghi nhớ chính xác số hiệu văn bản và ngày ban hành, tránh nhầm lẫn</span>`));
+  const ddCard = el('div', 'card pad');
+  v.appendChild(ddCard);
 
   const reviewQs = essayReviewList();
   if (reviewQs.length) {
@@ -1641,7 +1646,36 @@ function essayHome() {
     goA.onclick = () => essayStartAdaptive();
     sugBox.appendChild(goA);
   }
+  function renderDocdate() {
+    const items = docdateItems();
+    const cat = docdateSetup.cat;
+    const pool = docdatePool(cat);
+    const seenN = pool.filter(it => store.d.stats[it.id]).length;
+    ddCard.innerHTML = `<p class="muted" style="font-size:13.5px;line-height:1.6;margin-bottom:10px">Chỉ gồm câu mà việc nhớ ĐÚNG số hiệu văn bản hoặc ngày tháng chính là nội dung được hỏi — không phải mọi câu có chứa một con số (phần trăm, số câu, điểm số, thời gian thi… không được tính). <b>${items.length} câu</b> phù hợp trong toàn ngân hàng (đã gộp câu trùng giữa ngân hàng chính và 4 đề) · đã luyện ${seenN}/${pool.length} câu ở bộ lọc hiện tại.</p>`;
+    const chipsRow = el('div', 'chips');
+    DOCDATE_CATS.forEach(([id, lbl]) => {
+      const n = docdatePool(id).length;
+      const c = el('button', 'chip' + (cat === id ? ' on' : ''), `${esc(lbl)}<small>${n}</small>`);
+      c.onclick = () => { docdateSetup.cat = id; renderDocdate(); };
+      chipsRow.appendChild(c);
+    });
+    ddCard.appendChild(chipsRow);
+    const confRow = el('label', 'sw'); confRow.style.marginTop = '12px';
+    confRow.innerHTML = `<input type="checkbox"${docdateSetup.interleave ? ' checked' : ''}><span class="box"></span><span class="lbl">Luyện chống nhầm lẫn<i>Xếp các câu dễ nhầm (số hiệu/ngày gần giống) liền kề nhau để buộc phân biệt chính xác</i></span>`;
+    confRow.querySelector('input').onchange = e => { docdateSetup.interleave = e.target.checked; };
+    ddCard.appendChild(confRow);
+    const go = el('button', 'btn primary big block', `${ICON.play} Bắt đầu`); go.style.marginTop = '12px';
+    go.disabled = pool.length === 0;
+    go.onclick = () => docdateStart(cat);
+    ddCard.appendChild(go);
+    const tableBtn = el('button', 'btn ghost block'); tableBtn.style.marginTop = '8px';
+    tableBtn.textContent = docdateSetup.showTable ? 'Ẩn bảng ghi nhớ' : '📋 Xem bảng ghi nhớ văn bản & mốc thời gian';
+    tableBtn.onclick = () => { docdateSetup.showTable = !docdateSetup.showTable; renderDocdate(); };
+    ddCard.appendChild(tableBtn);
+    if (docdateSetup.showTable) ddCard.appendChild(docdateMemoTable());
+  }
   sync();
+  renderDocdate();
   return v;
 }
 
@@ -1844,6 +1878,430 @@ function essayResult() {
   });
   v.appendChild(list);
   return v;
+}
+
+/* ---------- SỐ HIỆU & MỐC THỜI GIAN (ghi nhớ chính xác số hiệu văn bản, ngày ban hành, mốc lịch sử) ----------
+ * Khác mọi nhóm "Luyện tự luận" khác: KHÔNG lọc theo "có chứa chữ số" (sẽ
+ * lẫn cả phần trăm, số câu, điểm số, thời gian thi…) — chỉ nhận câu mà
+ * SỐ HIỆU VĂN BẢN hoặc NGÀY BAN HÀNH chính là nội dung đang được hỏi/trả
+ * lời, xác định bằng CẤU TRÚC thật của đáp án (đã qua `canonicalAnswers`,
+ * nên câu nhiều đáp án đúng/đáp án tham chiếu cũng được tính đúng), không
+ * suy đoán. Dùng chung 1 hàm phân loại, không liệt kê ID cố định — đúng
+ * tinh thần đã áp dụng cho `resolveReferentialAnswer` ở trên. */
+
+/* Số hiệu văn bản VN: "731/QĐ-TCHCKT", "36/2023/TT-BQP", "02/2026/NĐ-CP",
+ * "12/KH-BCĐ", "10/CT-TTg"… — số, có thể kèm /năm, rồi 1+ mã chữ hoa nối
+ * bằng "-" hoặc "/" (dữ liệu dùng lẫn cả 2, ví dụ "843/QĐ/TCII" thay vì
+ * "2400/QĐ-TCII"). DÙNG LOOKAROUND, KHÔNG DÙNG \b ở đầu/cuối — \b của JS
+ * chỉ coi ASCII là "ký tự từ" nên vô tình cắt mất chữ "Đ" cuối một số mã
+ * (ví dụ "BCĐ" bị cắt thành "BC") — cùng loại lỗi \b-trên-dấu-tiếng-Việt
+ * đã gặp khi xây `extractRefLetters` ở trên. */
+const DOC_NUM_RE = /(?<![A-Za-zĐđ0-9])\d{1,4}(?:\/\d{4})?\/[A-ZĐ][A-Za-zĐđ]{0,7}(?:[-\/][A-ZĐ][A-Za-zĐđ]{0,7})+(?![A-Za-zĐđ0-9])/g;
+const DATE_NUM_RE = /\b([0-3]?\d)[\/\-]([01]?\d)[\/\-](\d{4})\b/g;
+const DATE_SPELLED_RE = /ngày\s+([0-3]?\d)\s+tháng\s+([01]?\d)\s+năm\s+(\d{4})/gi;
+function extractDocNumbers(text) { return [...String(text || '').matchAll(DOC_NUM_RE)].map(m => m[0]); }
+function extractDates(text) {
+  const out = [];
+  for (const m of String(text || '').matchAll(DATE_NUM_RE)) out.push({ raw: m[0], d: +m[1], mo: +m[2], y: +m[3] });
+  for (const m of String(text || '').matchAll(DATE_SPELLED_RE)) out.push({ raw: m[0], d: +m[1], mo: +m[2], y: +m[3] });
+  return out;
+}
+/** Tách số hiệu thành {number, year, codes[]} để chấm TỪNG PHẦN — không so
+ * khớp theo tỷ lệ từ như `gradeRecall` (không phù hợp: 1 chữ số sai vẫn có
+ * thể "khớp" >90% theo từ, nhưng số hiệu sai 1 chữ số là SAI HOÀN TOÀN). */
+function parseDocNumber(str) {
+  // Dùng `i` (không phân biệt hoa/thường) — người học có thể gõ "214/ct-bqp"
+  // thay vì "214/CT-BQP", đúng yêu cầu "bỏ qua khác biệt chữ hoa/thường". Chỉ
+  // `extractDocNumbers` (dò số hiệu TRONG văn bản câu hỏi/đáp án gốc, luôn
+  // viết hoa đúng chuẩn) mới cần giữ nguyên yêu cầu viết hoa để tránh khớp
+  // nhầm vào văn xuôi thường — việc CHẤM câu trả lời gõ tay thì không.
+  const m = String(str || '').trim().match(/(\d{1,4})(?:\/(\d{4}))?\/([A-ZĐ][A-Za-zĐđ]{0,7}(?:[-\/][A-ZĐ][A-Za-zĐđ]{0,7})+)/i);
+  if (!m) return null;
+  return { number: m[1].replace(/^0+(?=\d)/, ''), year: m[2] || null, codes: m[3].toUpperCase().split(/[-\/]/) };
+}
+function parseDateStr(str) {
+  const m = String(str || '').trim().match(/(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})/);
+  if (!m) return null;
+  return { d: +m[1], mo: +m[2], y: +m[3] };
+}
+/** Chấm số hiệu: bỏ qua khoảng trắng/chữ hoa-thường (đã chuẩn hoá ở
+ * `parseDocNumber`), KHÔNG chấp nhận sai bất kỳ chữ số hay mã cơ quan nào —
+ * báo đúng phần sai (number/year/code) để hiển thị rõ cho người học. */
+function compareDocNumber(typedStr, correctStr) {
+  const c = parseDocNumber(correctStr);
+  if (!c) return { exact: false, mismatch: ['unparseable'] };
+  const t = typedStr ? parseDocNumber(typedStr) : null;
+  if (!t) return { exact: false, mismatch: ['number', 'code'] };
+  const mismatch = [];
+  if (t.number !== c.number) mismatch.push('number');
+  if ((t.year || '') !== (c.year || '')) mismatch.push('year');
+  if (t.codes.join('-') !== c.codes.join('-')) mismatch.push('code');
+  return { exact: mismatch.length === 0, mismatch };
+}
+/** Chấm ngày: quy về {d,mo,y} số nguyên nên "01/04/2026", "1/4/2026",
+ * "01-04-2026" đều coi là MỘT ngày (bỏ số 0 đầu, chấp nhận "/" hoặc "-")
+ * — nhưng sai ngày/tháng/năm bất kỳ đều KHÔNG được chấp nhận, không có
+ * "gần đúng". */
+function compareDate(typedStr, correctStr) {
+  const c = parseDateStr(correctStr);
+  if (!c) return { exact: false, mismatch: ['unparseable'] };
+  const t = typedStr ? parseDateStr(typedStr) : null;
+  if (!t) return { exact: false, mismatch: ['day', 'month', 'year'] };
+  const mismatch = [];
+  if (t.d !== c.d) mismatch.push('day');
+  if (t.mo !== c.mo) mismatch.push('month');
+  if (t.y !== c.y) mismatch.push('year');
+  return { exact: mismatch.length === 0, mismatch };
+}
+/** Chấm 1 câu "Số hiệu & Mốc thời gian": đáp án chuẩn (đã giải tham chiếu
+ * qua `canonicalAnswers`) có thể chứa CẢ số hiệu VÀ ngày (ví dụ "Chỉ thị số
+ * 214/CT-BQP ngày 14/3/1995…") — chấm riêng từng phần, chỉ coi ĐÚNG khi
+ * TẤT CẢ phần có trong đáp án đều đúng. Trả về null nếu đáp án chuẩn không
+ * chứa số hiệu/ngày nào (câu không thuộc nhóm này). */
+function gradeDocDateAnswer(typed, canonicalText) {
+  const cDoc = extractDocNumbers(canonicalText)[0] || null;
+  const cDate = (extractDates(canonicalText)[0] || {}).raw || null;
+  if (!cDoc && !cDate) return null;
+  const tDoc = extractDocNumbers(typed)[0] || null;
+  const tDate = (extractDates(typed)[0] || {}).raw || null;
+  const parts = [];
+  let exact = true;
+  if (cDoc) {
+    const r = compareDocNumber(tDoc, cDoc);
+    parts.push({ kind: 'docnum', exact: r.exact, mismatch: r.mismatch, correct: cDoc, typed: tDoc || '(chưa nhập)' });
+    if (!r.exact) exact = false;
+  }
+  if (cDate) {
+    const r = compareDate(tDate, cDate);
+    parts.push({ kind: 'date', exact: r.exact, mismatch: r.mismatch, correct: cDate, typed: tDate || '(chưa nhập)' });
+    if (!r.exact) exact = false;
+  }
+  return { exact, parts };
+}
+/** true nếu, sau khi bỏ đúng cụm ngày `dateRaw` khỏi `text` (và chữ "ngày"
+ * đứng ngay trước nó, cùng mọi dấu câu/khoảng trắng), phần còn lại không
+ * dài hơn `maxLeftover` ký tự — dùng để phân biệt "đáp án CHÍNH LÀ ngày"
+ * (`ngay_ban_hanh`, cần rất chặt — ngưỡng 6) với "đáp án có ngày + 1 chi
+ * tiết phụ ngắn, ví dụ tên người" (`moc_lich_su`, ngưỡng rộng hơn — 80). */
+function isMostlyDate(text, dateRaw, maxLeftover) {
+  const without = text.replace(dateRaw, '').replace(/^ngày\s*/i, '').replace(/[.,;:()\s]+/g, '');
+  return without.length <= maxLeftover;
+}
+/** true nếu đáp án chuẩn chỉ gồm 1 hoặc nhiều năm (4 số, 1900–2099), cách
+ * nhau bởi dấu câu/khoảng trắng/chữ "năm" — ví dụ "Năm 2005." hoặc câu
+ * nhiều đáp án đúng đã ghép "1985. 1987." — không phải mọi số 4 chữ số
+ * (vẫn phải nằm trong khoảng năm hợp lý, không khớp nhầm mã số khác). */
+function isBareYearAnswer(canon) {
+  const toks = canon.replace(/năm/gi, ' ').replace(/[.,;()\s]+/g, ' ').trim().split(/\s+/).filter(Boolean);
+  return toks.length > 0 && toks.every(t => /^\d{4}$/.test(t) && +t >= 1900 && +t <= 2099);
+}
+/** Phân loại 1 câu — KHÔNG liệt kê ID, tính từ cấu trúc đáp án thật, không
+ * phải chỉ từ khoá trong câu hỏi (lý do xem từng mục):
+ * - `so_hieu`: đáp án chuẩn chứa số hiệu văn bản VÀ số hiệu đó KHÔNG xuất
+ *   hiện giống nhau ở TẤT CẢ phương án (nếu giống nhau ở mọi phương án,
+ *   con số không phải thứ đang được hỏi — ví dụ `IV-20` cả 3 phương án
+ *   đều lặp lại đúng "10/CT-TTg ngày 30/3/2026", câu hỏi thật ra là về NỘI
+ *   DUNG chỉ thị, không phải số hiệu — loại khỏi `so_hieu`).
+ * - `ngay_ban_hanh`: đáp án chuẩn CHỦ YẾU là ngày (ngưỡng chặt, 6 ký tự
+ *   còn lại) — không chỉ cần CÓ ngày ở đâu đó. Lúc xây hàm này, bản đầu
+ *   chỉ kiểm tra "có ngày trong câu hỏi HOẶC đáp án" — sai: `I-12` hỏi
+ *   "được thành lập ở CẤP NÀO" (đáp án là cấp đơn vị, không phải ngày) và
+ *   `II-3`/`II-32` hỏi mức ăn thêm "NGÀY THÀNH LẬP QĐND" (đáp án là 1 tỷ
+ *   lệ, "ngày thành lập" chỉ là tên gọi 1 ngày lễ, không phải thứ được
+ *   hỏi) — cả 3 câu có NGÀY TRONG CÂU HỎI (để chỉ định văn bản/ngày lễ nào)
+ *   nhưng đáp án hoàn toàn không liên quan đến ngày/số — phải bắt buộc xét
+ *   THEO ĐÁP ÁN, không phải theo câu hỏi.
+ * - `moc_lich_su`: câu hỏi mang tính lịch sử (từ khoá "thành lập/truyền
+ *   thống/kỷ niệm/ra đời" HOẶC thuộc ngành "VIII. Truyền thống HC-KT") VÀ
+ *   đáp án chuẩn là ngày (cho phép kèm 1 chi tiết phụ ngắn như tên người,
+ *   ngưỡng rộng hơn `ngay_ban_hanh` vì nhiều câu hỏi kép "ngày nào? Ai là
+ *   trưởng phòng đầu tiên?") HOẶC là năm trần (ví dụ "Năm 2005.", hoặc câu
+ *   nhiều đáp án đúng "1985. 1987." sau khi ghép) — bắt được cả các mốc chỉ
+ *   ghi năm, không có ngày/tháng cụ thể (`VIII-24/25/26`). */
+function classifyDocDate(q) {
+  const canon = (canonicalAnswers(q)[0] || '').trim();
+  const stem = q.q || '';
+  const cats = [];
+  const canonDocs = extractDocNumbers(canon);
+  if (canonDocs.length) {
+    const d0 = canonDocs[0];
+    const allOptsSame = q.opts.length > 1 && q.opts.every(o => extractDocNumbers(o.t).includes(d0));
+    if (!allOptsSame) cats.push('so_hieu');
+  }
+  const canonDates = extractDates(canon);
+  if (canonDates.length && isMostlyDate(canon, canonDates[0].raw, 6)) cats.push('ngay_ban_hanh');
+  // Cố ý KHÔNG gắn moc_lich_su cho câu đã có so_hieu: khi đáp án là "số hiệu
+  // văn bản ngày X của cơ quan Y" (ví dụ VIII-10), độ dài phần còn lại sau
+  // khi bỏ ngày dao động rất khác nhau tuỳ câu (tuỳ có kèm tên/chức vụ người
+  // ký hay không) — dùng 1 ngưỡng ký tự để quyết định sẽ cho kết quả tuỳ
+  // tiện, không nhất quán giữa các câu cùng dạng. Việc chấm so_hieu đã kiểm
+  // tra CẢ số hiệu VÀ ngày cùng lúc (xem `gradeDocDateAnswer`) nên không mất
+  // phần luyện ngày — chỉ không gắn thêm nhãn trùng lặp.
+  const isHistorical = (/thành lập|truyền thống|kỷ niệm|ra đời/i.test(stem) || q.sec === 'VIII') && !cats.includes('so_hieu');
+  if (isHistorical) {
+    if (canonDates.length && isMostlyDate(canon, canonDates[0].raw, 80)) cats.push('moc_lich_su');
+    else if (isBareYearAnswer(canon)) cats.push('moc_lich_su');
+  }
+  return [...new Set(cats)];
+}
+/** Gộp ngân hàng chính + "Ôn 4 đề" thành 1 danh sách đồng nhất để phân
+ * loại/gộp trùng — KHÔNG đổi dữ liệu gốc, chỉ đọc. */
+function docdateAllRecords() {
+  const main = DATA.questions.filter(answerable).map(q => ({ id: q.id, ds: 'main', raw: q }));
+  const d4 = DETHI4 ? DETHI4.flat.filter(answerable).map(q => ({ id: q.id, ds: 'dethi4', raw: q })) : [];
+  return [...main, ...d4];
+}
+let _docdateCache = null;
+/** Danh sách câu đã phân loại + GỘP TRÙNG giữa ngân hàng chính và 4 đề:
+ * trùng khi câu hỏi VÀ đáp án chuẩn giống nhau sau chuẩn hoá (không phải
+ * chỉ cùng chủ đề) — giữ đúng 1 bản hiển thị nhưng lưu `sources` (mọi ID
+ * gốc) để vẫn truy ngược được nguồn dữ liệu. Có cache vì dữ liệu không đổi
+ * trong 1 lần tải trang. */
+function docdateItems() {
+  if (_docdateCache) return _docdateCache;
+  const items = [];
+  const seenKey = new Map();
+  docdateAllRecords().forEach(({ id, ds, raw: q }) => {
+    const cats = classifyDocDate(q);
+    if (!cats.length) return;
+    const canon = canonicalAnswers(q)[0] || '';
+    const key = normLowerAns(q.q) + '||' + normLowerAns(canon);
+    if (seenKey.has(key)) { items[seenKey.get(key)].sources.push({ id, ds }); return; }
+    seenKey.set(key, items.length);
+    items.push({
+      id, ds, q, cats, canon, sources: [{ id, ds }],
+      secLabel: ds === 'main' ? `${q.sec}. ${q.secShort}` : `Đề ${q.setNo} · ${D4_STAGE_LABEL[q.stage]}`,
+    });
+  });
+  markConfusable(items);
+  _docdateCache = items;
+  return items;
+}
+/** "Dễ nhầm lẫn" — 2 tín hiệu, cả 2 đều dựa trên dữ liệu thật, không suy
+ * đoán: (1) NGAY TRONG CÂU, có ≥2 phương án tự thân đã chứa số hiệu/ngày
+ * khác nhau (người ra đề đã chủ ý đặt số/ngày gây nhiễu làm phương án sai
+ * — ví dụ VIII-10 có "216/CT-BQP" chỉ khác 1 chữ số với đáp án đúng
+ * "214/CT-BQP"); (2) GIỮA CÁC CÂU, cùng 1 số hiệu/ngày xuất hiện (ở câu hỏi
+ * hay bất kỳ phương án nào) ở ≥2 câu khác nhau (ví dụ VIII-8 và VIII-9
+ * dùng chung đúng 2 phương án "190/QĐ-TM"/"164/QĐ-TM", chỉ đổi đáp án đúng
+ * — buộc phân biệt đúng giữa 2 câu, không chỉ trong 1 câu). */
+function markConfusable(items) {
+  const index = new Map();
+  const tokensOf = q => {
+    const set = new Set();
+    [q.q, ...q.opts.map(o => o.t)].forEach(t => {
+      extractDocNumbers(t).forEach(d => set.add('N:' + d.toUpperCase()));
+      extractDates(t).forEach(d => set.add('D:' + d.d + '/' + d.mo + '/' + d.y));
+    });
+    return set;
+  };
+  items.forEach(it => { it._tokens = tokensOf(it.q); it._tokens.forEach(tok => { if (!index.has(tok)) index.set(tok, new Set()); index.get(tok).add(it.id); }); });
+  items.forEach(it => {
+    const perOptionHits = it.q.opts.filter(o => extractDocNumbers(o.t).length || extractDates(o.t).length).length;
+    const linked = new Set();
+    it._tokens.forEach(tok => { const s = index.get(tok); if (s && s.size > 1) s.forEach(id => { if (id !== it.id) linked.add(id); }); });
+    it.confusable = perOptionHits >= 2 || linked.size > 0;
+    it.confusableWith = [...linked];
+    delete it._tokens;
+  });
+}
+function docdatePool(cat) {
+  const items = docdateItems();
+  if (!cat || cat === 'all') return items;
+  if (cat === 'confusable') return items.filter(it => it.confusable);
+  return items.filter(it => it.cats.includes(cat));
+}
+/** "Câu luyện bổ sung" — CHỈ sinh đúng 1 chiều an toàn: số hiệu → ngày ban
+ * hành, dựng từ CHÍNH 2 dữ liệu đã trích xuất (không bịa thêm chữ nào) —
+ * các chiều khác (tên văn bản→số hiệu, ngày→tên/số hiệu) đã có ngay trong
+ * câu hỏi gốc ở nhóm `so_hieu` (hỏi "văn bản nào" = hỏi theo chiều tên→số
+ * hiệu rồi) nên không sinh lại, tránh trùng lặp không cần thiết. Chỉ sinh
+ * khi câu có ĐỦ cả số hiệu và ngày trong đáp án (yêu cầu "chỉ khi câu hỏi
+ * có đáp án duy nhất và không mơ hồ") — câu nào thiếu 1 trong 2 bị bỏ qua,
+ * không suy đoán phần còn thiếu. */
+function docdateSupplementary() {
+  return docdateItems().filter(it => it.cats.includes('so_hieu')).map(it => {
+    const doc = extractDocNumbers(it.canon)[0];
+    const date = extractDates(it.canon)[0];
+    if (!doc || !date) return null;
+    return { id: 'GEN-' + it.id, generated: true, sourceId: it.id, secLabel: it.secLabel,
+      q: `${doc} được ban hành vào ngày nào?`, canon: date.raw };
+  }).filter(Boolean);
+}
+/** Xếp các câu "dễ nhầm" liền kề nhau (ổn định theo khoá nhóm — id nhỏ
+ * nhất trong {chính nó + các câu liên kết}) để chế độ "Luyện chống nhầm
+ * lẫn" thực sự buộc phân biệt 2 câu dễ lẫn ngay sau nhau, không để ngẫu
+ * nhiên rải chúng cách xa nhau trong 1 lượt luyện dài. */
+function interleaveConfusable(pool) {
+  const keyOf = it => [it.id, ...(it.confusableWith || [])].sort()[0];
+  return pool.slice().sort((a, b) => keyOf(a).localeCompare(keyOf(b)));
+}
+
+const docdateSetup = { cat: 'all', interleave: false, showTable: false };
+const DOCDATE_CATS = [['all', 'Tất cả'], ['so_hieu', 'Số hiệu quyết định/văn bản'], ['ngay_ban_hanh', 'Ngày tháng năm ban hành'], ['moc_lich_su', 'Ngày truyền thống & mốc lịch sử'], ['confusable', 'Dễ nhầm lẫn']];
+const DOCDATE_MISMATCH_LABEL = { number: 'số hiệu', year: 'năm văn bản', code: 'ký hiệu cơ quan ban hành', day: 'ngày', month: 'tháng', unparseable: 'không đọc được định dạng' };
+
+function docdateStart(cat) {
+  let pool = docdatePool(cat);
+  if (!pool.length) { toast('Không có câu nào phù hợp.'); return; }
+  pool = shuffle(pool);
+  if (docdateSetup.interleave) pool = interleaveConfusable(pool);
+  const supp = (cat === 'all' || cat === 'so_hieu') ? docdateSupplementary() : [];
+  const combined = [...pool, ...supp];
+  app.docdate = {
+    cat,
+    items: combined.map(item => ({ item, typed: '', done: false, ok: null, revealed: false, graded: null })),
+    i: 0, right: 0, wrong: 0, started: Date.now(),
+  };
+  app.view = 'essay'; render();
+}
+function docdateAdvance() {
+  const T = app.docdate;
+  if (T.i < T.items.length - 1) { T.i++; render(); } else docdateFinish();
+}
+function docdateFinish() {
+  const T = app.docdate;
+  T.right = T.items.filter(it => it.ok === true).length;
+  T.wrong = T.items.filter(it => it.ok === false).length;
+  T.finished = true;
+  T.elapsed = Date.now() - T.started;
+  render();
+}
+function docdateSubmit(it, item) {
+  if (it.revealed) return;
+  const canon = item.generated ? item.canon : (canonicalAnswers(item.q)[0] || '');
+  const g = gradeDocDateAnswer(it.typed, canon);
+  it.graded = g;
+  it.ok = !!(g && g.exact);
+  it.revealed = true;
+  if (!item.generated) store.grade(item.id, it.ok);
+  render();
+}
+function docdateGradeBox(it) {
+  const g = it.graded;
+  const box = el('div', 'grade-box');
+  if (!g) { box.innerHTML = `<div class="note">${ICON.warn}<span>Không xác định được số hiệu/ngày để chấm câu này.</span></div>`; return box; }
+  const rows = g.parts.map(p => {
+    const label = p.kind === 'docnum' ? 'Số hiệu văn bản' : 'Ngày ban hành';
+    const why = p.mismatch.map(m => DOCDATE_MISMATCH_LABEL[m] || m).join(', ');
+    return `<div class="gscore" style="margin-top:8px">
+      <div class="gpts" style="color:${p.exact ? 'var(--ok)' : 'var(--bad)'}"><b>${p.exact ? ICON.check + ' Đúng' : ICON.x + ' Sai'} — ${esc(label)}</b>${!p.exact ? `<span>Sai ở: ${esc(why)}</span>` : ''}</div>
+      <p style="font-size:13px;margin-top:6px"><b>Bạn nhập:</b> ${esc(p.typed)}</p>
+      <p style="font-size:13px"><b>Đáp án đúng:</b> ${esc(p.correct)}</p>
+    </div>`;
+  }).join('');
+  box.innerHTML = `<div class="gscore"><div class="gpts" style="color:${g.exact ? 'var(--ok)' : 'var(--bad)'}"><b>${g.exact ? ICON.check + ' Chính xác toàn bộ' : ICON.x + ' Chưa chính xác'}</b></div></div>${rows}`;
+  return box;
+}
+function docdateQuizView() {
+  const T = app.docdate, it = T.items[T.i], item = it.item;
+  const v = el('div');
+  const bar = el('div', 'quiz-bar');
+  const back = el('button', 'btn ghost', `${ICON.back} Thoát`);
+  back.onclick = () => { if (T.i === 0 || confirm('Thoát và huỷ lượt luyện này?')) { app.docdate = null; nav('essay'); } };
+  bar.appendChild(back);
+  bar.appendChild(el('div', 'progress', `<i style="width:${T.i / T.items.length * 100}%"></i>`));
+  bar.appendChild(el('span', 'counter', `${T.i + 1}/${T.items.length}`));
+  bar.appendChild(el('span', 'score-live', `<span class="g">✓ ${T.items.filter(x => x.ok === true).length}</span> · <span class="r">✕ ${T.items.filter(x => x.ok === false).length}</span>`));
+  v.appendChild(bar);
+
+  const card = el('div', 'card qcard');
+  let tagsHtml = item.generated ? `<span class="tag" style="background:var(--warn)">Câu luyện bổ sung</span>` : `<span class="tag">${esc(item.secLabel)}</span>`;
+  if (item.confusable) tagsHtml += `<span class="tag multi">Dễ nhầm lẫn</span>`;
+  const topEl = el('div', 'qtop', tagsHtml);
+  if (!item.generated) topEl.appendChild(starBtn(item.id));
+  card.appendChild(topEl);
+  card.appendChild(el('div', 'qtext', esc(item.generated ? item.q : essayQuestionText(item.q))));
+
+  if (!it.revealed) {
+    const ta = el('textarea', 'recall-in');
+    ta.placeholder = 'Gõ chính xác số hiệu và/hoặc ngày tháng…';
+    ta.value = it.typed;
+    ta.oninput = () => { it.typed = ta.value; };
+    card.appendChild(ta);
+    const foot = el('div', 'qfoot');
+    const submit = el('button', 'btn primary', `Kiểm tra ${ICON.check}`);
+    submit.onclick = once(() => docdateSubmit(it, item));
+    foot.appendChild(submit);
+    card.appendChild(foot);
+  } else {
+    card.appendChild(docdateGradeBox(it));
+    const foot = el('div', 'qfoot');
+    const retry = el('button', 'btn', `${ICON.refresh} Thử lại câu này`);
+    retry.onclick = () => { it.typed = ''; it.revealed = false; render(); };
+    foot.appendChild(retry);
+    const last = T.i === T.items.length - 1;
+    const next = el('button', 'btn primary', (last ? 'Xem kết quả' : 'Câu tiếp theo') + ICON.arrow);
+    next.onclick = once(() => { it.done = true; docdateAdvance(); });
+    foot.appendChild(next);
+    card.appendChild(foot);
+  }
+  v.appendChild(card);
+  return v;
+}
+function docdateResult() {
+  const T = app.docdate;
+  const total = T.items.length;
+  const pct = total ? Math.round(T.right / total * 100) : 0;
+  const emo = pct >= 90 ? '🏆' : pct >= 75 ? '🎉' : pct >= 50 ? '💪' : '📚';
+  const v = el('div');
+  const c = el('div', 'card result', `
+    <div class="emoji">${emo}</div>
+    <div class="big" style="color:${pct >= 75 ? 'var(--ok)' : pct >= 50 ? 'var(--warn)' : 'var(--bad)'}">${pct}%</div>
+    <div class="lbl"><b>Số hiệu & Mốc thời gian</b> — đúng ${T.right}/${total} câu, ${fmtTime(T.elapsed)}</div>`);
+  const cta = el('div', 'hero-cta'); cta.style.cssText = 'justify-content:center;margin-top:20px;flex-wrap:wrap';
+  const again = el('button', 'btn primary', `${ICON.refresh} Luyện lượt khác`);
+  again.onclick = () => { const cat = T.cat; app.docdate = null; docdateStart(cat); };
+  cta.appendChild(again);
+  const home = el('button', 'btn ghost', 'Về trang Luyện tự luận');
+  home.onclick = () => { app.docdate = null; nav('essay'); };
+  cta.appendChild(home);
+  c.appendChild(cta); v.appendChild(c);
+
+  v.appendChild(el('div', 'sec-title', `<h3>Xem lại bài làm</h3>`));
+  const list = el('div', 'review-list');
+  T.items.forEach(it => {
+    const item = it.item;
+    const r = el('div', 'rev ' + (it.ok ? 'hit' : 'miss'));
+    const top = el('div', 'qtop'); top.style.marginBottom = '0';
+    top.innerHTML = `<span class="tag">${item.generated ? 'Câu luyện bổ sung' : esc(item.secLabel)}</span><span class="tag" style="color:${it.ok ? 'var(--ok)' : 'var(--bad)'};font-weight:800">${it.ok ? '✓ Đúng' : '✕ Sai'}</span>`;
+    if (!item.generated) top.appendChild(starBtn(item.id));
+    r.appendChild(top);
+    r.appendChild(el('div', 'q', esc(item.generated ? item.q : essayQuestionText(item.q))));
+    r.appendChild(docdateGradeBox(it));
+    list.appendChild(r);
+  });
+  v.appendChild(list);
+  return v;
+}
+/** "Bảng ghi nhớ văn bản & mốc thời gian" — chỉ tổng hợp lại những gì ĐÃ
+ * trích xuất chắc chắn được, ẩn mặc định để người học tự nhớ trước khi bấm
+ * hiện. Không có dữ liệu mâu thuẫn nào được phát hiện trong ngân hàng hiện
+ * tại (đã rà soát khi xây tính năng — mỗi số hiệu chỉ gắn với đúng 1 ngày
+ * xuyên suốt), nên không có hàng nào bị đánh dấu "cần kiểm tra" lúc này;
+ * nếu phát sinh sau khi thêm câu hỏi mới, hàng đó sẽ tự xuất hiện ở đây
+ * với 2 giá trị khác nhau thay vì bị âm thầm chọn 1. */
+function docdateMemoTable() {
+  const items = docdateItems().filter(it => it.cats.includes('so_hieu') || it.cats.includes('ngay_ban_hanh') || it.cats.includes('moc_lich_su'));
+  const wrap = el('div'); wrap.style.marginTop = '14px';
+  wrap.appendChild(el('p', 'muted', 'Bấm "Hiện" để xem số hiệu/ngày — chỉ tổng hợp dữ liệu đã xác định chắc chắn từ ngân hàng câu hỏi, không suy đoán.')).style.cssText = 'font-size:12.5px;margin-bottom:10px';
+  const list = el('div', 'review-list');
+  items.forEach(it => {
+    const doc = extractDocNumbers(it.canon)[0] || '';
+    const date = extractDates(it.canon)[0]?.raw || '';
+    const mastery = store.d.stats[it.id] ? `Hộp ${store.d.stats[it.id].box}/5` : 'Chưa luyện';
+    const row = el('div', 'rev');
+    row.innerHTML = `<div class="qtop" style="margin-bottom:6px"><span class="tag">${esc(it.secLabel)}</span><span class="tag">${esc(mastery)}</span>${it.confusable ? '<span class="tag multi">Dễ nhầm lẫn</span>' : ''}</div><div class="q" style="font-size:13.5px">${esc(it.q.q)}</div>`;
+    const dataEl = el('div', ''); dataEl.style.cssText = 'display:none;margin-top:6px;font-size:13.5px';
+    dataEl.innerHTML = `${doc ? `<div><b>Số hiệu:</b> ${esc(doc)}</div>` : ''}${date ? `<div><b>Ngày:</b> ${esc(date)}</div>` : ''}`;
+    const toggle = el('button', 'btn ghost', 'Hiện số hiệu/ngày');
+    toggle.style.marginTop = '8px';
+    toggle.onclick = () => { const hidden = dataEl.style.display === 'none'; dataEl.style.display = hidden ? 'block' : 'none'; toggle.textContent = hidden ? 'Ẩn số hiệu/ngày' : 'Hiện số hiệu/ngày'; };
+    row.appendChild(toggle); row.appendChild(dataEl);
+    list.appendChild(row);
+  });
+  wrap.appendChild(list);
+  return wrap;
 }
 
 /* ---------- FLASHCARD ---------- */
@@ -3029,6 +3487,8 @@ function nav(v) {
   if (v !== 'review') app.review = null;
   if (v === 'essay' && app.essay?.finished) app.essay = null;
   if (v !== 'essay') { clearTeamTimer(); app.essay = null; }
+  if (v === 'essay' && app.docdate?.finished) app.docdate = null;
+  if (v !== 'essay') app.docdate = null;
   location.hash = v; render(); scrollTo({ top: 0, behavior: 'smooth' });
 }
 

@@ -1415,3 +1415,199 @@ thử lại, xem dưới). **Không đổi đáp án/cơ chế chấm trắc ngh
   tiếp dữ liệu (đã làm cho toàn bộ 29 câu), không phải đọc toàn bộ 244 câu
   không theo mẫu nào; vẫn có khả năng (dù thấp hơn nhiều so với cách liệt
   kê chuỗi cố định trước đây) sót 1 cách diễn đạt chưa từng gặp.
+
+### 09/11/2026 — nhóm luyện mới "📅 Số hiệu & Mốc thời gian" (ghi nhớ chính xác số hiệu văn bản, ngày ban hành, mốc lịch sử)
+
+Thêm khu vực **"📅 Số hiệu & Mốc thời gian"** ngay trong tab "Luyện tự luận"
+đã có (không tạo tab cấp cao mới) — rà soát CẤU TRÚC thật của câu hỏi/đáp
+án trên cả ngân hàng chính (244 câu) và "Ôn 4 đề trọng tâm" (80 câu), không
+chỉ lọc theo "có chứa chữ số", để tránh lẫn phần trăm/số câu/điểm số/thời
+gian thi vào nhóm luyện này — đúng yêu cầu đặc biệt của tính năng.
+
+**Rà soát toàn bộ 324 câu (244 + 80), không lấy mẫu**: dùng 1 fork đọc độc
+lập trước, sau đó tôi tự đối chiếu lại từng trường hợp biên bằng cách đọc
+trực tiếp dữ liệu (không tin thẳng báo cáo tự động) trước khi triển khai —
+phát hiện và sửa đúng 5 lỗi phân loại trong lúc xây dựng:
+
+| Câu | Lỗi phát hiện | Sửa |
+|---|---|---|
+| `I-12` | "...được thành lập **ở cấp nào**?" — khớp từ khoá "thành lập" nhưng đáp án là CẤP ĐƠN VỊ (Trung đoàn/Lữ đoàn...), không phải ngày | Loại khỏi mọi nhóm — bắt buộc xét theo HÌNH DẠNG ĐÁP ÁN, không chỉ từ khoá trong câu hỏi |
+| `II-3`, `II-32` | Câu hỏi về mức ăn thêm "**ngày thành lập** QĐND" — "ngày thành lập" chỉ là TÊN 1 ngày lễ để xác định mức ăn, đáp án là tỷ lệ "1,5 lần" | Loại khỏi mọi nhóm, cùng nguyên tắc trên |
+| `VIII-27`, `VIII-28` | Hỏi về huân chương được trao "nhân dịp kỷ niệm... (07/3/1979-07/3/2024)" — ngày chỉ là bối cảnh xác định dịp kỷ niệm, đáp án là TÊN HUÂN CHƯƠNG | Loại khỏi mọi nhóm |
+| `VIII-24`, `VIII-25`, `VIII-26` | Đáp án là NĂM TRẦN ("Năm 2005.", "2004", hoặc nhiều đáp án đúng "1985."+"1987." đã ghép) — quy tắc dò ngày ban đầu chỉ nhận `DD/MM/YYYY` đầy đủ, bỏ sót năm đơn lẻ | Thêm `isBareYearAnswer()` nhận diện đáp án chỉ gồm 1 hoặc nhiều năm (1900–2099) |
+| `IV-19` | "Phong trào... **ra đời năm nào**?" — đúng là mốc lịch sử nhưng không thuộc ngành VIII, không khớp 2 tín hiệu ban đầu | Thêm từ khoá "ra đời" vào quy tắc dò lịch sử |
+
+Sau khi sửa, quét lại TOÀN BỘ 324 câu bằng chính hàm đã sửa, xác nhận không
+còn câu nào khác bị bỏ sót hoặc lọt nhầm (0 trường hợp cả 2 chiều, kiểm tra
+độc lập bằng script riêng ngoài logic phân loại).
+
+**Phân loại cuối cùng** (hàm `classifyDocDate(q)` — không liệt kê ID cố
+định, tính từ CẤU TRÚC đáp án thật đã qua `canonicalAnswers`/
+`resolveReferentialAnswer`):
+- `so_hieu`: đáp án chứa số hiệu văn bản VÀ số hiệu đó KHÔNG giống nhau ở
+  mọi phương án (nếu giống nhau ở mọi phương án — ví dụ `IV-20` — con số
+  không phải thứ đang được hỏi, loại khỏi nhóm).
+- `ngay_ban_hanh`: đáp án CHỦ YẾU là ngày (sau khi bỏ cụm ngày khớp được,
+  phần còn lại ≤6 ký tự) — ngưỡng chặt để không lẫn câu mà ngày chỉ là 1
+  chi tiết phụ trong câu trả lời dài.
+- `moc_lich_su`: câu hỏi mang tính lịch sử (từ khoá "thành lập/truyền
+  thống/kỷ niệm/ra đời" HOẶC thuộc ngành VIII) VÀ đáp án là ngày (ngưỡng
+  rộng hơn, ≤80 ký tự còn lại — chấp nhận 1 chi tiết phụ ngắn như tên người,
+  vì nhiều câu hỏi kép "ngày nào? Ai là trưởng phòng đầu tiên?") HOẶC là
+  năm trần. **Cố ý không gắn thêm `moc_lich_su` cho câu đã có `so_hieu`**
+  (ví dụ `VIII-8`): độ dài phần còn lại sau khi bỏ ngày dao động rất khác
+  nhau tuỳ câu có kèm tên/chức vụ người ký hay không, dùng ngưỡng ký tự sẽ
+  cho kết quả không nhất quán giữa các câu cùng dạng — việc chấm `so_hieu`
+  đã kiểm tra CẢ số hiệu VÀ ngày cùng lúc nên không mất phần luyện ngày,
+  chỉ không gắn 2 nhãn trùng lặp cho cùng 1 câu.
+
+**Kết quả cuối (sau gộp trùng giữa 2 ngân hàng)**: tổng **20 câu duy nhất**
+đủ điều kiện — **Số hiệu quyết định/văn bản: 12**, **Ngày tháng năm ban
+hành: 2** (`III-15`, `VIII-4`), **Ngày truyền thống & mốc lịch sử: 7**
+(`IV-19, VIII-4, VIII-6, VIII-7, VIII-24, VIII-25, VIII-26`), **"Dễ nhầm
+lẫn": 16/20**. Gộp trùng theo ĐÚNG câu hỏi + đáp án chuẩn giống nhau sau
+chuẩn hoá (không gộp câu chỉ "gần giống", ví dụ `VIII-23`↔`DT3-GC-5` chỉ
+~92% trùng từ nên vẫn hiển thị là 2 mục riêng — đúng điều kiện "chỉ hiển
+thị một lần NẾU THỰC SỰ cùng câu hỏi và đáp án"), vẫn giữ `sources` (mọi
+ID gốc) cho từng mục để truy ngược nguồn.
+
+**"Dễ nhầm lẫn" — 2 tín hiệu, cả 2 từ dữ liệu thật, không suy đoán**: (1)
+NGAY TRONG 1 CÂU có ≥2 phương án tự thân chứa số hiệu/ngày khác nhau (người
+ra đề đã chủ ý đặt số/ngày gây nhiễu, ví dụ `VIII-10` có phương án nhiễu
+"216/CT-BQP" chỉ khác 1 chữ số với đáp án đúng "214/CT-BQP", cùng ngày); (2)
+GIỮA CÁC CÂU, cùng 1 số hiệu/ngày (bất kỳ ở câu hỏi hay phương án) xuất hiện
+ở ≥2 câu khác nhau. Cụm "dễ nhầm" cụ thể tìm được:
+- `VIII-8` ↔ `VIII-9` ↔ `VIII-6`/`VIII-7`/`VIII-13`/`VIII-17` (cụm 6 câu
+  liên kết qua 2 mốc ngày "19/11/1966"/"07/3/1979" dùng chung làm phương án
+  nhiễu lẫn nhau — ví dụ `VIII-8` và `VIII-9` dùng ĐÚNG 2 phương án giống
+  nhau, chỉ đổi đáp án đúng).
+- `VIII-10` ↔ `VIII-11` (đáp án đúng của câu này là phương án nhiễu của câu
+  kia, cùng mốc "214/CT-BQP ngày 14/3/1995").
+- `VIII-22` ↔ `VIII-23` ↔ `DT3-GC-5` (dùng chung đúng 2 phương án
+  "359/QĐ-BQP"/"120/2006/QĐ-BQP", đổi đáp án đúng giữa 2 câu).
+- `VIII-12` (nội bộ 1 câu): phương án nhiễu lặp lại ĐÚNG số hiệu
+  "4352/QĐ-BQP" với ngày khác ("23/10/2025" so với đáp án đúng
+  "23/9/2024" — ngày/tháng gần như đảo chỗ, bẫy nhầm lẫn rõ rệt nhất tìm
+  được).
+
+**Chế độ "Luyện chống nhầm lẫn"**: khi bật, xếp mọi câu trong 1 cụm dễ nhầm
+liền nhau thành 1 khối liên tục (sắp theo khoá nhóm ổn định — ID nhỏ nhất
+trong {chính nó + các câu liên kết}, giữ thứ tự ngẫu nhiên nội bộ khối từ
+bước xáo trộn trước đó) — không xếp rải rác cách xa nhau trong 1 lượt luyện
+dài. Với cụm 6 câu liên kết chặt (`VIII-6/7/8/9/13/17`), đảm bảo cả 6 câu
+nằm trong 1 khối LIÊN TỤC (không có câu không liên quan chen vào giữa),
+không bắt buộc 2 câu bất kỳ phải sát cạnh nhau tuyệt đối.
+
+**Chấm điểm chuyên biệt** (hàm `gradeDocDateAnswer`/`compareDocNumber`/
+`compareDate` — KHÔNG dùng `gradeRecall` chung, vì so khớp theo tỷ lệ từ
+không phù hợp: sai đúng 1 chữ số trong số hiệu vẫn "khớp" >90% theo từ,
+nhưng phải tính SAI HOÀN TOÀN):
+- Số hiệu: tách {số, năm, mã cơ quan[]}, so khớp từng phần — bỏ qua hoa/
+  thường và khoảng trắng, KHÔNG chấp nhận sai bất kỳ chữ số hay mã nào.
+- Ngày: quy về {ngày,tháng,năm} dạng số nguyên nên "01/04/2026",
+  "1/4/2026", "01-04-2026" đều là MỘT ngày — sai ngày/tháng/năm bất kỳ đều
+  không được chấp nhận, không có "gần đúng".
+- Câu có CẢ số hiệu và ngày (ví dụ "Chỉ thị số 214/CT-BQP ngày 14/3/1995"):
+  chấm riêng 2 phần, chỉ coi ĐÚNG khi CẢ 2 phần đều đúng — gõ đúng ngày
+  nhưng sai số hiệu (hoặc ngược lại) vẫn tính SAI, không có điểm một phần.
+- Hiển thị rõ sai ở đâu: nhãn "số hiệu"/"năm văn bản"/"ký hiệu cơ quan ban
+  hành" cho số hiệu, "ngày"/"tháng"/"năm" cho ngày.
+- Không đụng tới chấm trắc nghiệm gốc — `q.ans`/`q.opts` không đổi, màn
+  "Luyện tập" vẫn hiện đủ nguyên văn mọi phương án kể cả phương án nhiễu.
+
+**"Câu luyện bổ sung" — 12 câu, CHỈ 1 chiều an toàn (số hiệu → ngày ban
+hành)**: dựng từ chính 2 dữ liệu đã trích xuất của các câu `so_hieu` có ĐỦ
+cả số hiệu và ngày trong đáp án (không bịa thêm chữ nào, không suy đoán
+phần thiếu) — ví dụ `GEN-VIII-10`: "214/CT-BQP được ban hành vào ngày
+nào?" → đáp án "14/3/1995", lấy đúng từ đáp án đã xác minh của `VIII-10`.
+**Chủ động KHÔNG sinh 2 chiều còn lại** (tên văn bản→số hiệu, ngày→tên/số
+hiệu): chiều "tên→số hiệu" đã CÓ SẴN chính là câu hỏi gốc `so_hieu` (hỏi
+"văn bản nào" rồi, sinh lại sẽ trùng lặp không cần thiết); chiều "ngày→số
+hiệu/tên" bị bỏ vì nhiều ngày xuất hiện gần nhau giữa các câu (xem cụm "dễ
+nhầm lẫn" trên) nên không đủ điều kiện "đáp án duy nhất và không mơ hồ" như
+yêu cầu — tránh sinh câu hỏi có thể gây tranh cãi đáp án. Gắn nhãn "Câu
+luyện bổ sung" công khai trên giao diện, KHÔNG có nút 🔖 (không phải câu
+hỏi gốc, không lưu độc lập trong Leitner — chỉ tính điểm trong phiên luyện
+hiện tại), không ghi/đổi gì vào `questions.json`/`dethi4.json`.
+
+**Bảng ghi nhớ văn bản & mốc thời gian**: liệt kê 19 câu thuộc 3 nhóm
+`so_hieu`/`ngay_ban_hanh`/`moc_lich_su` (loại `confusable` vì đó là một
+GÓC NHÌN khác, không phải 1 nhóm nội dung riêng), ẩn số hiệu/ngày theo mặc
+định, bấm "Hiện" mới lộ ra; hiện kèm mức ghi nhớ (hộp Leitner) hiện tại.
+**Không phát hiện dữ liệu mâu thuẫn nào** (đã rà soát: mỗi số hiệu luôn đi
+kèm đúng 1 ngày xuyên suốt dữ liệu) nên hiện chưa có dòng nào bị đánh dấu
+"cần kiểm tra" — nếu phát sinh sau khi thêm câu hỏi mới có số liệu trái
+nhau, bảng sẽ tự hiện 2 giá trị khác nhau cho cùng 1 dòng (do đọc trực tiếp
+từ dữ liệu câu hỏi, không có logic "chọn 1 giá trị" nào để tự ý quyết định
+thay).
+
+**Tích hợp hệ thống hiện có**: dùng lại nguyên `starBtn`/`store.grade`/
+`store.star` — bookmark 🔖 và Leitner hoạt động y hệt mọi nơi khác, câu
+đánh dấu tự xuất hiện ở "Cần ôn lại" qua đúng cơ chế `resolveMarked` đã có
+(không cần sửa gì thêm, vì mọi ID ở đây vẫn là ID câu hỏi gốc, trừ câu "Câu
+luyện bổ sung" không có nút 🔖). Không đổi/xoá `stats`/`starred`/`history`
+hiện có. Không ảnh hưởng "Luyện tự luận" (các nhóm độ dài, "Luyện theo năng
+lực"), "Đội tuyển", "Ôn 4 đề" — xác nhận bằng hồi quy.
+
+**Giao diện**: thêm 1 khu vực mới trong `essayHome()`, tái dùng toàn bộ CSS
+đã có (`.chips`, `.sw`, `.card.pad`, `.sec-title`, `.review-list`/`.rev`,
+`.grade-box`/`.gscore`/`.gpts` — vốn đã có từ tab "Đội tuyển"). **Không
+thêm dòng CSS mới nào, không thêm tab cấp cao mới.**
+
+**Kiểm thử**: **35 unit test thuần** (Node, không qua trình duyệt) cho
+riêng các hàm trích xuất/chấm điểm (`extractDocNumbers`/`extractDates`/
+`compareDocNumber`/`compareDate`/`gradeDocDateAnswer`) — số hiệu đúng/sai
+từng phần (số, năm, mã cơ quan), ngày đúng/sai từng phần, 3 định dạng ngày
+tương đương, không có điểm một phần khi chỉ đúng 1 trong 2 phần, không
+khớp nhầm phần trăm/thời gian thi/số câu, hồi quy đúng bẫy số thật
+`VIII-10/VIII-33` (216 vs 214) và bẫy ngày thật `VIII-12` (23/10/2025 vs
+23/9/2024) — phát hiện và sửa 1 lỗi thật lúc viết test: `compareDocNumber`
+ban đầu yêu cầu mã cơ quan viết hoa, gõ "214/ct-bqp" (chữ thường) bị chấm
+sai dù đúng về nội dung — sai với chính yêu cầu "bỏ qua hoa/thường", đã sửa
+thêm cờ `i` vào regex chấm điểm. **28 kịch bản Playwright** (Chromium,
+`node server.js` thật): đúng số liệu từng nhóm tính trực tiếp từ dữ liệu
+(không giả định); xác nhận đúng 5 câu lỗi phân loại nêu trên nay đã sửa
+đúng; "Luyện chống nhầm lẫn" giữ cụm 6 câu liên kết thành 1 khối liên tục;
+12 câu luyện bổ sung đúng mẫu, đáp án lấy verbatim từ câu nguồn; gõ số
+hiệu nhiễu thật (216 thay 214) → chấm Sai, báo đúng "Sai ở: số hiệu"; gõ
+đúng đáp án → chấm Đúng, cập nhật Leitner; đánh dấu 🔖 đồng bộ đúng sang
+"Cần ôn lại"; di động không tràn ngang trang. Cộng chạy lại toàn bộ 200
+kịch bản Playwright của mọi tính năng trước — không hồi quy. **Tổng cộng
+275 lượt kiểm thử (35 unit test + 200 kịch bản cũ + 28 kịch bản mới) không
+tính riêng theo file, toàn bộ ĐẠT.**
+
+**Báo cáo theo đúng yêu cầu cuối**:
+- Số câu được lọc vào nhóm: 12 Số hiệu, 2 Ngày ban hành, 7 Mốc lịch sử,
+  tổng 20 câu duy nhất (324 câu đã rà soát — 244 ngân hàng chính + 80 "Ôn
+  4 đề").
+- Số cặp/cụm dễ nhầm lẫn: 16/20 câu thuộc ít nhất 1 cụm — 1 cụm lớn 6 câu
+  (`VIII-6/7/8/9/13/17`), 1 cặp (`VIII-10/VIII-11`), 1 cụm 3 câu
+  (`VIII-22/23/DT3-GC-5`), còn lại dễ nhầm nội bộ 1 câu (`VIII-12`, và mọi
+  câu `so_hieu` khác đều có phương án nhiễu số hiệu/ngày riêng trong chính
+  câu đó).
+- Số câu luyện bổ sung: 12 (số hiệu → ngày ban hành), gắn nhãn công khai,
+  không ghi vào dữ liệu gốc.
+- Trường hợp cần xác minh thủ công: không có câu nào bị đưa vào danh sách
+  "cần kiểm tra" của bảng ghi nhớ (không phát hiện mâu thuẫn dữ liệu); 5
+  câu phân loại sai lúc đầu đã được PHÁT HIỆN VÀ SỬA trong chính phiên làm
+  việc này (bảng chi tiết phía trên), không còn tồn đọng.
+
+**Giới hạn còn lại**:
+- `VIII-23` và `DT3-GC-5` không được gộp (chỉ ~92% trùng từ, không trùng
+  tuyệt đối) nên vẫn hiện 2 mục + sinh 2 câu luyện bổ sung gần như giống
+  nhau (`GEN-VIII-23` và `GEN-DT3-GC-5`, cùng số hiệu/ngày) — đúng theo quy
+  tắc gộp trùng đã chọn (chỉ gộp khi THỰC SỰ giống nhau, không gộp "gần
+  giống" để tránh làm mất thông tin khi 2 câu thực ra khác nhau ở chi tiết
+  nào đó), nhưng có nghĩa là người học sẽ gặp lại cùng 1 sự kiện 2 lần dưới
+  2 ID khác nhau nếu chọn nhóm "Số hiệu quyết định/văn bản" hoặc "Tất cả".
+- Quy tắc dò "lịch sử" (từ khoá + ngành VIII) vẫn có thể bỏ sót 1 câu hỏi
+  lịch sử thực sự ở ngành KHÁC ngành VIII mà không dùng đúng 4 từ khoá đã
+  chọn ("thành lập/truyền thống/kỷ niệm/ra đời") — đã quét lại toàn bộ 324
+  câu xác nhận không có câu nào đang lọt hiện tại, nhưng nếu thêm câu hỏi
+  lịch sử mới ở ngành khác dùng cách diễn đạt khác, có thể cần bổ sung từ
+  khoá.
+- "Luyện chống nhầm lẫn" đảm bảo cả cụm nằm liên tục, nhưng KHÔNG đảm bảo
+  2 câu cụ thể trong 1 cụm lớn (ví dụ `VIII-8` và `VIII-9`) luôn đứng sát
+  cạnh nhau tuyệt đối — với cụm 6 câu, thứ tự nội bộ trong khối vẫn ngẫu
+  nhiên (giữ tính đa dạng mỗi lượt luyện), chỉ đảm bảo không có câu không
+  liên quan chen vào giữa khối.
